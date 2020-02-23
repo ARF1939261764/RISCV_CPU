@@ -121,4 +121,93 @@ dualPortRam_inst0_reRam(
 	.writeByteEnable(reRam_writeByteEnable)			/*字节使能信号*/
 );
 
+
+endmodule
+
+
+module cache_rw_data #(
+  parameter ADDR_WIDTH=10
+)(
+  clk,
+  readAddress,
+  readWay,
+  readData,
+  writeAddress,
+  writeWay,
+  writeData,
+  writeEnable,
+  writeByteEnable
+);
+input          clk;
+input [31:0]   readAddress;
+input [1:0]    readWay;
+output[31:0]   readData;
+input [31:0]   writeAddress;
+input [1:0]    writeWay;
+input [31:0]   writeData;
+input          writeEnable;
+input [3:0]    writeByteEnable;
+
+wire[127:0] rd,wd;
+wire[15:0] wbe;
+wire[31:0] rds[3:0];
+wire[3:0] bem;
+
+assign {rds[0],rds[1],rds[2],rds[3]}=rd;
+assign readData=rds[readWay];
+
+assign wd={4{writeData}};
+
+assign bem=4'd1<<writeWay;
+
+assign wbe={{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}}&{4{writeByteEnable}};
+
+dualPortRam #(
+	.WIDTH(32*4),		                            /*数据位宽*/
+	.DEPTH(2**ADDR_WIDTH/4)	                    /*深度*/
+)
+dualPortRam_inst0_dataRam(
+	.clk(clk),
+	.readAddress(readAddress[ADDR_WIDTH-1:2]),	/*读地址*/
+	.readData(rd),							                /*读出的数据*/
+	.writeAddress(writeAddress[ADDR_WIDTH-1:2]),/*写地址*/
+	.writeData(wd),						                  /*需要写入的数据*/
+	.writeEnable(writeEnable),	                /*写使能*/
+	.writeByteEnable(wbe)		                    /*字节使能信号*/
+);
+
+/*检查*/
+always @(posedge clk) begin
+  if(readAddress[1:0]!=0) begin
+    $display("cache unaligned access:%d\n",$time);
+  end
+end
+
+endmodule
+
+module cache_rw_tag #(
+  parameter ADDR_WIDTH=10
+)(
+  clk,
+  readAddress,
+  readWay,
+  readData,
+  writeAddress,
+  writeWay,
+  writeData,
+  writeEnable,
+  writeByteEnable
+)
+input          clk;
+input [31:0]   readAddress;
+input [1:0]    readWay;
+output[31:0]   readData;
+input [31:0]   writeAddress;
+input [1:0]    writeWay;
+input [31:0]   writeData;
+input          writeEnable;
+input [3:0]    writeByteEnable;
+
+
+
 endmodule
