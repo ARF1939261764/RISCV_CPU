@@ -23,6 +23,7 @@ module cache_rw #(
   m0_cmd,
   m0_cmd_valid,
   m0_cmd_ready
+  
 );
 input clk,rest;
 /*s0从机接口*/
@@ -61,26 +62,26 @@ width
 ********************************************************/
 localparam DATA_RAM_ADDR_WIDTH=log2(SIZE/(32/8*4));
 
-localparam TAG_RAM_ADDR_WIDTH=log2(SIZE/(64*4));
+localparam TAG_RAM_ADDR_WIDTH=DATA_RAM_ADDR_WIDTH-4;
 
-localparam DRE_RAM_ADDR_WIDTH=log2(SIZE/32);
+localparam DRE_RAM_ADDR_WIDTH=log2(SIZE/32)+1;
 
 localparam TAG_ADDR_WIDTH=32-(DATA_RAM_ADDR_WIDTH+2);
 
 wire[DATA_RAM_ADDR_WIDTH-1:0] data_rAddr;
-wire[1:0]                     data_rWay;
+wire[1:0]                     data_rCh;
 wire[31:0]                    data_rData;
 wire[DATA_RAM_ADDR_WIDTH-1:0] data_wAddr;
-wire[1:0]                     data_wWay;
+wire[1:0]                     data_wCh;
 wire[31:0]                    data_wData;
 wire                          data_wEn;
 wire[3:0]                     data_wByteEn;
 
 wire[TAG_RAM_ADDR_WIDTH-1:0]  tag_rAddr;
-wire[1:0]                     tag_rWay;
+wire[1:0]                     tag_rCh;
 wire[31:0]                    tag_rData;
 wire[TAG_RAM_ADDR_WIDTH-1:0]  tag_wAddr;
-wire[1:0]                     tag_wWay;
+wire[1:0]                     tag_wCh;
 wire[31:0]                    tag_wData;
 wire                          tag_wEn;
 wire[31:0]                    addr_Buff;
@@ -90,26 +91,50 @@ wire                          isHaveFreeBlock;
 wire[1:0]                     freeBlockNum;
 
 wire[DRE_RAM_ADDR_WIDTH-1:0]  dre_rAddr;
-wire[1:0]                     dre_rWay;
+wire[1:0]                     dre_rCh;
 wire[3:0]                     dre_rData;
-wire[15:0]                    dre_rDataAll;
+wire[7:0]                     dre_rDataAll;
 wire[DRE_RAM_ADDR_WIDTH-1:0]  dre_wAddr;
+wire[1:0]                     dre_wCh;
 wire[31:0]                    dre_wData;
 wire                          dre_wEn;
 
-assign tag_rAddr=   data_rAddr[DATA_RAM_ADDR_WIDTH-1:4];
-assign tag_rWay =   data_rWay; 
-assign tag_wAddr=   data_wAddr[DATA_RAM_ADDR_WIDTH-1:4];
-assign tag_wWay =   data_wWay;
-
-reg [31:0] last_s0_address;
-reg [3:0]  last_s0_byteEnable;
-reg        last_s0_read;
-reg        last_s0_write;
-reg [31:0] last_s0_writeData;
-
 wire isCacheEn,isIoAddr,isHit,isWBuffHit,isRe,isR,isW;
 wire isReadErr,isWriteErr,isSendCmdToRI;
+
+reg [31:0]                    last_s0_address;
+reg [3:0]                     last_s0_byteEnable;
+reg                           last_s0_read;
+reg                           last_s0_write;
+reg [31:0]                    last_s0_writeData;
+
+assign tag_rAddr  =           data_rAddr[DATA_RAM_ADDR_WIDTH-1:4];
+assign tag_rCh    =           data_rCh; 
+assign tag_wAddr  =           data_wAddr[DATA_RAM_ADDR_WIDTH-1:4];
+assign tag_wCh    =           data_wCh;
+assign dre_rAddr  =           data_rAddr;
+assign dre_rCh    =           data_rCh;
+assign dre_wAddr  =           data_wAddr;
+assign dre_wCh    =           data_wCh;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 assign isCacheEn      = isEnableCache;
 assign isIoAddr       = isIOAddrBlock;
@@ -125,7 +150,7 @@ assign isReadErr      =   (
                             !isWBuffHit ||  /*写缓冲寄存器也没有命中*/
                             !isRe           /*不可读*/ 
                           )&&isR;           /*当是读指令时^*/
-                 
+
 assign isWriteErr     =   (
                             isIoAddr    ||  /*是IO地址*/
                             !isHit          /*没有命中*/
@@ -198,10 +223,10 @@ cache_rw_data #(
 cache_rw_data_inst0(
   .clk(clk),
   .readAddress(data_rAddr),
-  .readWay(data_rWay),
+  .readCh(data_rCh),
   .readData(data_rData),
   .writeAddress(data_wAddr),
-  .writeWay(data_wWay),
+  .writeCh(data_wCh),
   .writeData(data_wData),
   .writeEnable(data_wEn),
   .writeByteEnable(data_wByteEn)
@@ -214,13 +239,12 @@ cache_rw_tag #(
 )cache_rw_tag_inst0(
   .clk(clk),
   .readAddress(tag_rAddr),
-  .readWay(tag_rWay),
+  .readCh(tag_rCh),
   .readTag(tag_rData),
   .writeAddress(tag_wAddr),
-  .writeWay(tag_wWay),
+  .writeCh(tag_wCh),
   .writeTag(tag_wData),
   .writeEnable(tag_wEn),
-  .address(addr_Buff),
   .isHit(addr_isHit),
   .hitBlockNum(addr_hitBlockNum),
   .isHaveFreeBlock(isHaveFreeBlock),
@@ -232,16 +256,14 @@ cache_rw_dre #(
 )cache_rw_dre_inst0(
   .clk(clk),
   .readAddress(dre_rAddr),
-  .readWay(dre_rWay),
+  .readCh(dre_rCh),
   .readRe(dre_rData),
   .readReAll(dre_rDataAll),
   .writeAddress(dre_wAddr),
+  .writeCh(dre_wCh),
   .writeRe(dre_wData),
   .writeEnable(dre_wEn)
 );
-
-
-
 
 endmodule
 
@@ -254,20 +276,20 @@ module cache_rw_data #(
 )(
   clk,
   readAddress,
-  readWay,
+  readCh,
   readData,
   writeAddress,
-  writeWay,
+  writeCh,
   writeData,
   writeEnable,
   writeByteEnable
 );
 input                   clk;
 input [ADDR_WIDTH-1:0]  readAddress;
-input [1:0]             readWay;
+input [1:0]             readCh;
 output[31:0]            readData;
 input [ADDR_WIDTH-1:0]  writeAddress;
-input [1:0]             writeWay;
+input [1:0]             writeCh;
 input [31:0]            writeData;
 input                   writeEnable;
 input [3:0]             writeByteEnable;
@@ -278,9 +300,9 @@ wire [15:0]  wbe;
 wire [3:0]   bem;
 
 assign {rds[0],rds[1],rds[2],rds[3]}=rd;
-assign readData=rds[readWay];
+assign readData=rds[readCh];
 assign wd={4{writeData}};
-assign bem=4'd1<<writeWay;
+assign bem=4'd1<<writeCh;
 assign wbe={{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}}&{4{writeByteEnable}};
 
 dualPortRam #(
@@ -309,41 +331,43 @@ module cache_rw_tag #(
 )(
   clk,
   readAddress,
-  readWay,
+  readCh,
   readTag,
+  readHitTag,
   writeAddress,
-  writeWay,
+  writeCh,
   writeTag,
   writeEnable,
-  address,
   isHit,
   hitBlockNum,
   isHaveFreeBlock,
   freeBlockNum
 );
-input                   clk;
-input [ADDR_WIDTH-1:0]  readAddress;
-input [1:0]             readWay;
-output[31:0]            readTag;
-input [ADDR_WIDTH-1:0]  writeAddress;
-input [1:0]             writeWay;
-input [31:0]            writeTag;
-input                   writeEnable;
-input [TAG_ADDR_WIDTH-1:0] address;
-output reg              isHit;
-output[1:0]             hitBlockNum;
-output                  isHaveFreeBlock;
-output[1:0]             freeBlockNum;
+input                     clk;
+input [ADDR_WIDTH-1:0]    readAddress;
+input [1:0]               readCh;
+output[31:0]              readTag;
+output[31:0]              readHitTag
+input [ADDR_WIDTH-1:0]    writeAddress;
+input [1:0]               writeCh;
+input [31:0]              writeTag;
+input                     writeEnable;
+input   
+output reg                isHit;
+output[1:0]               hitBlockNum;
+output                    isHaveFreeBlock;
+output[1:0]               freeBlockNum;
 
-wire [31:0]  rds[3:0];
-wire [127:0] rd,wd;
-wire [15:0]  wbe;
-wire [3:0]   bem;
+wire [31:0]               rds[3:0];
+wire [127:0]              rd,wd;
+wire [15:0]               wbe;
+wire [3:0]                bem;
 
 assign {rds[0],rds[1],rds[2],rds[3]}=rd;
-assign readTag=rds[readWay];
+assign readTag=rds[readCh];
+assign readHitTag=rds[hitBlockNum];
 assign wd={4{writeTag}};
-assign bem=4'd1<<writeWay;
+assign bem=4'd1<<writeCh;
 assign wbe={{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}};
 
 dualPortRam #(
@@ -365,7 +389,7 @@ reg[3:0] addrEqual;
 
 /*缓冲地址*/
 always @(posedge clk) begin
-  addressBuff<=address;
+  addressBuff<=readAddress[31:31-TAG_ADDR_WIDTH+1];
 end
 
 /*比较地址,判断是否命中*/
@@ -408,40 +432,46 @@ module cache_rw_dre #(
 )(
   clk,
   readAddress,
-  readWay,
+  readCh,
   readRe,
   readReAll,
   writeAddress,
+  writeCh,
   writeRe,
   writeEnable
 );
 input clk;
 input[ADDR_WIDTH-1:0] readAddress;
-input[1:0]            readWay;
+input[1:0]            readCh;
 output[3:0]           readRe;
-output[15:0]          readReAll;
+output[7:0]           readReAll;
 input[ADDR_WIDTH-1:0] writeAddress;
-input[15:0]           writeRe;
+input[1:0]            writeCh;
+input[7:0]            writeRe;
 input                 writeEnable;
 
-wire[15:0] rd;
-wire[3:0] rds[3:0];
+wire[31:0] rd,wd;
+wire[7:0] rds[3:0];
+
 assign {rds[0],rds[1],rds[2],rds[3]}=rd;
-assign readRe=rds[readWay];
-assign readReAll=rd;
+
+assign readRe=readAddress[0]?readReAll[7:4]:readReAll[3:0];
+assign readReAll=rds[readCh];
+
+assign wd={4{writeRe}};
 
 dualPortRam #(
-	.WIDTH(16),		                            /*数据位宽*/
-	.DEPTH(2**ADDR_WIDTH)	                      /*深度*/
+	.WIDTH(32),		                                  /*数据位宽*/
+	.DEPTH(2**ADDR_WIDTH)	                          /*深度*/
 )
 dualPortRam_inst0_tagRam(
 	.clk(clk),
-	.readAddress(readAddress),	                /*读地址*/
-	.readData(rd),							                /*读出的数据*/
-	.writeAddress(writeAddress),                /*写地址*/
-	.writeData(writeRe),						            /*需要写入的数据*/
-	.writeEnable(writeEnable),	                /*写使能*/
-	.writeByteEnable(2'b11)		                  /*字节使能信号*/
+	.readAddress(readAddress[ADDR_WIDTH-1:1]),	    /*读地址*/
+	.readData(rd),							                    /*读出的数据*/
+	.writeAddress(writeAddress[ADDR_WIDTH-1:1]),    /*写地址*/
+	.writeData(wd),						                      /*需要写入的数据*/
+	.writeEnable(writeEnable),	                    /*写使能*/
+	.writeByteEnable(4'd8>>writeCh)		            /*字节使能信号*/
 );
 
 endmodule
