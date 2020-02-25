@@ -18,6 +18,7 @@ module cache_rw #(
   address,
   isIOAddrBlock,
   isEnableCache,
+  /**/
   isRequest,
   m0_cmd,
   m0_cmd_valid,
@@ -131,8 +132,6 @@ assign isWriteErr     =   (
                           )&&isW;           /*当是写指令时*/
 
 assign isSendCmdToRI  =   isReadErr||isWriteErr||isRequest;
-
-assign s0_waitRequest=1;
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
