@@ -10,6 +10,7 @@ module cache_rw_dre #(
   rw_writeAddress,
   rw_writeChannel,
   rw_writeEnable,
+  rw_writeByteEnable,
 
   ri_readAddress,
   ri_readChannel,
@@ -22,16 +23,19 @@ module cache_rw_dre #(
 );
 input                   clk;
 input                   sel;
+
+input  [3:0]            rw_readByteEnable;
 input  [ADDR_WIDTH-1:0] rw_readAddress;
 input  [1:0]            rw_readChannel;
-input  [3:0]            rw_readByteEnable;
 output                  rw_isReadable;
 input  [ADDR_WIDTH-1:0] rw_writeAddress;
 input  [1:0]            rw_writeChannel;
 input                   rw_writeEnable;
+input  [3:0]            rw_writeByteEnable;
+
 input  [ADDR_WIDTH-1:0] ri_readAddress;
 input                   ri_readChannel;
-input  [7:0]            ri_readData;
+output [7:0]            ri_readData;
 input  [ADDR_WIDTH-1:0] ri_writeAddress;
 input  [1:0]            ri_writeChannel;
 input                   ri_writeEnable;
@@ -44,10 +48,24 @@ wire [3:0]              readRe;
 wire [7:0]              readReAll;
 wire [ADDR_WIDTH-1:0]   writeAddress;
 wire [1:0]              writeCh;
-wire [7:0]              writeRe;
+wire [7:0]              writeData;
 wire                    writeEnable;
 
+wire [7:0]              wre;
+wire                    isReadable;
 
+assign readAddress      =   sel?ri_readAddress  : rw_readAddress;
+assign readCh           =   sel?ri_readChannel  : rw_readChannel;
+assign writeAddress     =   sel?ri_writeAddress : rw_writeAddress;
+assign writeCh          =   sel?ri_writeChannel : rw_writeChannel;
+assign writeData        =   sel?ri_writeData    : wre;
+assign writeEnable      =   sel?ri_writeEnable  : rw_writeEnable;
+
+assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeByteEnable}});
+assign isReadable       =   (readRe&rw_readByteEnable)==rw_readByteEnable;
+assign rw_isReadable    =   isReadable;
+assign ri_isReadable    =   isReadable;
+assign ri_readData      =   readReAll;
 
 cache_rw_dre_ram #(
   .ADDR_WIDTH(ADDR_WIDTH)
@@ -59,7 +77,7 @@ cache_rw_dre_ram #(
   .readReAll(readReAll),
   .writeAddress(writeAddress),
   .writeCh(writeCh),
-  .writeRe(writeRe),
+  .writeRe(writeData),
   .writeEnable(writeEnable)
 );
 

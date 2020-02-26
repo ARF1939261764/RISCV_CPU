@@ -1,6 +1,6 @@
 `include "define.v"
 
-module cache_io #(
+module cache_ctr #(
   parameter ADDR_BLOCK_NUM=4
 )(
   clk,
