@@ -12,6 +12,8 @@ module cache_rw_tag #(
   rw_tag,/*需要对比的标签(高位地址)*/
   rw_isHit,
   rw_hitBlockNum,
+  rw_isHaveFreeBlock,
+  rw_freeBlockNum,
   /*替换模块*/
   ri_readAddress,
   ri_readChannel,
@@ -19,11 +21,7 @@ module cache_rw_tag #(
   ri_writeAddress,
   ri_writeChannel,
   ri_writeEnable,
-  ri_writeData,
-  ri_isHit,
-  ri_hitBlockNum,
-  ri_isHaveFreeBlock,
-  ri_freeBlockNum
+  ri_writeData
 );
 input                         clk;
 input                         sel;
@@ -33,6 +31,8 @@ input                         rw_writeEnable;
 input [TAG_ADDR_WIDTH-1:0]    rw_tag;
 output                        rw_isHit;
 output[1:0]                   rw_hitBlockNum;
+output                        rw_isHaveFreeBlock;
+output[1:0]                   rw_freeBlockNum;
 
 input [ADDR_WIDTH-1:0]        ri_readAddress;
 input [1:0]                   ri_readChannel;
@@ -41,10 +41,6 @@ input [ADDR_WIDTH-1:0]        ri_writeAddress;
 input [1:0]                   ri_writeChannel;
 input                         ri_writeEnable;
 input [31:0]                  ri_writeData;
-output                        ri_isHit;
-output[1:0]                   ri_hitBlockNum;
-output                        ri_isHaveFreeBlock;
-output[1:0]                   ri_freeBlockNum;
   
 wire [ADDR_WIDTH-1:0]         readAddress;
 wire [1:0]                    readCh;
@@ -67,13 +63,11 @@ assign writeTag           =   sel?ri_writeData:(readHitTag|(1<<TAG_ADDR_WIDTH+1)
 assign writeEnable        =   sel?ri_writeEnable:rw_writeEnable;
         
 assign rw_isHit           =   isHit;
-assign ri_isHit           =   isHit;
 assign rw_hitBlockNum     =   hitBlockNum;
-assign ri_hitBlockNum     =   hitBlockNum;
 assign ri_readData        =   readTag;
 
-assign ri_isHaveFreeBlock =   isHaveFreeBlock;
-assign ri_freeBlockNum    =   freeBlockNum;
+assign rw_isHaveFreeBlock =   isHaveFreeBlock;
+assign rw_freeBlockNum    =   freeBlockNum;
 
 cache_rw_tag_ram #(
   .ADDR_WIDTH(ADDR_WIDTH),
@@ -162,19 +156,13 @@ dualPortRam_inst0_tagRam(
 	.writeByteEnable(wbe)		                    /*字节使能信号*/
 );
 
-reg[TAG_ADDR_WIDTH-1:0] tagBuff;
 reg[3:0] addrEqual;
-
-/*缓冲地址*/
-always @(posedge clk) begin
-  tagBuff<=tag;
-end
 
 /*比较地址,判断是否命中*/
 always @(*) begin:judgeHitBlock
   integer i;
   for(i=0;i<4;i=i+1) begin
-    addrEqual[i]=(tagBuff==rds[i][TAG_ADDR_WIDTH-1:0])&&rds[i][TAG_ADDR_WIDTH];
+    addrEqual[i]=(tag==rds[i][TAG_ADDR_WIDTH-1:0])&&rds[i][TAG_ADDR_WIDTH];
   end
   isHit=1'd0;
   for(i=0;i<4;i=i+1) begin

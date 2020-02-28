@@ -9,7 +9,7 @@ module cache_rw_dre #(
   rw_writeAddress,
   rw_writeChannel,
   rw_writeEnable,
-  rw_writeByteEnable,
+  rw_writeRe,
 
   ri_readAddress,
   ri_readChannel,
@@ -28,7 +28,7 @@ output [3:0]            rw_readRe;
 input  [ADDR_WIDTH-1:0] rw_writeAddress;
 input  [1:0]            rw_writeChannel;
 input                   rw_writeEnable;
-input  [3:0]            rw_writeByteEnable;
+input  [3:0]            rw_writeRe;
 
 input  [ADDR_WIDTH-0:0] ri_readAddress;
 input                   ri_readChannel;
@@ -57,7 +57,7 @@ assign writeCh          =   sel?ri_writeChannel               : rw_writeChannel;
 assign writeData        =   sel?ri_writeData                  : wre;
 assign writeEnable      =   sel?ri_writeEnable                : rw_writeEnable;
 
-assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeByteEnable}});
+assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
 
