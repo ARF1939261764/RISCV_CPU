@@ -24,8 +24,8 @@ module cache_rw_data #(
 input                       clk;
 input                       sel;
 
-input   [1:0]               rw_rwChannel;
 input   [ADDR_WIDTH-1:0]    rw_readAddress;
+input   [1:0]               rw_rwChannel;
 output  [31:0]              rw_readData;
 input   [ADDR_WIDTH-1:0]    rw_writeAddress;
 input   [3:0]               rw_writeByteEnable;
@@ -76,6 +76,7 @@ assign {
   rw_writeEnable,
   rw_writeData
 };
+
 assign rw_readData=readData;
 assign ri_readData=readData;
 
@@ -123,16 +124,16 @@ input [31:0]            writeData;
 input                   writeEnable;
 input [3:0]             writeByteEnable;
 
-wire [31:0]  rds[3:0];
-wire [127:0] rd,wd;
-wire [15:0]  wbe;
-wire [3:0]   bem;
+wire [31:0]             rds[3:0];
+wire [127:0]            rd,wd;
+wire [15:0]             wbe;
+wire [3:0]              bem;
 
-assign {rds[0],rds[1],rds[2],rds[3]}=rd;
-assign readData=rds[readCh];
-assign wd={4{writeData}};
-assign bem=4'd1<<writeCh;
-assign wbe={{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}}&{4{writeByteEnable}};
+assign {rds[0],rds[1],rds[2],rds[3]}  =  rd;
+assign readData                       =  rds[readCh];
+assign wd                             =  {4{writeData}};
+assign bem                            =  4'd1<<writeCh;
+assign wbe                            =  {{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}}&{4{writeByteEnable}};
 
 dualPortRam #(
 	.WIDTH(32*4),		                            /*数据位宽*/

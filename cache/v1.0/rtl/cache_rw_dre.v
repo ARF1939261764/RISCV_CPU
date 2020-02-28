@@ -25,7 +25,7 @@ input                   clk;
 input                   sel;
 
 input  [3:0]            rw_readByteEnable;
-input  [ADDR_WIDTH-1:0] rw_readAddress;
+input  [ADDR_WIDTH-0:0] rw_readAddress;
 input  [1:0]            rw_readChannel;
 output                  rw_isReadable;
 input  [ADDR_WIDTH-1:0] rw_writeAddress;
@@ -33,7 +33,7 @@ input  [1:0]            rw_writeChannel;
 input                   rw_writeEnable;
 input  [3:0]            rw_writeByteEnable;
 
-input  [ADDR_WIDTH-1:0] ri_readAddress;
+input  [ADDR_WIDTH-0:0] ri_readAddress;
 input                   ri_readChannel;
 output [7:0]            ri_readData;
 input  [ADDR_WIDTH-1:0] ri_writeAddress;
@@ -54,12 +54,12 @@ wire                    writeEnable;
 wire [7:0]              wre;
 wire                    isReadable;
 
-assign readAddress      =   sel?ri_readAddress  : rw_readAddress;
-assign readCh           =   sel?ri_readChannel  : rw_readChannel;
-assign writeAddress     =   sel?ri_writeAddress : rw_writeAddress;
-assign writeCh          =   sel?ri_writeChannel : rw_writeChannel;
-assign writeData        =   sel?ri_writeData    : wre;
-assign writeEnable      =   sel?ri_writeEnable  : rw_writeEnable;
+assign readAddress      =   sel?ri_readAddress[ADDR_WIDTH:1]  : rw_readAddress[ADDR_WIDTH:1];
+assign readCh           =   sel?ri_readChannel                : rw_readChannel;
+assign writeAddress     =   sel?ri_writeAddress               : rw_writeAddress;
+assign writeCh          =   sel?ri_writeChannel               : rw_writeChannel;
+assign writeData        =   sel?ri_writeData                  : wre;
+assign writeEnable      =   sel?ri_writeEnable                : rw_writeEnable;
 
 assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeByteEnable}});
 assign isReadable       =   (readRe&rw_readByteEnable)==rw_readByteEnable;

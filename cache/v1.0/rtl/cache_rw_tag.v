@@ -1,6 +1,6 @@
 module cache_rw_tag #(
   parameter ADDR_WIDTH=8,
-            TAG_ADDR_WIDTH=8
+            TAG_ADDR_WIDTH=21
 )(
   clk,
   /*选择信号*/
@@ -33,14 +33,14 @@ input                         rw_writeEnable;
 input [TAG_ADDR_WIDTH-1:0]    rw_tag;
 output                        rw_isHit;
 output[1:0]                   rw_hitBlockNum;
-  
-input[ADDR_WIDTH-1:0]         ri_readAddress;
-input[1:0]                    ri_readChannel;
+
+input [ADDR_WIDTH-1:0]        ri_readAddress;
+input [1:0]                   ri_readChannel;
 output[31:0]                  ri_readData;
-input[ADDR_WIDTH-1:0]         ri_writeAddress;
-input[1:0]                    ri_writeChannel;
+input [ADDR_WIDTH-1:0]        ri_writeAddress;
+input [1:0]                   ri_writeChannel;
 input                         ri_writeEnable;
-input[31:0]                   ri_writeData;
+input [31:0]                  ri_writeData;
 output                        ri_isHit;
 output[1:0]                   ri_hitBlockNum;
 output                        ri_isHaveFreeBlock;

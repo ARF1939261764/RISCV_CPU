@@ -15,38 +15,99 @@ module cache_rw #(
   s0_waitRequest,
   s0_readDataValid,
   /**/
-  address,
-  isIOAddrBlock,
-  isEnableCache,
+  ctr_address,
+  ctr_isIOAddrBlock,
+  ctr_isEnableCache,
   /**/
-  isRequest,
-  m0_cmd,
-  m0_cmd_valid,
-  m0_cmd_ready
-  
+  ri_isCacheEnable,
+  ri_isRequest,
+  ri_cmd,
+  ri_cmd_valid,
+  ri_cmd_ready,
+  ri_rsp_data,
+  /**/
+  data_ri_readAddress,
+  data_ri_rwChannel,
+  data_ri_readData,
+  data_ri_writeAddress,
+  data_ri_writeByteEnable,
+  data_ri_writeEnable,
+  data_ri_writeData,
+  /**/
+  tag_ri_readAddress,
+  tag_ri_readChannel,
+  tag_ri_readData,
+  tag_ri_writeAddress,
+  tag_ri_writeChannel,
+  tag_ri_writeEnable,
+  tag_ri_writeData,
+  tag_ri_isHit,
+  tag_ri_hitBlockNum,
+  tag_ri_isHaveFreeBlock,
+  tag_ri_freeBlockNum,
+  /**/
+  dre_ri_readAddress,
+  dre_ri_readChannel,
+  dre_ri_readData,
+  dre_ri_writeAddress,
+  dre_ri_writeChannel,
+  dre_ri_writeEnable,
+  dre_ri_writeData,
+  dre_ri_isReadable
 );
 input clk,rest;
 /*s0从机接口*/
-input     [31:0]   s0_address;
-input     [3:0]    s0_byteEnable;
-input              s0_read;
-output    [31:0]   s0_readData;
-input              s0_write;
-input     [31:0]   s0_writeData;
-output             s0_waitRequest;
-output             s0_readDataValid;
+input       [31:0]                       s0_address;
+input       [3:0]                        s0_byteEnable;
+input                                    s0_read;
+output      [31:0]                       s0_readData;
+input                                    s0_write;
+input       [31:0]                       s0_writeData;
+output                                   s0_waitRequest;
+output                                   s0_readDataValid;
 /**/
-output    [31:0]   address;
-input              isIOAddrBlock;
-input              isEnableCache;
-input              isRequest;
-output reg[3:0]    m0_cmd;
-output reg         m0_cmd_valid;
-input              m0_cmd_ready;
+output      [31:0]                       ctr_address;
+input                                    ctr_isIOAddrBlock;
+input                                    ctr_isEnableCache;
+output                                   ri_isCacheEnable;
+input                                    ri_isRequest;
+output reg  [3:0]                        ri_cmd;
+output reg                               ri_cmd_valid;
+input                                    ri_cmd_ready;
+input       [31:0]                       ri_rsp_data;
 
-/********************************************************
+input       [1:0]                        data_ri_readAddress;
+input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_rwChannel;
+output      [31:0]                       data_ri_readData;
+input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_writeAddress;
+input       [3:0]                        data_ri_writeByteEnable;
+input                                    data_ri_writeEnable;
+input       [31:0]                       data_ri_writeData;
+
+input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_readAddress;
+input       [1:0]                        tag_ri_readChannel;
+output      [31:0]                       tag_ri_readData;
+input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_writeAddress;
+input       [1:0]                        tag_ri_writeChannel;
+input                                    tag_ri_writeEnable;
+input       [31:0]                       tag_ri_writeData;
+output                                   tag_ri_isHit;
+output      [1:0]                        tag_ri_hitBlockNum;
+output                                   tag_ri_isHaveFreeBlock;
+output      [1:0]                        tag_ri_freeBlockNum;
+
+input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress;
+input                                    dre_ri_readChannel;
+output      [7:0]                        dre_ri_readData;
+input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress;
+input       [1:0]                        dre_ri_writeChannel;
+input                                    dre_ri_writeEnable;
+input       [7:0]                        dre_ri_writeData;
+output                                   dre_ri_isReadable;        
+
+/**************************************************************************
 function:计算数据位宽
-********************************************************/
+**************************************************************************/
 function integer log2;
 	input integer num;
 	begin
@@ -57,9 +118,9 @@ function integer log2;
 	end
 endfunction
 
-/********************************************************
+/**************************************************************************
 width
-********************************************************/
+**************************************************************************/
 localparam DATA_RAM_ADDR_WIDTH=log2(SIZE/(32/8*4));
 
 localparam TAG_RAM_ADDR_WIDTH=DATA_RAM_ADDR_WIDTH-4;
@@ -68,188 +129,263 @@ localparam DRE_RAM_ADDR_WIDTH=log2(SIZE/32)+1;
 
 localparam TAG_ADDR_WIDTH=32-(DATA_RAM_ADDR_WIDTH+2);
 
-wire[DATA_RAM_ADDR_WIDTH-1:0] data_rAddr;
-wire[1:0]                     data_rCh;
-wire[31:0]                    data_rData;
-wire[DATA_RAM_ADDR_WIDTH-1:0] data_wAddr;
-wire[1:0]                     data_wCh;
-wire[31:0]                    data_wData;
-wire                          data_wEn;
-wire[3:0]                     data_wByteEn;
+/**************************************************************************
+连接到实例module的wire
+**************************************************************************/
+wire                              sel;/*选择信号*/
 
-wire[TAG_RAM_ADDR_WIDTH-1:0]  tag_rAddr;
-wire[1:0]                     tag_rCh;
-wire[31:0]                    tag_rData;
-wire[TAG_RAM_ADDR_WIDTH-1:0]  tag_wAddr;
-wire[1:0]                     tag_wCh;
-wire[31:0]                    tag_wData;
-wire                          tag_wEn;
-wire[31:0]                    addr_Buff;
-wire                          addr_isHit;
-wire[1:0]                     addr_hitBlockNum;
-wire                          isHaveFreeBlock;
-wire[1:0]                     freeBlockNum;
+wire [DATA_RAM_ADDR_WIDTH-1:0]    data_rw_readAddress;
+wire [1:0]                        data_rw_rwChannel;
+wire [31:0]                       data_rw_readData;
+wire [DATA_RAM_ADDR_WIDTH-1:0]    data_rw_writeAddress;
+wire [3:0]                        data_rw_writeByteEnable;
+wire                              data_rw_writeEnable;
+wire [31:0]                       data_rw_writeData;
 
-wire[DRE_RAM_ADDR_WIDTH-1:0]  dre_rAddr;
-wire[1:0]                     dre_rCh;
-wire[3:0]                     dre_rData;
-wire[7:0]                     dre_rDataAll;
-wire[DRE_RAM_ADDR_WIDTH-1:0]  dre_wAddr;
-wire[1:0]                     dre_wCh;
-wire[31:0]                    dre_wData;
-wire                          dre_wEn;
+wire [TAG_RAM_ADDR_WIDTH-1:0]     tag_rw_readAddress;
+wire [TAG_RAM_ADDR_WIDTH-1:0]     tag_rw_writeAddress;
+wire                              tag_rw_writeEnable;
+wire [TAG_ADDR_WIDTH-1:0]         tag_rw_tag;/*需要对比的标签(高位地址)*/
+wire                              tag_rw_isHit;
+wire [1:0]                        tag_rw_hitBlockNum;
 
-wire isCacheEn,isIoAddr,isHit,isWBuffHit,isRe,isR,isW;
-wire isReadErr,isWriteErr,isSendCmdToRI;
+wire [DRE_RAM_ADDR_WIDTH-0:0]     dre_rw_readAddress;
+wire [1:0]                        dre_rw_readChannel;
+wire [3:0]                        dre_rw_readByteEnable;
+wire                              dre_rw_isReadable;
+wire [DRE_RAM_ADDR_WIDTH-1:0]     dre_rw_writeAddress;
+wire [1:0]                        dre_rw_writeChannel;
+wire                              dre_rw_writeEnable;
+wire [3:0]                        dre_rw_writeByteEnable;
 
-reg [31:0]                    last_s0_address;
-reg [3:0]                     last_s0_byteEnable;
-reg                           last_s0_read;
-reg                           last_s0_write;
-reg [31:0]                    last_s0_writeData;
+/**************************************************************************
+当前模块需要用到的reg、wire
+**************************************************************************/
+reg  [31:0]                       last_s0_address;
+reg  [3:0]                        last_s0_byteEnable;
+reg                               last_s0_read;
+reg                               last_s0_write;
+reg  [31:0]                       last_s0_writeData;
 
-assign tag_rAddr  =           data_rAddr[DATA_RAM_ADDR_WIDTH-1:4];
-assign tag_rCh    =           data_rCh; 
-assign tag_wAddr  =           data_wAddr[DATA_RAM_ADDR_WIDTH-1:4];
-assign tag_wCh    =           data_wCh;
-assign dre_rAddr  =           data_rAddr;
-assign dre_rCh    =           data_rCh;
-assign dre_wAddr  =           data_wAddr;
-assign dre_wCh    =           data_wCh;
+wire                              rw_waitRequest;
+wire                              ri_waitRequest;
+wire                              isCacheEn;
+wire                              isIoAddr;
+wire                              isHit;
+wire                              isWBuffHit;
+wire                              isRe;
+wire                              isR;
+wire                              isW;
+wire                              isReadFault;
+wire                              isWriteFault;
+wire                              isFault;
+/**************************************************************************
+连线
+**************************************************************************/
+assign sel                     =  s0_waitRequest;
 
-assign isCacheEn      = isEnableCache;
-assign isIoAddr       = isIOAddrBlock;
-assign isHit          = addr_isHit;
-assign isWBuffHit     = 0/**/;
-assign isRe           = (last_s0_byteEnable&dre_rData)==last_s0_byteEnable/**/;
-assign isR            = last_s0_read;/**/
-assign isW            = last_s0_write;/**/
+assign data_rw_readAddress     =  s0_address[DATA_RAM_ADDR_WIDTH+1:2];
+assign data_rw_rwChannel       =  tag_rw_hitBlockNum;
+assign data_rw_writeAddress    =  last_s0_address[DATA_RAM_ADDR_WIDTH+1:2];
+assign data_rw_writeByteEnable =  last_s0_byteEnable;
+assign data_rw_writeEnable     =  last_s0_write;
+assign data_rw_writeData       =  last_s0_writeData;
 
-assign isReadErr      =   (
-                            isIoAddr    ||  /*是IO地址*/
-                            !isHit      ||  /*没有命中*/
-                            !isWBuffHit ||  /*写缓冲寄存器也没有命中*/
-                            !isRe           /*不可读*/ 
-                          )&&isR;           /*当是读指令时^*/
+assign tag_rw_readAddress      =  s0_address[DATA_RAM_ADDR_WIDTH+1:6];
+assign tag_rw_writeAddress     =  last_s0_address[DATA_RAM_ADDR_WIDTH+1:6];
+assign tag_rw_writeEnable      =  last_s0_write;
+assign tag_rw_tag              =  last_s0_address[31:31-TAG_ADDR_WIDTH+1];
 
-assign isWriteErr     =   (
-                            isIoAddr    ||  /*是IO地址*/
-                            !isHit          /*没有命中*/
-                          )&&isW;           /*当是写指令时*/
+assign dre_rw_readAddress      =  s0_address[DATA_RAM_ADDR_WIDTH+2:2];
+assign dre_rw_readChannel      =  tag_rw_hitBlockNum;
+assign dre_rw_readByteEnable   =  last_s0_byteEnable;
+assign dre_rw_writeAddress     =  last_s0_address[DATA_RAM_ADDR_WIDTH+2:3];
+assign dre_rw_writeChannel     =  tag_rw_hitBlockNum;
+assign dre_rw_writeEnable      =  last_s0_write;
+assign dre_rw_writeByteEnable  =  last_s0_byteEnable;
 
-assign isSendCmdToRI  =   isReadErr||isWriteErr||isRequest;
+assign ctr_address             =  s0_address;
+assign ri_isCacheEnable        =  isCacheEn;
+assign s0_readData             =  state==state_idle?data_rw_readData:ri_rsp_data;
+assign s0_readDataValid        =  state==state_idle?(last_s0_read&&!isReadFault):ri_cmd_ready;
 
+assign isCacheEn               =  ctr_isEnableCache;
+assign isIoAddr                =  ctr_isIOAddrBlock;
+assign isHit                   =  tag_rw_isHit;
+assign isWBuffHit              =  last_s0_write&&(s0_address==last_s0_address)&&((s0_byteEnable&last_s0_byteEnable)==s0_byteEnable);
+assign isRe                    =  dre_rw_isReadable;
+assign isR                     =  last_s0_read;
+assign isW                     =  last_s0_write;
+
+assign isReadFault             =  isR             &&
+                                  (!isWBuffHit)   &&
+                                  (
+                                    isIoAddr      ||
+                                    (!isHit)      ||
+                                    (!isRe)
+                                  );
+assign isWriteFault            =  isW             &&
+                                  (
+                                    isIoAddr      ||
+                                    (!isHit)
+                                  );
+assign isFault                 =  isReadFault||isWriteFault||ri_waitRequest;
+
+assign rw_waitRequest          =  (isFault||(state!=state_idle))&&
+                                  (~((state==state_idle)&&(last_state==state_waitDone)));
+assign ri_waitRequest          =  ri_isRequest;
+assign s0_waitRequest          =  rw_waitRequest||ri_waitRequest;
+
+
+/**************************************************************************
+缓存指令
+**************************************************************************/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
-    {last_s0_byteEnable,last_s0_read,last_s0_write}<=0;
+    {last_s0_address,last_s0_byteEnable,last_s0_read,last_s0_write,last_s0_writeData}<=0;
   end
   else begin
-    if((!s0_waitRequest)&&isCacheEn) begin
-      {last_s0_byteEnable,last_s0_read,last_s0_write}<={s0_byteEnable,s0_read,s0_write};
+    if(!s0_waitRequest) begin
+      {last_s0_address,last_s0_byteEnable,last_s0_read,last_s0_write,last_s0_writeData}
+        <={s0_address,s0_byteEnable,s0_read,s0_write,s0_writeData};
     end
   end
 end
 
-
-/*******************************************************************************
+/**************************************************************************
 状态机
-*******************************************************************************/
-localparam  state_idle=1'd0,
-            state_waitDone=1'd1;
-          
-reg state;
+**************************************************************************/
+localparam state_idle=1'd0,
+           state_waitDone=1'd1;
+reg state,last_state;
+/*第一段*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
     state<=state_idle;
+    last_state<=state_idle;
   end
   else begin
-    case(state)
+    last_state<=state;
+    case (state)
       state_idle:begin
-          state<=isSendCmdToRI?state_waitDone:state_idle;
+          state<=isFault?state_waitDone:state_idle;
         end
       state_waitDone:begin
-          state<=m0_cmd_ready?state_idle:state_waitDone;
-        end
+          state<=ri_cmd_ready?state_idle:state_waitDone;
+        end 
       default:begin
           state<=state_idle;
         end
     endcase
   end
 end
-  
+/*第二段*/
 always @(posedge clk) begin
-  case(state)
+  case (state)
     state_idle:begin
-        if(isReadErr||isWriteErr) begin
-          m0_cmd<=isIoAddr?`cache_rw_cmd_iorw:`cache_rw_cmd_rb;
+        if(isReadFault||isWriteFault) begin
+          ri_cmd<=isIoAddr?`cache_rw_cmd_iorw:`cache_rw_cmd_rb;
         end
         else begin
-          m0_cmd<=`cache_rw_handleCtrCmd;
+          ri_cmd<=ri_waitRequest?`cache_rw_handleCtrCmd:`cache_rw_cmd_nop;
         end
-        m0_cmd_valid<=isSendCmdToRI;
-      end
+        ri_cmd_valid<=isFault?1'd1:1'd0;
+      end      
     state_waitDone:begin
-        m0_cmd_valid<=m0_cmd_ready?1'b0:1'b1;
-      end
+        ri_cmd_valid<=ri_cmd_ready?1'd0:1'd1;
+      end 
     default:begin
-        m0_cmd_valid<=1'b0;
+        ri_cmd_valid<=1'd0;
       end
   endcase
 end
 
-/*数据RAM*/
+/**************************************************************************
+数据
+**************************************************************************/
 cache_rw_data #(
   .ADDR_WIDTH(DATA_RAM_ADDR_WIDTH)
 )
 cache_rw_data_inst0(
   .clk(clk),
-  .readAddress(data_rAddr),
-  .readCh(data_rCh),
-  .readData(data_rData),
-  .writeAddress(data_wAddr),
-  .writeCh(data_wCh),
-  .writeData(data_wData),
-  .writeEnable(data_wEn),
-  .writeByteEnable(data_wByteEn)
+   /*选择信号*/
+  .sel(sel),
+   /*读写模块*/
+  .rw_readAddress(data_rw_readAddress),
+  .rw_rwChannel(data_rw_rwChannel),
+  .rw_readData(data_rw_readData),
+  .rw_writeAddress(data_rw_writeAddress),
+  .rw_writeByteEnable(data_rw_writeByteEnable),
+  .rw_writeEnable(data_rw_writeEnable),
+  .rw_writeData(data_rw_writeData),
+   /*替换模块*/
+  .ri_readAddress(data_ri_readAddress),
+  .ri_rwChannel(data_ri_rwChannel),
+  .ri_readData(data_ri_readData),
+  .ri_writeAddress(data_ri_writeAddress),
+  .ri_writeByteEnable(data_ri_writeByteEnable),
+  .ri_writeEnable(data_ri_writeEnable),
+  .ri_writeData(data_ri_writeData)
 );
 
-/*地址标签RAM*/
+/**************************************************************************
+cache块信息
+**************************************************************************/
 cache_rw_tag #(
   .ADDR_WIDTH(TAG_RAM_ADDR_WIDTH),
   .TAG_ADDR_WIDTH(TAG_ADDR_WIDTH)
-)cache_rw_tag_inst0(
+)
+cache_rw_tag_inst0(
   .clk(clk),
-  .readAddress(tag_rAddr),
-  .readCh(tag_rCh),
-  .readTag(tag_rData),
-  .writeAddress(tag_wAddr),
-  .writeCh(tag_wCh),
-  .writeTag(tag_wData),
-  .writeEnable(tag_wEn),
-  .isHit(addr_isHit),
-  .hitBlockNum(addr_hitBlockNum),
-  .isHaveFreeBlock(isHaveFreeBlock),
-  .freeBlockNum(freeBlockNum)
+  /*选择信号*/
+  .sel(sel),
+  /*读写模块*/
+  .rw_readAddress(tag_rw_readAddress),
+  .rw_writeAddress(tag_rw_writeAddress),
+  .rw_writeEnable(tag_rw_writeEnable),
+  .rw_tag(tag_rw_tag),/*需要对比的标签(高位地址)*/
+  .rw_isHit(tag_rw_isHit),
+  .rw_hitBlockNum(tag_rw_hitBlockNum),
+  /*替换模块*/
+  .ri_readAddress(tag_ri_readAddress),
+  .ri_readChannel(tag_ri_readChannel),
+  .ri_readData(tag_ri_readData),
+  .ri_writeAddress(tag_ri_writeAddress),
+  .ri_writeChannel(tag_ri_writeChannel),
+  .ri_writeEnable(tag_ri_writeEnable),
+  .ri_writeData(tag_ri_writeData),
+  .ri_isHit(tag_ri_isHit),
+  .ri_hitBlockNum(tag_ri_hitBlockNum),
+  .ri_isHaveFreeBlock(tag_ri_isHaveFreeBlock),
+  .ri_freeBlockNum(tag_ri_freeBlockNum)
 );
-/*可读信息RAM*/
+
+/**************************************************************************
+数据可读信息
+**************************************************************************/
 cache_rw_dre #(
   .ADDR_WIDTH(DRE_RAM_ADDR_WIDTH)
-)cache_rw_dre_inst0(
+)
+cache_rw_dre_inst0(
   .clk(clk),
-  .readAddress(dre_rAddr),
-  .readCh(dre_rCh),
-  .readRe(dre_rData),
-  .readReAll(dre_rDataAll),
-  .writeAddress(dre_wAddr),
-  .writeCh(dre_wCh),
-  .writeRe(dre_wData),
-  .writeEnable(dre_wEn)
+  .sel(sel),
+  .rw_readAddress(dre_rw_readAddress),
+  .rw_readChannel(dre_rw_readChannel),
+  .rw_readByteEnable(dre_rw_readByteEnable),
+  .rw_isReadable(dre_rw_isReadable),
+  .rw_writeAddress(dre_rw_writeAddress),
+  .rw_writeChannel(dre_rw_writeChannel),
+  .rw_writeEnable(dre_rw_writeEnable),
+  .rw_writeByteEnable(dre_rw_writeByteEnable),
+
+  .ri_readAddress(dre_ri_readAddress),
+  .ri_readChannel(dre_ri_readChannel),
+  .ri_readData(dre_ri_readData),
+  .ri_writeAddress(dre_ri_writeAddress),
+  .ri_writeChannel(dre_ri_writeChannel),
+  .ri_writeEnable(dre_ri_writeEnable),
+  .ri_writeData(dre_ri_writeData),
+  .ri_isReadable(dre_ri_isReadable)
 );
 
 endmodule
-
-
-
-
-
-
