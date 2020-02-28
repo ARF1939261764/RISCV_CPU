@@ -179,6 +179,7 @@ wire                              isW;
 wire                              isReadFault;
 wire                              isWriteFault;
 wire                              isFault;
+wire                              isNeedSendCmdToRi;
 /**************************************************************************
 连线
 **************************************************************************/
@@ -229,12 +230,13 @@ assign isWriteFault            =  isW             &&
                                     isIoAddr      ||
                                     (!isHit)
                                   );
-assign isFault                 =  isReadFault||isWriteFault||ri_waitRequest;
+assign isFault                 =  isReadFault||isWriteFault;
 
 assign rw_waitRequest          =  (isFault||(state!=state_idle))&&
                                   (~((state==state_idle)&&(last_state==state_waitDone)));
 assign ri_waitRequest          =  ri_isRequest;
-assign s0_waitRequest          =  rw_waitRequest||ri_waitRequest;
+assign isNeedSendCmdToRi       =  rw_waitRequest||ri_waitRequest;
+assign s0_waitRequest          =  isNeedSendCmdToRi;
 
 
 /**************************************************************************
@@ -268,7 +270,7 @@ always @(posedge clk or negedge rest) begin
     last_state<=state;
     case (state)
       state_idle:begin
-          state<=isFault?state_waitDone:state_idle;
+          state<=isNeedSendCmdToRi?state_waitDone:state_idle;
         end
       state_waitDone:begin
           state<=ri_cmd_ready?state_idle:state_waitDone;
@@ -283,13 +285,16 @@ end
 always @(posedge clk) begin
   case (state)
     state_idle:begin
-        if(isReadFault||isWriteFault) begin
+        if(rw_waitRequest) begin
           ri_cmd<=isIoAddr?`cache_rw_cmd_iorw:`cache_rw_cmd_rb;
         end
-        else begin
-          ri_cmd<=ri_waitRequest?`cache_rw_handleCtrCmd:`cache_rw_cmd_nop;
+        else if(ri_waitRequest)begin
+          ri_cmd<=`cache_rw_handleCtrCmd;
         end
-        ri_cmd_valid<=isFault?1'd1:1'd0;
+        else begin
+          ri_cmd<=`cache_rw_cmd_nop;
+        end
+        ri_cmd_valid<=isNeedSendCmdToRi?1'd1:1'd0;
       end      
     state_waitDone:begin
         ri_cmd_valid<=ri_cmd_ready?1'd0:1'd1;
