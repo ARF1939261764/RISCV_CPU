@@ -5,8 +5,7 @@ module cache_rw_dre #(
   sel,
   rw_readAddress,
   rw_readChannel,
-  rw_readByteEnable,
-  rw_isReadable,
+  rw_readRe,
   rw_writeAddress,
   rw_writeChannel,
   rw_writeEnable,
@@ -18,16 +17,14 @@ module cache_rw_dre #(
   ri_writeAddress,
   ri_writeChannel,
   ri_writeEnable,
-  ri_writeData,
-  ri_isReadable
+  ri_writeData
 );
 input                   clk;
 input                   sel;
 
-input  [3:0]            rw_readByteEnable;
 input  [ADDR_WIDTH-0:0] rw_readAddress;
 input  [1:0]            rw_readChannel;
-output                  rw_isReadable;
+output [3:0]            rw_readRe;
 input  [ADDR_WIDTH-1:0] rw_writeAddress;
 input  [1:0]            rw_writeChannel;
 input                   rw_writeEnable;
@@ -40,7 +37,6 @@ input  [ADDR_WIDTH-1:0] ri_writeAddress;
 input  [1:0]            ri_writeChannel;
 input                   ri_writeEnable;
 input  [7:0]            ri_writeData;
-output                  ri_isReadable;
 
 wire [ADDR_WIDTH-1:0]   readAddress;
 wire [1:0]              readCh;
@@ -62,9 +58,7 @@ assign writeData        =   sel?ri_writeData                  : wre;
 assign writeEnable      =   sel?ri_writeEnable                : rw_writeEnable;
 
 assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeByteEnable}});
-assign isReadable       =   (readRe&rw_readByteEnable)==rw_readByteEnable;
-assign rw_isReadable    =   isReadable;
-assign ri_isReadable    =   isReadable;
+assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
 
 cache_rw_dre_ram #(
