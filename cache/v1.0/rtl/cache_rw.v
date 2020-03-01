@@ -1,4 +1,4 @@
-`include "define.v"
+`include "cache_define.v"
 
 module cache_rw #(
   parameter SIZE=8*1024
@@ -20,12 +20,16 @@ module cache_rw #(
   ctr_isIOAddrBlock,           
   ctr_isEnableCache,
   /**/
-  ri_isCacheEnable,
-  ri_isRequest,
   ri_cmd,
   ri_cmd_valid,
   ri_cmd_ready,
+  ri_isRequest,
   ri_rsp_data,
+  ri_last_arb_address,
+  ri_last_arb_writeData,
+  ri_last_arb_byteEnable,
+  ri_last_arb_read,
+  ri_last_arb_write,
   ri_isHit,
   ri_hitBlockNum,
   ri_isHaveFreeBlock,
@@ -71,17 +75,20 @@ output      [31:0]                       ctr_address;             /*该信号输
 input                                    ctr_isIOAddrBlock;       /*ctr_address是否为IO设备地址段的地址*/      
 input                                    ctr_isEnableCache;       /*cache是否使能*/      
 
-output                                   ri_isCacheEnable;        /*输出至cache_ri，指明cache module是否使能*/
 input                                    ri_isRequest;            /*来自cache_ri模块,表示ri模块是否有待处理指令,也表示ri模块当前需要获得3块RAM的控制权*/
 output reg  [3:0]                        ri_cmd;                  /*输出到ri模块的命令*/
 output reg                               ri_cmd_valid;            /*表示命令是否有效*/
 input                                    ri_cmd_ready;            /*来自ri模块,表示命令是否处理完成*/
 input       [31:0]                       ri_rsp_data;             /*来自ri模块返回的数据*/
-
-output                                   ri_isHit;            /**/
-output      [1:0]                        ri_hitBlockNum;
-output                                   ri_isHaveFreeBlock;
-output      [1:0]                        ri_freeBlockNum;
+output      [31:0]                       ri_last_arb_address;
+output      [31:0]                       ri_last_arb_writeData;
+output      [3:0]                        ri_last_arb_byteEnable;
+output                                   ri_last_arb_read;
+output                                   ri_last_arb_write;
+output                                   ri_isHit;                /*是否命中*/
+output      [1:0]                        ri_hitBlockNum;          /*如果命中，命中的哪一块*/
+output                                   ri_isHaveFreeBlock;      /*是否还有空余的块*/
+output      [1:0]                        ri_freeBlockNum;         /*如果还有空块，哪一块是空的*/
 
 input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_readAddress;     /*data ram的读地址线*/
 input       [1:0]                        data_ri_rwChannel;       /*读写通道(总共4个通道,4路)*/
@@ -123,13 +130,10 @@ endfunction
 /**************************************************************************
 width
 **************************************************************************/
-localparam DATA_RAM_ADDR_WIDTH=log2(SIZE/(32/8*4));
-
-localparam TAG_RAM_ADDR_WIDTH=DATA_RAM_ADDR_WIDTH-4;
-
-localparam DRE_RAM_ADDR_WIDTH=log2(SIZE/32)+1;
-
-localparam TAG_ADDR_WIDTH=32-(DATA_RAM_ADDR_WIDTH+2);
+localparam DATA_RAM_ADDR_WIDTH  = `SIZE_TO_DATA_RAM_ADDR_WIDTH;
+localparam TAG_RAM_ADDR_WIDTH   = `SIZE_TO_TAG_RAM_ADDR_WIDTH;
+localparam DRE_RAM_ADDR_WIDTH   = `SIZE_TO_DRE_RAM_ADDR_WIDTH;
+localparam TAG_ADDR_WIDTH       = `SIZE_TO_TAG_ADDR_WIDTH;
 
 /**************************************************************************
 连接到实例module的wire
@@ -219,7 +223,6 @@ assign dre_rw_writeEnable      =  last_arb_write;
 assign dre_rw_writeRe          =  last_arb_byteEnable;
 
 assign ctr_address             =  arb_address;
-assign ri_isCacheEnable        =  isCacheEn;
 assign arb_isEnableCache       =  isCacheEn;
 assign arb_readData            =  (state==state_idle)?{
                                     readBuff_arb_write&&readableMask[3]?readBuff_arb_writeData[31:24]:data_rw_readData[31:24],
@@ -256,6 +259,11 @@ assign ri_waitRequest          =  ri_isRequest;
 assign isNeedSendCmdToRi       =  rw_waitRequest||ri_waitRequest;
 assign arb_waitRequest         =  isNeedSendCmdToRi;
 
+assign ri_last_arb_address     =  last_arb_address;
+assign ri_last_arb_writeData   =  last_arb_writeData;
+assign ri_last_arb_byteEnable  =  last_arb_byteEnable;
+assign ri_last_arb_read        =  last_arb_read;
+assign ri_last_arb_write       =  last_arb_write;
 assign ri_isHit                =  last_isHit;
 assign ri_hitBlockNum          =  last_hitBlockNum;
 assign ri_isHaveFreeBlock      =  last_isHaveFreeBlock;
