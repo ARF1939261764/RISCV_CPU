@@ -36,7 +36,6 @@ module cache_ri #(
   rw_hitBlockNum,
   rw_isHaveFreeBlock,
   rw_freeBlockNum,
-
   /**/
   data_ri_readAddress,
   data_ri_rwChannel,
@@ -142,16 +141,175 @@ localparam TAG_RAM_ADDR_WIDTH   = `SIZE_TO_TAG_RAM_ADDR_WIDTH;
 localparam DRE_RAM_ADDR_WIDTH   = `SIZE_TO_DRE_RAM_ADDR_WIDTH;
 localparam TAG_ADDR_WIDTH       = `SIZE_TO_TAG_ADDR_WIDTH;
 
+/**************************************************************************
+wire and reg
+**************************************************************************/
+wire                  isDirtyBlock;
+reg  [1:0]            replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];
+reg  [3:0]            rwChannel;
+reg  [31:0]           readAddress;
+reg  [31:0]           writeAddress;
+
+/**************************************************************************
+连线
+**************************************************************************/
+assign isDirtyBlock                 =     tag_ri_readData[TAG_ADDR_WIDTH+1];
+assign data_ri_readAddress          =     readAddress[DATA_RAM_ADDR_WIDTH+1:2];
+assign data_ri_writeAddress         =     writeAddress[DATA_RAM_ADDR_WIDTH+1:2];
+assign data_ri_rwChannel            =     rwChannel;
+
+assign tag_ri_readAddress           =     readAddress[DATA_RAM_ADDR_WIDTH+1:6];
+assign tag_ri_writeAddress          =     writeAddress[DATA_RAM_ADDR_WIDTH+1:6];
+assign tag_ri_readChannel           =     rwChannel;
+assign tag_ri_writeChannel          =     rwChannel;
+
+assign dre_ri_readAddress           =     readAddress[DATA_RAM_ADDR_WIDTH+2:2];
+assign dre_ri_writeAddress          =     writeAddress[DATA_RAM_ADDR_WIDTH+2:3];
+assign dre_ri_readChannel           =     rwChannel;
+assign dre_ri_writeChannel          =     rwChannel;
+
+assign rw_rsp_data                  =     arb_readData;
 /*************************************************************************
 状态机
 *************************************************************************/
-parameter state_idle            = 4'd0,
-          state_waitReadIODone  = 4'd1,
-          state_waitWriteIODone = 4'd2,
-          state_readMiss        = 4'd3,
-          state_writeMiss       = 4'd4,
+localparam  state_idle              =     4'd0,
+            state_waitReadIODone    =     4'd1,
+            state_waitWriteIODone   =     4'd2,
+            state_readMiss          =     4'd3,
+            state_writeMiss         =     4'd4,
+            state_writeBack         =     4'd5,
+            state_readIn            =     4'd6,
+            state_clearRe           =     4'd7,
+            state_writeBackAll      =     4'd8,
+            state_clearAll          =     4'd9,
+            state_handleCtrCmd      =     4'd10;
+reg[3:0] state;
+
+wire endFlag_state_waitReadIODone   =     (!arb_read||!arb_waitRequest)&&arb_readDataValid;
+wire endFlag_state_waitWriteIODone  =     (!arb_write||!arb_waitRequest);
+/*第一段*/
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
+    state<=state_idle;
+  end
+  else begin
+    case(state)
+      state_idle:begin
+          case(rw_cmd)
+            `cache_rw_cmd_rb:state<=rw_last_arb_read?state_readMiss:state_writeMiss;
+            `cache_rw_cmd_iorw:state<=rw_last_arb_read?state_waitReadIODone:state_waitWriteIODone;
+            `cache_rw_handleCtrCmd:state<=state_handleCtrCmd;
+            default:state<=state_idle;
+          endcase
+        end
+      state_waitReadIODone:begin
+          state<endFlag_state_waitReadIODone?state_idle:state_waitReadIODone;
+        end
+      state_waitWriteIODone:begin
+          state<=endFlag_state_waitWriteIODone?state_idle:state_waitWriteIODone;
+        end
+      state_readMiss:begin
+          if(rw_isHit) begin
+            state<=state_readIn;
+          end
+          else
+            state<=isDirtyBlock?state_writeBack:state_readIn;
+          end
+        end
+      state_writeMiss:begin
+          state<=isDirtyBlock?state_writeBack:state_clearRe;
+        end
+      state_writeBack:begin
           
+        end
+      state_readIn:begin
+          
+        end
+      state_clearRe:begin
+        end
+      state_writeBackAll:begin
+        end
+      state_clearAll:begin
+        end
+      default:begin
+        end
+    endcase
+  end
+end
 
-parameter
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
+    data_ri_writeByteEnable<=1'd0;
+    tag_ri_writeEnable<=1'd0;
+    dre_ri_writeEnable<=1'd0;
+  end
+  else begin
+    case(state)
+      state_idle:begin
+          case(rw_cmd)
+            `cache_rw_cmd_rb:begin
+                readAddress<=rw_last_arb_address;
+                rwChannel<=rw_isHaveFreeBlock?rw_freeBlockNum:replaceFIFO[DATA_RAM_ADDR_WIDTH+1:6];
+                arb_read<=1'd0;
+                arb_write<=1'd0;
+              end
+            `cache_rw_cmd_iorw:begin
+                arb_address<=rw_last_arb_address;
+                arb_writeData<=rw_last_arb_writeData;
+                arb_read<=rw_last_arb_read;
+                arb_write<=rw_last_arb_write;
+                arb_byteEnable<=rw_last_arb_byteEnable;
+              end
+            default:begin
+                arb_read<=1'd0;
+                arb_write<=1'd0;
+              end
+          endcase
+          data_ri_writeByteEnable<=1'd0;
+          tag_ri_writeEnable<=1'd0;
+          dre_ri_writeEnable<=1'd0;
+        end
+      state_waitReadIODone:begin
+          arb_read<=!arb_waitRequest?1'd0:arb_read;
+        end
+      state_waitWriteIODone:begin
+          arb_write<=!arb_waitRequest?1'd0:arb_write;
+        end
+      state_readMiss,state_writeMiss:begin
+          readAddress<={rw_last_arb_address[31:6],6'd0};
+        end
+      state_writeBack:begin
+        end
+      state_readIn:begin
+        end
+      state_clearRe:begin
+        end
+      state_writeBackAll:begin
+        end
+      state_clearAll:begin
+        end
+      default:begin
+        end  
+    endcase
+  end
+end
 
-endmodule // cache_ri
+always @(*) begin
+  case (state)
+    state_idle:begin
+        rw_cmd_ready=1'd0;
+      end
+    state_waitReadIODone:begin
+        rw_cmd_ready=endFlag_state_waitReadIODone;
+      end
+    state_waitWriteIODone:begin
+        rw_cmd_ready=endFlag_state_waitWriteIODone;
+      end
+    default:begin
+        rw_cmd_ready=1'd0;
+      end
+    default: 
+  endcase
+end
+
+endmodule

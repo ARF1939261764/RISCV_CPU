@@ -21,7 +21,6 @@ module cache_rw #(
   ctr_isEnableCache,
   /**/
   ri_cmd,
-  ri_cmd_valid,
   ri_cmd_ready,
   ri_isRequest,
   ri_rsp_data,
@@ -77,7 +76,6 @@ input                                    ctr_isEnableCache;       /*cache是否�
 
 input                                    ri_isRequest;            /*来自cache_ri模块,表示ri模块是否有待处理指令,也表示ri模块当前需要获得3块RAM的控制权*/
 output reg  [3:0]                        ri_cmd;                  /*输出到ri模块的命令*/
-output reg                               ri_cmd_valid;            /*表示命令是否有效*/
 input                                    ri_cmd_ready;            /*来自ri模块,表示命令是否处理完成*/
 input       [31:0]                       ri_rsp_data;             /*来自ri模块返回的数据*/
 output      [31:0]                       ri_last_arb_address;
@@ -335,13 +333,12 @@ always @(posedge clk) begin
         else begin
           ri_cmd<=`cache_rw_cmd_nop;
         end
-        ri_cmd_valid<=isNeedSendCmdToRi?1'd1:1'd0;
       end      
     state_waitDone:begin
-        ri_cmd_valid<=ri_cmd_ready?1'd0:1'd1;
+        ri_cmd<=ri_cmd_ready?cache_rw_cmd_nop:ri_cmd;
       end 
     default:begin
-        ri_cmd_valid<=1'd0;
+        ri_cmd<=cache_rw_cmd_nop;
       end
   endcase
 end
