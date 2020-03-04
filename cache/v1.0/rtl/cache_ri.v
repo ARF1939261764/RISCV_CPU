@@ -1,7 +1,10 @@
 `include "cache_define.v"
 
 module cache_ri #(
-  parameter SIZE = 8*1024
+  parameter DATA_RAM_ADDR_WIDTH,
+            TAG_RAM_ADDR_WIDTH,
+            DRE_RAM_ADDR_WIDTH,
+            TAG_ADDR_WIDTH   
 )(
   clk,
   rest,
@@ -23,7 +26,6 @@ module cache_ri #(
   ctr_isEnableCache,
 
   rw_cmd,
-  rw_cmd_valid,
   rw_cmd_ready,
   rw_isRequest,
   rw_rsp_data,
@@ -77,7 +79,6 @@ input    [31:0]                          arb_readData;
 input                                    arb_readDataValid;
 
 input    [2:0]                           ctr_cmd;
-input                                    ctr_cmd_valid;
 output                                   ctr_cmd_ready;
 input                                    ctr_isEnableCache;
 
@@ -121,34 +122,13 @@ output                                   dre_ri_writeEnable;
 output  [7:0]                            dre_ri_writeData;
 
 /**************************************************************************
-function:计算数据位宽
-**************************************************************************/
-function integer log2;
-	input integer num;
-	begin
-		log2=0;
-		while(2**log2<num) begin
-			log2=log2+1;
-		end
-	end
-endfunction
-
-/**************************************************************************
-width
-**************************************************************************/
-localparam DATA_RAM_ADDR_WIDTH  = `SIZE_TO_DATA_RAM_ADDR_WIDTH;
-localparam TAG_RAM_ADDR_WIDTH   = `SIZE_TO_TAG_RAM_ADDR_WIDTH;
-localparam DRE_RAM_ADDR_WIDTH   = `SIZE_TO_DRE_RAM_ADDR_WIDTH;
-localparam TAG_ADDR_WIDTH       = `SIZE_TO_TAG_ADDR_WIDTH;
-
-/**************************************************************************
 wire and reg
 **************************************************************************/
-wire                  isDirtyBlock;
-reg  [1:0]            replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];
-reg  [3:0]            rwChannel;
-reg  [31:0]           readAddress;
-reg  [31:0]           writeAddress;
+wire                  isDirtyBlock;                               /*是否为脏块*/
+reg  [1:0]            replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];     /*替换FIFO,其实就是一个计数器*/
+reg  [3:0]            rwChannel;                                  /*读通道*/
+reg  [31:0]           readAddress;                                /*读地址*/
+reg  [31:0]           writeAddress;                               /*写地址*/
 
 /**************************************************************************
 连线
@@ -169,6 +149,7 @@ assign dre_ri_readChannel           =     rwChannel;
 assign dre_ri_writeChannel          =     rwChannel;
 
 assign rw_rsp_data                  =     arb_readData;
+
 /*************************************************************************
 状态机
 *************************************************************************/
@@ -223,13 +204,16 @@ always @(posedge clk or negedge rest) begin
           
         end
       state_readIn:begin
-          
+
         end
       state_clearRe:begin
+
         end
       state_writeBackAll:begin
+
         end
       state_clearAll:begin
+
         end
       default:begin
         end
@@ -279,6 +263,7 @@ always @(posedge clk or negedge rest) begin
           readAddress<={rw_last_arb_address[31:6],6'd0};
         end
       state_writeBack:begin
+          
         end
       state_readIn:begin
         end

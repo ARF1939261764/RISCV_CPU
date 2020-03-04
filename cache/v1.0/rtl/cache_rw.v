@@ -1,7 +1,10 @@
 `include "cache_define.v"
 
 module cache_rw #(
-  parameter SIZE=8*1024
+  parameter DATA_RAM_ADDR_WIDTH,
+            TAG_RAM_ADDR_WIDTH,
+            DRE_RAM_ADDR_WIDTH,
+            TAG_ADDR_WIDTH  
 )(
   clk,
   rest,
@@ -111,27 +114,6 @@ input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress;     /*写地址*/
 input       [1:0]                        dre_ri_writeChannel;     /*写数据*/
 input                                    dre_ri_writeEnable;      /*写使能*/
 input       [7:0]                        dre_ri_writeData;        /*写数据(一次8bit)*/
-
-/**************************************************************************
-function:计算数据位宽
-**************************************************************************/
-function integer log2;
-	input integer num;
-	begin
-		log2=0;
-		while(2**log2<num) begin
-			log2=log2+1;
-		end
-	end
-endfunction
-
-/**************************************************************************
-width
-**************************************************************************/
-localparam DATA_RAM_ADDR_WIDTH  = `SIZE_TO_DATA_RAM_ADDR_WIDTH;
-localparam TAG_RAM_ADDR_WIDTH   = `SIZE_TO_TAG_RAM_ADDR_WIDTH;
-localparam DRE_RAM_ADDR_WIDTH   = `SIZE_TO_DRE_RAM_ADDR_WIDTH;
-localparam TAG_ADDR_WIDTH       = `SIZE_TO_TAG_ADDR_WIDTH;
 
 /**************************************************************************
 连接到实例module的wire
