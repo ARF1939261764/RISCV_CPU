@@ -63,61 +63,61 @@ module cache_ri #(
   dre_ri_writeData
 );
 
-input                                           clk;
-input                                           rest;
+input  logic                                         clk;
+input  logic                                         rest;
 
-output   [31:0]                                 av_s0_address;
-output   [3:0]                                  av_s0_byteEnable;
-output                                          av_s0_read;
-output                                          av_s0_write;
-output   [31:0]                                 av_s0_writeData;
-input                                           av_s0_waitRequest;
-output                                          av_s0_beginBurstTransfer;
-output   [`CACHE_AVALON_BURST_COUNT_WIDTH-1:0]  av_s0_burstCount;
-input    [31:0]                                 av_s0_readData;
-input                                           av_s0_readDataValid;
+output logic  [31:0]                                 av_s0_address;
+output logic  [3:0]                                  av_s0_byteEnable;
+output logic                                         av_s0_read;
+output logic                                         av_s0_write;
+output logic  [31:0]                                 av_s0_writeData;
+input  logic                                         av_s0_waitRequest;
+output logic                                         av_s0_beginBurstTransfer;
+output logic  [`CACHE_AVALON_BURST_COUNT_WIDTH-1:0]  av_s0_burstCount;
+input  logic  [31:0]                                 av_s0_readData;
+input  logic                                         av_s0_readDataValid;
 
-input    [2:0]                                  ctr_cmd;
-output                                          ctr_cmd_ready;
-input                                           ctr_isEnableCache;
+input  logic  [2:0]                                  ctr_cmd;
+output logic                                         ctr_cmd_ready;
+input  logic                                         ctr_isEnableCache;
 
-input    [3:0]                                  rw_cmd;
-output                                          rw_cmd_ready;
-output                                          rw_isRequest;
-output   [31:0]                                 rw_rsp_data;
-input    [31:0]                                 rw_last_av_s0_address;
-input    [31:0]                                 rw_last_av_s0_writeData;
-input    [3:0]                                  rw_last_av_s0_byteEnable;
-input                                           rw_last_av_s0_read;
-input                                           rw_last_av_s0_write;
-input                                           rw_isHit;
-input    [1:0]                                  rw_hitBlockNum;
-input                                           rw_isHaveFreeBlock;
-input    [1:0]                                  rw_freeBlockNum;
-/**/        
-output  [DATA_RAM_ADDR_WIDTH-1:0]               data_ri_readAddress;
-output  [1:0]                                   data_ri_rwChannel;
-input   [31:0]                                  data_ri_readData;
-output  [DATA_RAM_ADDR_WIDTH-1:0]               data_ri_writeAddress;
-output  [3:0]                                   data_ri_writeByteEnable;
-output                                          data_ri_writeEnable;
-output  [31:0]                                  data_ri_writeData;
-/**/        
-output  [TAG_RAM_ADDR_WIDTH-1:0]                tag_ri_readAddress;
-output  [1:0]                                   tag_ri_readChannel;
-input   [31:0]                                  tag_ri_readData;
-output  [TAG_RAM_ADDR_WIDTH-1:0]                tag_ri_writeAddress;
-output  [1:0]                                   tag_ri_writeChannel;
-output                                          tag_ri_writeEnable;
-output  [31:0]                                  tag_ri_writeData;
-/**/        
-output  [DRE_RAM_ADDR_WIDTH-0:0]                dre_ri_readAddress;
-output  [1:0]                                   dre_ri_readChannel;
-input   [7:0]                                   dre_ri_readData;
-output  [DRE_RAM_ADDR_WIDTH-1:0]                dre_ri_writeAddress;
-output  [1:0]                                   dre_ri_writeChannel;
-output                                          dre_ri_writeEnable;
-output  [7:0]                                   dre_ri_writeData;
+input  logic  [3:0]                                  rw_cmd;
+output logic                                         rw_cmd_ready;
+output logic                                         rw_isRequest;
+output logic  [31:0]                                 rw_rsp_data;
+input  logic  [31:0]                                 rw_last_av_s0_address;
+input  logic  [31:0]                                 rw_last_av_s0_writeData;
+input  logic  [3:0]                                  rw_last_av_s0_byteEnable;
+input  logic                                         rw_last_av_s0_read;
+input  logic                                         rw_last_av_s0_write;
+input  logic                                         rw_isHit;
+input  logic  [1:0]                                  rw_hitBlockNum;
+input  logic                                         rw_isHaveFreeBlock;
+input  logic  [1:0]                                  rw_freeBlockNum;
+/**/     
+output logic [DATA_RAM_ADDR_WIDTH-1:0]               data_ri_readAddress;
+output logic [1:0]                                   data_ri_rwChannel;
+input  logic [31:0]                                  data_ri_readData;
+output logic [DATA_RAM_ADDR_WIDTH-1:0]               data_ri_writeAddress;
+output logic [3:0]                                   data_ri_writeByteEnable;
+output logic                                         data_ri_writeEnable;
+output logic [31:0]                                  data_ri_writeData;
+/**/     
+output logic [TAG_RAM_ADDR_WIDTH-1:0]                tag_ri_readAddress;
+output logic [1:0]                                   tag_ri_readChannel;
+input  logic [31:0]                                  tag_ri_readData;
+output logic [TAG_RAM_ADDR_WIDTH-1:0]                tag_ri_writeAddress;
+output logic [1:0]                                   tag_ri_writeChannel;
+output logic                                         tag_ri_writeEnable;
+output logic [31:0]                                  tag_ri_writeData;
+/**/   
+output logic [DRE_RAM_ADDR_WIDTH-0:0]                dre_ri_readAddress;
+output logic [1:0]                                   dre_ri_readChannel;
+input  logic [7:0]                                   dre_ri_readData;
+output logic [DRE_RAM_ADDR_WIDTH-1:0]                dre_ri_writeAddress;
+output logic [1:0]                                   dre_ri_writeChannel;
+output logic                                         dre_ri_writeEnable;
+output logic [7:0]                                   dre_ri_writeData;
 
 /**************************************************************************
 av从机s0的指令fifo
@@ -131,7 +131,7 @@ localparam AVALON_S0_CMD_FIFO_WIDTH     = $bits({
                                             av_s0_beginBurstTransfer,
                                             av_s0_burstCount
                                           });
-localparam AVALON_S0_CMD_FIFO_DEPTH     = 1;
+localparam AVALON_S0_CMD_FIFO_DEPTH     = 2;
 
 wire                                    av_s0_cmd_fifo_full;
 wire                                    av_s0_cmd_fifo_empty;
@@ -241,6 +241,8 @@ reg  [1:0]            replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];     /*替换FIFO,�
 reg  [1:0]            rwChannel;                                  /*读通道*/
 reg  [31:0]           readAddress;                                /*读地址*/
 reg  [31:0]           writeAddress;                               /*写地址*/
+reg                   is_read_addr_change;                        /*读地址变化*/
+reg                   is_read_data_valid;                         /*读数据有效*/
 
 /**************************************************************************
 连线
@@ -262,6 +264,10 @@ assign dre_ri_readChannel           =     rwChannel;
 assign dre_ri_writeChannel          =     rwChannel;
 
 assign rw_rsp_data                  =     av_s0_readData;
+
+always @(posedge clk) begin
+  is_read_data_valid<=is_read_addr_change;
+end
 
 assign {
         av_s0_address,
@@ -293,8 +299,8 @@ reg[3:0] state;
 wire end_state_waitReadIODone ;
 wire end_state_waitWriteIODone;
 
-assign end_state_waitReadIODone=av_s0_cmd_fifo_full&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
-assign end_state_waitWriteIODone=av_s0_cmd_fifo_full&&!av_s0_waitRequest;
+assign end_state_waitReadIODone  =av_s0_cmd_fifo_full&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
+assign end_state_waitWriteIODone =av_s0_cmd_fifo_full&&!av_s0_waitRequest;
 /*第一段*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -350,7 +356,7 @@ end
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
-    data_ri_writeByteEnable<=1'd0;
+    data_ri_writeEnable<=1'd0;
     tag_ri_writeEnable<=1'd0;
     dre_ri_writeEnable<=1'd0;
     av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
@@ -360,7 +366,10 @@ always @(posedge clk or negedge rest) begin
       state_idle:begin
           case(rw_cmd)
             `cache_rw_cmd_rb:begin
-                readAddress<=rw_last_av_s0_address;
+                if(!rw_isHit) begin
+                  replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]]<=
+                    replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]]+2'd1;
+                end
               end
             `cache_rw_cmd_iorw:begin
                 /*将rw模块收到的IO读写请求发送到总线上*/
@@ -376,27 +385,35 @@ always @(posedge clk or negedge rest) begin
             default:begin
               end
           endcase
-          data_ri_writeByteEnable<=1'd0;
+          rwChannel<=rw_isHit?rw_hitBlockNum:replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]];
+          readAddress<=rw_last_av_s0_address;
+          data_ri_writeEnable<=1'd0;
           tag_ri_writeEnable<=1'd0;
           dre_ri_writeEnable<=1'd0;
         end
       state_waitReadIODone:begin
-          if(end_state_waitReadIODone) begin
-            av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
-          end
+          av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
         end
       state_waitWriteIODone:begin
-          if(end_state_waitWriteIODone) begin
-            av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
-          end
-        end
-      state_readMiss,state_writeMiss:begin
-          
+          av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
         end
       state_writeBack:begin
-          
+          if(!av_s0_cmd_fifo_half||!av_s0_waitRequest) begin
+            /*fifo还能装,或者当前总线从fifo中接收了一个数据则说明这时候还能继续往FIFO中写数据*/
+            
+          end
+          else begin
+            
+          end
+          if(is_read_data_valid) begin
+            
+          end
+          else begin
+
+          end
         end
       state_readIn:begin
+          
         end
       state_clearRe:begin
         end
@@ -432,8 +449,8 @@ fifo_sync_bypass #(
   .DEPTH(AVALON_S0_CMD_FIFO_DEPTH)
 )
 fifo_sync_bypass_inst0_av_s0_cmd_fifo(
-  .clk       (clk                          ),
-  .rest      (rest                         ),
+  .clk       (clk                      ),
+  .rest      (rest                     ),
   .full      (av_s0_cmd_fifo_full      ),
   .empty     (av_s0_cmd_fifo_empty     ),
   .half      (av_s0_cmd_fifo_half      ),
