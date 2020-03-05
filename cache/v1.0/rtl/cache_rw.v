@@ -1,10 +1,10 @@
 `include "cache_define.v"
 
 module cache_rw #(
-  parameter DATA_RAM_ADDR_WIDTH,
-            TAG_RAM_ADDR_WIDTH,
-            DRE_RAM_ADDR_WIDTH,
-            TAG_ADDR_WIDTH  
+  parameter DATA_RAM_ADDR_WIDTH=9,
+            TAG_RAM_ADDR_WIDTH=5,
+            DRE_RAM_ADDR_WIDTH=8,
+            TAG_ADDR_WIDTH=21
 )(
   clk,
   rest,
@@ -81,11 +81,11 @@ input                                    ri_isRequest;            /*来自cache_
 output reg  [3:0]                        ri_cmd;                  /*输出到ri模块的命令*/
 input                                    ri_cmd_ready;            /*来自ri模块,表示命令是否处理完成*/
 input       [31:0]                       ri_rsp_data;             /*来自ri模块返回的数据*/
-output      [31:0]                       ri_last_arb_address;
-output      [31:0]                       ri_last_arb_writeData;
-output      [3:0]                        ri_last_arb_byteEnable;
-output                                   ri_last_arb_read;
-output                                   ri_last_arb_write;
+output      [31:0]                       ri_last_arb_address;     /*向ri发出命令时表示rw模块接收到的地址*/
+output      [31:0]                       ri_last_arb_writeData;   /*向ri发出命令时表示rw模块接收到的数据*/
+output      [3:0]                        ri_last_arb_byteEnable;  /*向ri发出命令时表示rw模块接收到的字节使能信号*/
+output                                   ri_last_arb_read;        /*向ri发出命令时表示rw模块接收到的读使能信号*/
+output                                   ri_last_arb_write;       /*向ri发出命令时表示rw模块接收到的写使能信号*/
 output                                   ri_isHit;                /*是否命中*/
 output      [1:0]                        ri_hitBlockNum;          /*如果命中，命中的哪一块*/
 output                                   ri_isHaveFreeBlock;      /*是否还有空余的块*/
@@ -108,7 +108,7 @@ input                                    tag_ri_writeEnable;      /*写使能 */
 input       [31:0]                       tag_ri_writeData;        /*需要写入的数据*/
 
 input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress;      /*读地址*/
-input                                    dre_ri_readChannel;      /*读通道*/
+input       [1:0]                        dre_ri_readChannel;      /*读通道*/
 output      [7:0]                        dre_ri_readData;         /*读出的数据(1次8bit)*/
 input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress;     /*写地址*/
 input       [1:0]                        dre_ri_writeChannel;     /*写数据*/
@@ -317,10 +317,10 @@ always @(posedge clk) begin
         end
       end      
     state_waitDone:begin
-        ri_cmd<=ri_cmd_ready?cache_rw_cmd_nop:ri_cmd;
+        ri_cmd<=ri_cmd_ready?`cache_rw_cmd_nop:ri_cmd;
       end 
     default:begin
-        ri_cmd<=cache_rw_cmd_nop;
+        ri_cmd<=`cache_rw_cmd_nop;
       end
   endcase
 end

@@ -3,6 +3,6 @@
 
 `include "config.v"
 
-
+`define AVALON_BURST_COUNT_WIDTH          (8)
 
 `endif
