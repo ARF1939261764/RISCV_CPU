@@ -67,6 +67,7 @@ module cache_ri #(
 /**************************************************************************
 av从机s0的指令fifo
 **************************************************************************/
+/*fifo实例的参数*/
 localparam AVALON_S0_CMD_FIFO_WIDTH     = $bits({
                                             av_s0_address,        
                                             av_s0_byteEnable,     
@@ -77,7 +78,7 @@ localparam AVALON_S0_CMD_FIFO_WIDTH     = $bits({
                                             av_s0_burstCount
                                           });
 localparam AVALON_S0_CMD_FIFO_DEPTH     = 2;
-
+/*fifo的端口*/
 wire                                    av_s0_cmd_fifo_full;
 wire                                    av_s0_cmd_fifo_empty;
 wire                                    av_s0_cmd_fifo_half;
@@ -89,7 +90,6 @@ wire [AVALON_S0_CMD_FIFO_WIDTH-1:0]     av_s0_cmd_fifo_readData;
 /**************************************************************************
 av_s0_cmd_fifo操作任务
 **************************************************************************/
-
 typedef struct
 {
   reg                                      push;
@@ -198,7 +198,7 @@ wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_readData;
 
 assign read_byte_en_fifo_write          = is_read_data_valid;
 assign read_byte_en_fifo_writeData      = dre_ri_readRe;
-assign read_byte_en_fifo_read           = dre_ri_writeEnable;
+assign read_byte_en_fifo_read           = data_ri_writeEnable;
 
 /**************************************************************************
 其它wire与reg
@@ -206,7 +206,7 @@ assign read_byte_en_fifo_read           = dre_ri_writeEnable;
 reg                       is_need_modific_tag;
 reg[31:0]                 modific_tag;
 wire                      isDirtyBlock;                               /*是否为脏块*/
-wire [TAG_ADDR_WIDTH-1:0] block_addr;                                 /*块标签*/
+wire [TAG_ADDR_WIDTH-1:0] tag_ri_read_block_addr;                                 /*块标签*/
 reg  [1:0]                replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];     /*替换FIFO,其实就是一个计数器*/
 reg  [1:0]                rwChannel;                                  /*读通道*/
 reg  [31:0]               readAddress;                                /*读地址*/
@@ -221,7 +221,7 @@ reg  [31:0]               address_a,address_b;
 **************************************************************************/
 
 assign isDirtyBlock                 =     tag_ri_readData[TAG_ADDR_WIDTH+1];
-assign block_addr                   =     tag_ri_readData[TAG_ADDR_WIDTH-1:0];
+assign tag_ri_read_block_addr       =     tag_ri_readData[TAG_ADDR_WIDTH-1:0];
 assign data_ri_readAddress          =     readAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_writeAddress         =     writeAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_rwChannel            =     rwChannel;
@@ -252,17 +252,18 @@ assign av_s0_cmd_fifo_read=!av_s0_waitRequest;
 /*************************************************************************
 状态机
 *************************************************************************/
-localparam  state_idle              =     4'd0,
-            state_waitReadIODone    =     4'd1,
-            state_waitWriteIODone   =     4'd2,
-            state_readMiss          =     4'd3,
-            state_writeMiss         =     4'd4,
-            state_writeBack         =     4'd5,
-            state_readIn            =     4'd6,
-            state_clearRe           =     4'd7,
-            state_writeBackAll      =     4'd8,
-            state_clearAll          =     4'd9,
-            state_handleCtrCmd      =     4'd10;
+localparam  state_idle                 =     4'd0,
+            state_waitReadIODone       =     4'd1,
+            state_waitWriteIODone      =     4'd2,
+            state_readMiss             =     4'd3,
+            state_writeMiss            =     4'd4,
+            state_writeBack            =     4'd5,
+            state_readIn               =     4'd6,
+            state_clearRe              =     4'd7,
+            state_writeBackAll         =     4'd8,
+            state_clearAll             =     4'd9,
+            state_end_handle_read_miss =     4'd11,
+            state_handleCtrCmd         =     4'd10;
 reg[3:0] state,return_state;
 
 wire end_state_waitReadIODone ;
@@ -271,10 +272,10 @@ wire end_state_writeBack;
 wire end_state_readIn;
 wire end_state_clearRe;
 
-assign end_state_waitReadIODone  =av_s0_cmd_fifo_full&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
-assign end_state_waitWriteIODone =av_s0_cmd_fifo_full&&!av_s0_waitRequest;
-assign end_state_writeBack       =(av_s0_write&&!av_s0_waitRequest)&&(count_c>=8'd15);
-assign end_state_readIn          =(count_c>=8'd15);
+assign end_state_waitReadIODone  =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
+assign end_state_waitWriteIODone =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
+assign end_state_writeBack       =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_readIn          =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
 assign end_state_clearRe         =(count_a>=8'd7);
 /*第一段*/
 always @(posedge clk or negedge rest) begin
@@ -320,7 +321,7 @@ always @(posedge clk or negedge rest) begin
         end
       state_readIn:begin
           if(end_state_readIn) begin
-            state<=state_idle;
+            state<=state_end_handle_read_miss;
           end
         end
       state_clearRe:begin
@@ -333,6 +334,9 @@ always @(posedge clk or negedge rest) begin
         end
       state_clearAll:begin
 
+        end
+      state_end_handle_read_miss:begin
+          state<=state_idle;
         end
       state_handleCtrCmd:begin
 
@@ -403,11 +407,11 @@ always @(*) begin
     state_waitWriteIODone:begin
         rw_cmd_ready=end_state_waitWriteIODone;
       end
-    state_readIn:begin
-        rw_cmd_ready=end_state_readIn;
-      end
     state_clearRe:begin
         rw_cmd_ready=end_state_clearRe;
+      end
+    state_end_handle_read_miss:begin
+        rw_cmd_ready<=1'd1;
       end
     default:begin
         rw_cmd_ready=1'd0;
@@ -459,7 +463,7 @@ task state_read_write_miss_handle();
   count_b<=8'd0;
   count_c<=8'd0;
   is_read_addr_change<=1'd0;
-  address_a<={block_addr,rw_last_av_s0_address[31-TAG_ADDR_WIDTH:0]};
+  address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_ADDR_WIDTH:0]};
   address_b<=rw_last_av_s0_address;
 endtask
 
@@ -527,6 +531,12 @@ endtask
   1,count_a,count_b,count_c三个计数器清零,
   2,给出address_b(写入到存储器的地址)
   3,rwChannel修改为对应的通道
+最后一次执行完该任务后:
+  需要在下一个时钟将
+    data_ri_writeEnable
+    tag_ri_writeEnable 
+    dre_ri_writeEnable
+  这三个寄存器置0
 ******************************************************************************************/
 task state_readIn_handle();
   if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<8'd16)) begin
@@ -564,7 +574,7 @@ task state_readIn_handle();
     tag_ri_writeData<={{(32-TAG_ADDR_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_ADDR_WIDTH+1]};
     tag_ri_writeEnable  <= count_c==8'd0;
     /*dre*/
-    dre_ri_writeData<=8'hf;
+    dre_ri_writeData<=8'hff;
     dre_ri_writeEnable  <= 1'd1;
   end
   else begin
@@ -586,6 +596,7 @@ task state_readIn_handle();
     end
   end
   else begin
+    readAddress<=rw_last_av_s0_address;
     /*如果下一步需要进入到其它状态,全部清零*/
     count_a<=8'd0;
     count_b<=8'd0;
@@ -611,6 +622,7 @@ task state_clearRe_handle();
     count_a++;
   end
   else begin
+    readAddress<=rw_last_av_s0_address;
     count_a<=8'd0;
   end
 endtask
@@ -636,8 +648,8 @@ fifo_sync_bypass_inst0_av_s0_cmd_fifo(
 );
 /*-----可读mask fifo------------------------*/
 fifo_sync_bypass #(
-  .WIDTH(AVALON_S0_CMD_FIFO_WIDTH),
-  .DEPTH(AVALON_S0_CMD_FIFO_DEPTH)
+  .WIDTH(READ_BYTE_EN_FIFO_WIDTH),
+  .DEPTH(READ_BYTE_EN_FIFO_DEPTH)
 )
 fifo_sync_bypass_inst1_read_byten_en_fifo(
   .clk       (clk                         ),

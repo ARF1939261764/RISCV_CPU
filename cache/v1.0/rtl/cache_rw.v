@@ -206,7 +206,7 @@ assign dre_rw_writeRe          =  last_arb_byteEnable;
 
 assign ctr_address             =  arb_address;
 assign arb_isEnableCache       =  isCacheEn;
-assign arb_readData            =  (state==state_idle)?{
+assign arb_readData            =  (state==state_idle)||(ri_cmd!=`cache_rw_cmd_iorw)?{
                                     readBuff_arb_write&&readableMask[3]?readBuff_arb_writeData[31:24]:data_rw_readData[31:24],
                                     readBuff_arb_write&&readableMask[2]?readBuff_arb_writeData[23:16]:data_rw_readData[23:16],
                                     readBuff_arb_write&&readableMask[1]?readBuff_arb_writeData[15:8] :data_rw_readData[15:8] ,

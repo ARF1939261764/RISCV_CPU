@@ -13,6 +13,8 @@ module fifo_sync_bypass #(
   output [WIDTH-1:0]  readData
 );
 
+reg[WIDTH-1:0] array[DEPTH-1:0];
+
 assign readData=writeData;
 
 endmodule
