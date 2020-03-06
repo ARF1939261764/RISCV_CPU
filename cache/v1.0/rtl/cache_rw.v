@@ -40,6 +40,7 @@ module cache_rw #(
   data_ri_readAddress,
   data_ri_rwChannel,
   data_ri_readData,
+  dre_ri_readRe,
   data_ri_writeAddress,
   data_ri_writeByteEnable,
   data_ri_writeEnable,
@@ -110,6 +111,7 @@ input       [31:0]                       tag_ri_writeData;        /*需要写入
 input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress;      /*读地址*/
 input       [1:0]                        dre_ri_readChannel;      /*读通道*/
 output      [7:0]                        dre_ri_readData;         /*读出的数据(1次8bit)*/
+output      [3:0]                        dre_ri_readRe;
 input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress;     /*写地址*/
 input       [1:0]                        dre_ri_writeChannel;     /*写数据*/
 input                                    dre_ri_writeEnable;      /*写使能*/
@@ -405,6 +407,7 @@ cache_rw_dre_inst0(
   .ri_readAddress(dre_ri_readAddress),
   .ri_readChannel(dre_ri_readChannel),
   .ri_readData(dre_ri_readData),
+  .ri_readRe(dre_ri_readRe),
   .ri_writeAddress(dre_ri_writeAddress),
   .ri_writeChannel(dre_ri_writeChannel),
   .ri_writeEnable(dre_ri_writeEnable),

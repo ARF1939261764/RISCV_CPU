@@ -14,6 +14,7 @@ module cache_rw_dre #(
   ri_readAddress,
   ri_readChannel,
   ri_readData,
+  ri_readRe,
   ri_writeAddress,
   ri_writeChannel,
   ri_writeEnable,
@@ -33,6 +34,7 @@ input  [3:0]            rw_writeRe;
 input  [ADDR_WIDTH-0:0] ri_readAddress;
 input                   ri_readChannel;
 output [7:0]            ri_readData;
+output [3:0]            ri_readRe;
 input  [ADDR_WIDTH-1:0] ri_writeAddress;
 input  [1:0]            ri_writeChannel;
 input                   ri_writeEnable;
