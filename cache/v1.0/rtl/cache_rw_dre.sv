@@ -62,6 +62,7 @@ assign writeEnable      =   sel?ri_writeEnable                : rw_writeEnable;
 assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
+assign ri_readRe        =   rw_readRe;
 
 cache_rw_dre_ram #(
   .ADDR_WIDTH(ADDR_WIDTH)

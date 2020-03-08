@@ -1,4 +1,3 @@
-
 `include "cache_define.sv"
 
 module cache_arb(
@@ -35,6 +34,7 @@ module cache_arb(
   input  logic                                        m0_readDataValid,
   /*接到cache_rw模块*/
   output                                              rw_bus_idle,
+  input                                               rw_cache_is_enable,
   /*m1主机接口:接到总线*/
   output logic [31:0]                                 m1_address,
   output logic [3:0]                                  m1_byteEnable,
@@ -56,7 +56,7 @@ wire m1_rsp_mask;
 
 assign is_io_addr=s0_address[31];
 assign rw_bus_idle=(count==0)?1'd1:1'd0;
-assign sel=(m0_waitRequest||(!is_io_addr))&&(count==0);/*1:选择左,0:IO*/
+assign sel=(m0_waitRequest||(!is_io_addr))&&(count==0)&&!rw_cache_is_enable;/*1:选择左,0:IO*/
 assign m0_cmd_mask=sel;
 assign m1_rsp_mask=sel;
 

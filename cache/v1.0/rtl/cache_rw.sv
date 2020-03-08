@@ -226,8 +226,8 @@ end
 /**************************************************************************
 状态机
 **************************************************************************/
-localparam state_idle=1'd0,
-           state_waitDone=1'd1;
+localparam  state_idle=1'd0,
+            state_waitDone=1'd1;
 reg state,last_state;
 /*第一段*/
 always @(posedge clk or negedge rest) begin
