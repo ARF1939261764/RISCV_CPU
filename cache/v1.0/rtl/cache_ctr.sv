@@ -1,4 +1,4 @@
-`include "define.v"
+`include "define.sv"
 
 module cache_ctr #(
   parameter ADDR_BLOCK_NUM=4

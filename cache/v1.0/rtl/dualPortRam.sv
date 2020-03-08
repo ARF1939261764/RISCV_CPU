@@ -10,7 +10,7 @@ V0.1:2020年2月15日
 最后更新日期:
 	2020年2月15日
 ******************************************************/
-`include "define.v"
+`include "define.sv"
 
 module dualPortRam #(
 	parameter WIDTH=32,		/*数据位宽*/

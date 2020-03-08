@@ -1,4 +1,4 @@
-`include "cache_define.v"
+`include "cache_define.sv"
 
 module cache_ri #(
   parameter DATA_RAM_ADDR_WIDTH=9,
@@ -238,6 +238,8 @@ assign dre_ri_writeChannel          =     rwChannel;
 
 assign rw_rsp_data                  =     av_s0_readData;
 
+assign rw_isRequest                 =     ctr_cmd!=`cache_ctr_cmd_nop;
+
 assign {
         av_s0_address,
         av_s0_byteEnable,
@@ -246,8 +248,8 @@ assign {
         av_s0_writeData,
         av_s0_beginBurstTransfer,
         av_s0_burstCount
-}=av_s0_cmd_fifo_readData;
-assign av_s0_cmd_fifo_read=!av_s0_waitRequest;
+}                                   =     av_s0_cmd_fifo_readData;
+assign av_s0_cmd_fifo_read          =     !av_s0_waitRequest;
 
 /*************************************************************************
 状态机

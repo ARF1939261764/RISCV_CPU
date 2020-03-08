@@ -1,4 +1,4 @@
-`include "cache_define.v"
+`include "cache_define.sv"
 
 module cache_rw #(
   parameter DATA_RAM_ADDR_WIDTH=9,
@@ -6,117 +6,62 @@ module cache_rw #(
             DRE_RAM_ADDR_WIDTH=8,
             TAG_ADDR_WIDTH=21
 )(
-  clk,
-  rest,
+  input                                    clk,
+  input                                    rest,
   /*arb从机接口*/
-  arb_address,        
-  arb_byteEnable,     
-  arb_read,           
-  arb_readData,       
-  arb_write,          
-  arb_writeData,      
-  arb_waitRequest,    
-  arb_readDataValid,
-  arb_isEnableCache,
-  /**/
-  ctr_address,     
-  ctr_isIOAddrBlock,           
-  ctr_isEnableCache,
-  /**/
-  ri_cmd,
-  ri_cmd_ready,
-  ri_isRequest,
-  ri_rsp_data,
-  ri_last_arb_address,
-  ri_last_arb_writeData,
-  ri_last_arb_byteEnable,
-  ri_last_arb_read,
-  ri_last_arb_write,
-  ri_isHit,
-  ri_hitBlockNum,
-  ri_isHaveFreeBlock,
-  ri_freeBlockNum,
-  /**/
-  data_ri_readAddress,
-  data_ri_rwChannel,
-  data_ri_readData,
-  dre_ri_readRe,
-  data_ri_writeAddress,
-  data_ri_writeByteEnable,
-  data_ri_writeEnable,
-  data_ri_writeData,
-  /**/
-  tag_ri_readAddress,
-  tag_ri_readChannel,
-  tag_ri_readData,
-  tag_ri_writeAddress,
-  tag_ri_writeChannel,
-  tag_ri_writeEnable,
-  tag_ri_writeData,
-  /**/
-  dre_ri_readAddress,
-  dre_ri_readChannel,
-  dre_ri_readData,
-  dre_ri_writeAddress,
-  dre_ri_writeChannel,
-  dre_ri_writeEnable,
-  dre_ri_writeData
+  input       [31:0]                       arb_address,             /*读写地址*/
+  input       [3:0]                        arb_byteEnable,          /*字节使能(读写均有效)*/
+  input                                    arb_read,                /*读使能信号(读写使能信号不能同时为高电平)*/   
+  output      [31:0]                       arb_readData,            /*读出的数据*/   
+  input                                    arb_write,               /*写使能信号(读写使能信号不能同时为高电平)*/    
+  input       [31:0]                       arb_writeData,           /*需要写入的数据*/  
+  output                                   arb_waitRequest,         /*命令接受信号,为0表示接收了该条指令*/     
+  output                                   arb_readDataValid,       /*数据有效信号*/
+  output                                   arb_isEnableCache,       /*cache是否使能*/
+  /**/  
+  output      [31:0]                       ctr_address,             /*该信号输出至cache_ctr module,然后该模块返回一个信号表示这个地址是否为IO设备地址段的地址*/
+  input                                    ctr_isIOAddrBlock,       /*ctr_address是否为IO设备地址段的地址*/      
+  input                                    ctr_isEnableCache,       /*cache是否使能*/      
+  
+  input                                    ri_isRequest,            /*来自cache_ri模块,表示ri模块是否有待处理指令,也表示ri模块当前需要获得3块RAM的控制权*/
+  output reg  [3:0]                        ri_cmd,                  /*输出到ri模块的命令*/
+  input                                    ri_cmd_ready,            /*来自ri模块,表示命令是否处理完成*/
+  input       [31:0]                       ri_rsp_data,             /*来自ri模块返回的数据*/
+  output      [31:0]                       ri_last_arb_address,     /*向ri发出命令时表示rw模块接收到的地址*/
+  output      [31:0]                       ri_last_arb_writeData,   /*向ri发出命令时表示rw模块接收到的数据*/
+  output      [3:0]                        ri_last_arb_byteEnable,  /*向ri发出命令时表示rw模块接收到的字节使能信号*/
+  output                                   ri_last_arb_read,        /*向ri发出命令时表示rw模块接收到的读使能信号*/
+  output                                   ri_last_arb_write,       /*向ri发出命令时表示rw模块接收到的写使能信号*/
+  output                                   ri_isHit,                /*是否命中*/
+  output      [1:0]                        ri_hitBlockNum,          /*如果命中，命中的哪一块*/
+  output                                   ri_isHaveFreeBlock,      /*是否还有空余的块*/
+  output      [1:0]                        ri_freeBlockNum,         /*如果还有空块，哪一块是空的*/
+
+  input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_readAddress,     /*data ram的读地址线*/
+  input       [1:0]                        data_ri_rwChannel,       /*读写通道(总共4个通道,4路)*/
+  output      [31:0]                       data_ri_readData,        /*读出来的数据,一次读出32位*/
+  input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_writeAddress,    /*data ram的写地址线*/
+  input       [3:0]                        data_ri_writeByteEnable, /*写字节使能*/
+  input                                    data_ri_writeEnable,     /*写使能*/
+  input       [31:0]                       data_ri_writeData,       /*需要写入的数据，一次写入32位*/
+
+  input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_readAddress,      /*tag ram的读地址线*/
+  input       [1:0]                        tag_ri_readChannel,      /*读通道*/
+  output      [31:0]                       tag_ri_readData,         /*读出来的数据*/
+  input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_writeAddress,     /*写地址*/
+  input       [1:0]                        tag_ri_writeChannel,     /*写通道*/
+  input                                    tag_ri_writeEnable,      /*写使能 */
+  input       [31:0]                       tag_ri_writeData,        /*需要写入的数据*/
+
+  input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress,      /*读地址*/
+  input       [1:0]                        dre_ri_readChannel,      /*读通道*/
+  output      [7:0]                        dre_ri_readData,         /*读出的数据(1次8bit)*/
+  output      [3:0]                        dre_ri_readRe,
+  input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress,     /*写地址*/
+  input       [1:0]                        dre_ri_writeChannel,     /*写数据*/
+  input                                    dre_ri_writeEnable,      /*写使能*/
+  input       [7:0]                        dre_ri_writeData         /*写数据(一次8bit)*/
 );
-input clk,rest;
-/*arb从机接口*/
-input       [31:0]                       arb_address;             /*读写地址*/
-input       [3:0]                        arb_byteEnable;          /*字节使能(读写均有效)*/
-input                                    arb_read;                /*读使能信号(读写使能信号不能同时为高电平)*/   
-output      [31:0]                       arb_readData;            /*读出的数据*/   
-input                                    arb_write;               /*写使能信号(读写使能信号不能同时为高电平)*/    
-input       [31:0]                       arb_writeData;           /*需要写入的数据*/  
-output                                   arb_waitRequest;         /*命令接受信号,为0表示接收了该条指令*/     
-output                                   arb_readDataValid;       /*数据有效信号*/
-output                                   arb_isEnableCache;       /*cache是否使能*/
-/**/  
-output      [31:0]                       ctr_address;             /*该信号输出至cache_ctr module,然后该模块返回一个信号表示这个地址是否为IO设备地址段的地址*/
-input                                    ctr_isIOAddrBlock;       /*ctr_address是否为IO设备地址段的地址*/      
-input                                    ctr_isEnableCache;       /*cache是否使能*/      
-
-input                                    ri_isRequest;            /*来自cache_ri模块,表示ri模块是否有待处理指令,也表示ri模块当前需要获得3块RAM的控制权*/
-output reg  [3:0]                        ri_cmd;                  /*输出到ri模块的命令*/
-input                                    ri_cmd_ready;            /*来自ri模块,表示命令是否处理完成*/
-input       [31:0]                       ri_rsp_data;             /*来自ri模块返回的数据*/
-output      [31:0]                       ri_last_arb_address;     /*向ri发出命令时表示rw模块接收到的地址*/
-output      [31:0]                       ri_last_arb_writeData;   /*向ri发出命令时表示rw模块接收到的数据*/
-output      [3:0]                        ri_last_arb_byteEnable;  /*向ri发出命令时表示rw模块接收到的字节使能信号*/
-output                                   ri_last_arb_read;        /*向ri发出命令时表示rw模块接收到的读使能信号*/
-output                                   ri_last_arb_write;       /*向ri发出命令时表示rw模块接收到的写使能信号*/
-output                                   ri_isHit;                /*是否命中*/
-output      [1:0]                        ri_hitBlockNum;          /*如果命中，命中的哪一块*/
-output                                   ri_isHaveFreeBlock;      /*是否还有空余的块*/
-output      [1:0]                        ri_freeBlockNum;         /*如果还有空块，哪一块是空的*/
-
-input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_readAddress;     /*data ram的读地址线*/
-input       [1:0]                        data_ri_rwChannel;       /*读写通道(总共4个通道,4路)*/
-output      [31:0]                       data_ri_readData;        /*读出来的数据,一次读出32位*/
-input       [DATA_RAM_ADDR_WIDTH-1:0]    data_ri_writeAddress;    /*data ram的写地址线*/
-input       [3:0]                        data_ri_writeByteEnable; /*写字节使能*/
-input                                    data_ri_writeEnable;     /*写使能*/
-input       [31:0]                       data_ri_writeData;       /*需要写入的数据，一次写入32位*/
-
-input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_readAddress;      /*tag ram的读地址线*/
-input       [1:0]                        tag_ri_readChannel;      /*读通道*/
-output      [31:0]                       tag_ri_readData;         /*读出来的数据*/
-input       [TAG_RAM_ADDR_WIDTH-1:0]     tag_ri_writeAddress;     /*写地址*/
-input       [1:0]                        tag_ri_writeChannel;     /*写通道*/
-input                                    tag_ri_writeEnable;      /*写使能 */
-input       [31:0]                       tag_ri_writeData;        /*需要写入的数据*/
-
-input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress;      /*读地址*/
-input       [1:0]                        dre_ri_readChannel;      /*读通道*/
-output      [7:0]                        dre_ri_readData;         /*读出的数据(1次8bit)*/
-output      [3:0]                        dre_ri_readRe;
-input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_writeAddress;     /*写地址*/
-input       [1:0]                        dre_ri_writeChannel;     /*写数据*/
-input                                    dre_ri_writeEnable;      /*写使能*/
-input       [7:0]                        dre_ri_writeData;        /*写数据(一次8bit)*/
-
 /**************************************************************************
 连接到实例module的wire
 **************************************************************************/
