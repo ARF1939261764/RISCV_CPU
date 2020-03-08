@@ -18,6 +18,7 @@ module cache_rw #(
   output                                   arb_waitRequest,         /*命令接受信号,为0表示接收了该条指令*/     
   output                                   arb_readDataValid,       /*数据有效信号*/
   output                                   arb_isEnableCache,       /*cache是否使能*/
+  input                                    arb_bus_idle,            /*总线空闲,高电平表示总线空闲*/
   /**/  
   output      [31:0]                       ctr_address,             /*该信号输出至cache_ctr module,然后该模块返回一个信号表示这个地址是否为IO设备地址段的地址*/
   input                                    ctr_isIOAddrBlock,       /*ctr_address是否为IO设备地址段的地址*/      
@@ -256,7 +257,7 @@ always @(posedge clk) begin
         if(rw_waitRequest) begin
           ri_cmd<=isIoAddr?`cache_rw_cmd_iorw:`cache_rw_cmd_rb;
         end
-        else if(ri_waitRequest)begin
+        else if(ri_waitRequest&&arb_bus_idle)begin
           ri_cmd<=`cache_rw_handleCtrCmd;
         end
         else begin

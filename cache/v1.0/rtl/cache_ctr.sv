@@ -143,11 +143,11 @@ always @(posedge clk) begin
     cmd_idle:begin
         case({startRush,startClear})
           2'b01,2'b11:begin
-              cmd<=`cache_io_cmd_clear;
+              cmd<=`cache_ctr_cmd_clear;
               cmd_valid<=1'd1;
             end
           2'd2:begin
-              cmd<=`cache_io_cmd_wb;
+              cmd<=`cache_ctr_cmd_wb;
               cmd_valid<=1'd1;
             end
           default:begin
