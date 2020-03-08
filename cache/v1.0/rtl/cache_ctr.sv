@@ -1,4 +1,4 @@
-`include "define.sv"
+`include "cache_define.sv"
 
 module cache_ctr #(
   parameter ADDR_BLOCK_NUM=4
@@ -19,7 +19,6 @@ module cache_ctr #(
   isIOAddrBlock,
   isEnableCache,
   cmd,
-  cmd_valid,
   cmd_ready
 );
 /*时钟、复位*/
@@ -38,26 +37,12 @@ input         [31:0]  address;
 output reg            isIOAddrBlock;
 output                isEnableCache;
 output reg    [2:0]   cmd;
-output reg            cmd_valid;
 input                 cmd_ready;
-
-/********************************************************
-function:计算数据位宽
-********************************************************/
-function integer log2;
-	input integer num;
-	begin
-		log2=0;
-		while(2**log2<num) begin
-			log2=log2+1;
-		end
-	end
-endfunction
 
 /********************************************************
 地址宽度
 ********************************************************/
-localparam    ADDR_WIDTH=log2(ADDR_BLOCK_NUM*2*4+4);/*每个地址块用2个边界确定，每个边界用4个字节描述,另外再加一个控制寄存器*/
+localparam    ADDR_WIDTH=$clog2(ADDR_BLOCK_NUM*2*4+4);/*每个地址块用2个边界确定，每个边界用4个字节描述,另外再加一个控制寄存器*/
 
 /********************************************************
 地址块寄存器
@@ -115,16 +100,20 @@ assign startClear=(last_en&&(~s0_writeData[16]))&&writeCtrReg;
 /********************************************************
 指令控制
 ********************************************************/
-localparam  cmd_idle=1'd0,
-            cmd_waitDone=1'd1;
-reg         cmd_state;
+localparam  cmd_idle=2'd0,
+            cmd_waitDone=2'd1,
+            cmd_init=2'd2;
+reg[1:0]    cmd_state;
 /*状态机第一部分*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
-    cmd_state<=cmd_idle;
+    cmd_state<=cmd_init;
   end
   else begin
     case(cmd_state)
+      cmd_init:begin
+            cmd_state<=cmd_waitDone;
+          end
       cmd_idle:begin
           cmd_state<=({startRush,startClear}==2'd0)?cmd_idle:cmd_waitDone;
         end
@@ -139,29 +128,35 @@ always @(posedge clk or negedge rest) begin
 end
 /*状态机第二部分*/
 always @(posedge clk) begin
-  case(cmd_state)
-    cmd_idle:begin
-        case({startRush,startClear})
-          2'b01,2'b11:begin
-              cmd<=`cache_ctr_cmd_clear;
-              cmd_valid<=1'd1;
-            end
-          2'd2:begin
-              cmd<=`cache_ctr_cmd_wb;
-              cmd_valid<=1'd1;
-            end
-          default:begin
-              cmd_valid<=1'd0;
-            end
-        endcase
-      end
-    cmd_waitDone:begin
-        cmd_valid<=cmd_ready?1'b0:1'b1;
-      end
-    default:begin
-        cmd_valid<=1'd0;
-      end
-  endcase
+  if(!rest) begin
+    cmd<=cmd_init;
+  end
+  else begin
+    case(cmd_state)
+      cmd_init:begin
+            cmd<=`cache_ctr_cmd_init;
+          end
+      cmd_idle:begin
+          case({startRush,startClear})
+            2'b01,2'b11:begin
+                cmd<=`cache_ctr_cmd_clear;
+              end
+            2'd2:begin
+                cmd<=`cache_ctr_cmd_wb;
+              end
+            default:begin
+                cmd<=`cache_ctr_cmd_nop;
+              end
+          endcase
+        end
+      cmd_waitDone:begin
+          cmd<=cmd_ready?`cache_ctr_cmd_nop:cmd;
+        end
+      default:begin
+          cmd<=1'd0;
+        end
+    endcase
+  end
 end
 
 /********************************************************

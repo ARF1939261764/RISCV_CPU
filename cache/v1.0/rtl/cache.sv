@@ -15,6 +15,15 @@ module cache #(
 	input	[31:0]	                               s0_writeData,
 	output				                               s0_waitRequest,
 	output				                               s0_readDataValid,
+  /*s1从机接口*/
+	input	[31:0] 	                               s1_address,
+	input	[3:0] 	                               s1_byteEnable,
+	input					                               s1_read,
+	output[31:0]	                               s1_readData,
+	input					                               s1_write,
+	input	[31:0]	                               s1_writeData,
+	output				                               s1_waitRequest,
+	output				                               s1_readDataValid,
 	/*m0主机接口*/
 	output[31:0]	                               m0_address,
 	output[3:0] 	                               m0_byteEnable,
@@ -61,7 +70,14 @@ wire[31:0] 											av_arb_1_readData;
 wire       											av_arb_1_readDataValid;
 
 wire 														arb_bus_idle;
+
 wire 														rw_cache_is_enable;
+wire[31:0]                      rw_to_ctr_addr;
+
+wire                            ctr_is_io_addr;
+wire                            ctr_cache_is_enable;
+wire[2:0]                       ctr_cmd;
+wire                            ctr_cmd_ready;
 
 wire 			 											ri_is_request;
 wire[3:0]  											ri_cmd;
@@ -116,8 +132,8 @@ cache_arb cache_arb_inst0(
   .s0_readData						  (s0_readData										),
   .s0_readDataValid				  (s0_readDataValid								),
   /*s1从机接口:接到cache_ri模块,供替换模块(rw module)访问总线使用*/
-  .s1_address							  (av_arb_1_address),
-  .s1_byteEnable					  (av_arb_1_byteEnable),
+  .s1_address							  (av_arb_1_address               ),
+  .s1_byteEnable					  (av_arb_1_byteEnable            ),
   .s1_read								  (av_arb_1_read									),
   .s1_write								  (av_arb_1_write									),
   .s1_writeData						  (av_arb_1_writeData							),
@@ -171,20 +187,20 @@ cache_rw #(
   .arb_isEnableCache			  (rw_cache_is_enable							),
   .arb_bus_idle						  (arb_bus_idle               		),
   
-  .ctr_address						  (/*暂时不接*/										),    
-  .ctr_isIOAddrBlock			  (1'd0														),
-  .ctr_isEnableCache			  (1'd1														),
+  .ctr_address						  (rw_to_ctr_addr									),    
+  .ctr_isIOAddrBlock			  (ctr_is_io_addr									),
+  .ctr_isEnableCache			  (ctr_cache_is_enable  					),
   .ri_isRequest						  (ri_is_request   						    ),   
   .ri_cmd								    (ri_cmd                     		),         
   .ri_cmd_ready					    (ri_cmd_ready										),   
-  .ri_rsp_data						  (ri_rsp_data							  		),    
+  .ri_rsp_data						  (ri_rsp_data							  		),
   .ri_last_arb_address	    (rw_last_av_s0_address					),
   .ri_last_arb_writeData    (rw_last_av_s0_writeData				),
   .ri_last_arb_byteEnable   (rw_last_av_s0_byteEnable				),
   .ri_last_arb_read				  (rw_last_av_s0_read							),
   .ri_last_arb_write			  (rw_last_av_s0_write						),
-  .ri_isHit								  (rw_isHit												),       
-  .ri_hitBlockNum					  (rw_hitBlockNum									), 
+  .ri_isHit								  (rw_isHit												),
+  .ri_hitBlockNum					  (rw_hitBlockNum									),
   .ri_isHaveFreeBlock			  (rw_isHaveFreeBlock							),
   .ri_freeBlockNum				  (rw_freeBlockNum								),
   
@@ -235,9 +251,9 @@ cache_ri_inst0(
   .av_s0_readData						(av_arb_1_readData						  ),
   .av_s0_readDataValid			(av_arb_1_readDataValid				  ),
 
-  .ctr_cmd									(`cache_ctr_cmd_nop 					  ),
-  .ctr_cmd_ready						(									  					  ),
-  .ctr_isEnableCache				(1'd1													  ),
+  .ctr_cmd									(ctr_cmd             					  ),
+  .ctr_cmd_ready						(ctr_cmd_ready                  ),
+  .ctr_isEnableCache				(ctr_cache_is_enable  				  ),
 
   .rw_cmd										(ri_cmd												  ),
   .rw_cmd_ready							(ri_cmd_ready									  ),
@@ -277,6 +293,29 @@ cache_ri_inst0(
   .dre_ri_writeChannel			(dre_ri_writeChannel            ),
   .dre_ri_writeEnable				(dre_ri_writeEnable             ),
   .dre_ri_writeData					(dre_ri_writeData               )
+);
+
+cache_ctr #(
+  .ADDR_BLOCK_NUM           (4                              )
+)
+cache_ctr_inst0(
+  .clk                      (clk                            ),
+  .rest                     (rest                           ),
+  /*s0从机接口*/
+  .s0_address               (s1_address                     ),
+  .s0_byteEnable            (s1_byteEnable                  ),
+  .s0_read                  (s1_read                        ),
+  .s0_readData              (s1_readData                    ),
+  .s0_write                 (s1_write                       ),
+  .s0_writeData             (s1_writeData                   ),
+  .s0_waitRequest           (s1_waitRequest                 ),
+  .s0_readDataValid         (s1_readDataValid               ),
+  /*其它*/
+  .address                  (rw_to_ctr_addr                 ),
+  .isIOAddrBlock            (ctr_is_io_addr                 ),
+  .isEnableCache            (ctr_cache_is_enable            ),
+  .cmd                      (ctr_cmd                        ),
+  .cmd_ready                (ctr_cmd_ready                  )
 );
 
 endmodule

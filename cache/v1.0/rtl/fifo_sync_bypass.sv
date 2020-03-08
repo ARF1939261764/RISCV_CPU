@@ -5,15 +5,15 @@ module fifo_sync_bypass #(
   parameter DEPTH=2,  /*允许为2,4,8,16*/
             WIDTH=32
 )(
-  input               clk,
-  input               rest,
-  output              full,
-  output              empty,
-  output              half,
-  input               write,
-  input               read,
-  input  [WIDTH-1:0]  writeData,
-  output [WIDTH-1:0]  readData
+  input  logic              clk,
+  input  logic              rest,
+  output logic              full,
+  output logic              empty,
+  output logic              half,
+  input  logic              write,
+  input  logic              read,
+  input  logic [WIDTH-1:0]  writeData,
+  output logic [WIDTH-1:0]  readData
 );
 /***************************************************************************
 fif缓存区地址宽度

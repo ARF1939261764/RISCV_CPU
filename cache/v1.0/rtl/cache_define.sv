@@ -11,6 +11,7 @@
 `define cache_ctr_cmd_nop                       (3'd0)
 `define cache_ctr_cmd_wb                        (3'd1)
 `define cache_ctr_cmd_clear                     (3'd2)
+`define cache_ctr_cmd_init                      (3'd3)
 
 `define cache_rw_cmd_nop                        (4'd1)
 `define cache_rw_cmd_iorw                       (4'd2)

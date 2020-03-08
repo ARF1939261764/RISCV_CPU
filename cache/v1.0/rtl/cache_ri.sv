@@ -196,10 +196,6 @@ wire                                    read_byte_en_fifo_read;
 wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_writeData;
 wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_readData;
 
-assign read_byte_en_fifo_write          = is_read_data_valid;
-assign read_byte_en_fifo_writeData      = dre_ri_readRe;
-assign read_byte_en_fifo_read           = data_ri_writeEnable;
-
 /**************************************************************************
 其它wire与reg
 **************************************************************************/
@@ -219,6 +215,10 @@ reg  [31:0]               address_a,address_b;
 /**************************************************************************
 连线
 **************************************************************************/
+
+assign read_byte_en_fifo_writeData      = dre_ri_readRe;
+assign read_byte_en_fifo_read           = data_ri_writeEnable;
+assign read_byte_en_fifo_write          = is_read_data_valid;
 
 assign isDirtyBlock                 =     tag_ri_readData[TAG_ADDR_WIDTH+1];
 assign tag_ri_read_block_addr       =     tag_ri_readData[TAG_ADDR_WIDTH-1:0];
@@ -264,8 +264,9 @@ localparam  state_idle                 =     4'd0,
             state_clearRe              =     4'd7,
             state_writeBackAll         =     4'd8,
             state_clearAll             =     4'd9,
+            state_handleCtrCmd         =     4'd10,
             state_end_handle_read_miss =     4'd11,
-            state_handleCtrCmd         =     4'd10;
+            state_init                 =     4'd12;
 reg[3:0] state,return_state;
 
 wire end_state_waitReadIODone ;
@@ -273,12 +274,14 @@ wire end_state_waitWriteIODone;
 wire end_state_writeBack;
 wire end_state_readIn;
 wire end_state_clearRe;
+wire end_state_init;
 
 assign end_state_waitReadIODone  =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
 assign end_state_waitWriteIODone =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
 assign end_state_writeBack       =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
 assign end_state_readIn          =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
 assign end_state_clearRe         =(count_a>=8'd7);
+assign end_state_init            =(count_a<2**TAG_RAM_ADDR_WIDTH*4);
 /*第一段*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -341,7 +344,19 @@ always @(posedge clk or negedge rest) begin
           state<=state_idle;
         end
       state_handleCtrCmd:begin
-
+          case(ctr_cmd)
+            `cache_ctr_cmd_init:begin
+                state<=state_init;
+              end
+             default:begin
+                state<=state_idle;
+              end
+          endcase
+        end
+      state_init:begin
+          if(end_state_init) begin
+            state<=state_init;
+          end
         end
       default:begin
         end
@@ -391,6 +406,11 @@ always @(posedge clk or negedge rest) begin
       state_clearAll:begin
           /*写回所有cache块,并清除所有可读信息*/
           /*state_clearAll*/
+        end
+      state_handleCtrCmd:begin
+        end
+      state_init:begin
+          state_init_handle();
         end
       default:begin
         end  
@@ -631,6 +651,19 @@ task state_clearRe_handle();
     count_a<=8'd0;
   end
 endtask
+
+task state_handleCtrCmd_handle();
+  address_a<=0;
+  count_a<=0;
+endtask
+
+task state_init_handle();
+  {rwChannel,writeAddress}<={address_a+count_a*4}<<6;
+  tag_ri_writeData<=0;
+  tag_ri_writeEnable<=1'd1;
+  count_a<=count_a+8'd1;
+endtask
+
 
 /******************************************************************************************
 fifo_sync_bypass实例
