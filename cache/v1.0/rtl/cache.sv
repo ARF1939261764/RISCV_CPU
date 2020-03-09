@@ -39,16 +39,16 @@ module cache #(
 /*******************************************************************************
 位宽
 *******************************************************************************/
-localparam	DATA_RAM_ADDR_WIDTH	=	$clog2(SIZE/(32/8*4));
-localparam	TAG_RAM_ADDR_WIDTH	=	(DATA_RAM_ADDR_WIDTH-4);
-localparam	DRE_RAM_ADDR_WIDTH	=	$clog2(SIZE/32)+1;
-localparam	TAG_ADDR_WIDTH			=	32-(DATA_RAM_ADDR_WIDTH+2);
+localparam	DATA_RAM_ADDR_WIDTH	=	$clog2(SIZE/(32/8*4));/*8K:9*/
+localparam	TAG_RAM_ADDR_WIDTH	=	(DATA_RAM_ADDR_WIDTH-4);/*8K:5*/
+localparam	DRE_RAM_ADDR_WIDTH	=	$clog2(SIZE/32)+1;/*8K:9*/
+localparam	TAG_ADDR_WIDTH			=	32-(DATA_RAM_ADDR_WIDTH+2);/*8K:21*/
 
 /*******************************************************************************
 wire
 *******************************************************************************/
 wire[31:0] 											av_arb_0_address;
-wire[3:1]  											av_arb_0_byteEnable;
+wire[3:0]  											av_arb_0_byteEnable;
 wire 			 											av_arb_0_read;
 wire 			 											av_arb_0_write;
 wire[31:0] 											av_arb_0_writeData;
@@ -59,7 +59,7 @@ wire[31:0] 											av_arb_0_readData;
 wire       											av_arb_0_readDataValid;
 
 wire[31:0] 											av_arb_1_address;
-wire[3:1]  											av_arb_1_byteEnable;
+wire[3:0]  											av_arb_1_byteEnable;
 wire 			 											av_arb_1_read;
 wire 			 											av_arb_1_write;
 wire[31:0] 											av_arb_1_writeData;
@@ -94,29 +94,29 @@ wire[1:0]        								rw_hitBlockNum;
 wire             								rw_isHaveFreeBlock;
 wire[1:0]				 								rw_freeBlockNum;
 
-wire [DATA_RAM_ADDR_WIDTH-1:0]  data_ri_readAddress;    
-wire [1:0]                      data_ri_rwChannel;      
-wire [31:0]                     data_ri_readData;       
-wire [DATA_RAM_ADDR_WIDTH-1:0]  data_ri_writeAddress;   
+wire [DATA_RAM_ADDR_WIDTH-1:0]  data_ri_readAddress;
+wire [1:0]                      data_ri_rwChannel;
+wire [31:0]                     data_ri_readData;
+wire [DATA_RAM_ADDR_WIDTH-1:0]  data_ri_writeAddress;
 wire [3:0]                      data_ri_writeByteEnable;
-wire                            data_ri_writeEnable;    
-wire [31:0]                     data_ri_writeData;      
+wire                            data_ri_writeEnable;
+wire [31:0]                     data_ri_writeData;
 
-wire [TAG_RAM_ADDR_WIDTH-1:0]   tag_ri_readAddress;     
-wire [1:0]                      tag_ri_readChannel;     
-wire [31:0]                     tag_ri_readData;        
-wire [TAG_RAM_ADDR_WIDTH-1:0]   tag_ri_writeAddress;    
-wire [1:0]                      tag_ri_writeChannel;    
-wire                            tag_ri_writeEnable;     
-wire [31:0]                     tag_ri_writeData;       
+wire [TAG_RAM_ADDR_WIDTH-1:0]   tag_ri_readAddress;
+wire [1:0]                      tag_ri_readChannel;
+wire [31:0]                     tag_ri_readData;
+wire [TAG_RAM_ADDR_WIDTH-1:0]   tag_ri_writeAddress;
+wire [1:0]                      tag_ri_writeChannel;
+wire                            tag_ri_writeEnable;
+wire [31:0]                     tag_ri_writeData;
 
-wire [DRE_RAM_ADDR_WIDTH-0:0]   dre_ri_readAddress;     
-wire [1:0]                      dre_ri_readChannel;     
-wire [7:0]                      dre_ri_readData;        
+wire [DRE_RAM_ADDR_WIDTH-1:0]   dre_ri_readAddress;
+wire [1:0]                      dre_ri_readChannel;
+wire [7:0]                      dre_ri_readData;
 wire [3:0]                      dre_ri_readRe;
-wire [DRE_RAM_ADDR_WIDTH-1:0]   dre_ri_writeAddress;    
-wire [1:0]                      dre_ri_writeChannel;    
-wire                            dre_ri_writeEnable;     
+wire [DRE_RAM_ADDR_WIDTH-1:0]   dre_ri_writeAddress;
+wire [1:0]                      dre_ri_writeChannel;
+wire                            dre_ri_writeEnable;
 wire [7:0]                      dre_ri_writeData;
 
 cache_arb cache_arb_inst0(
@@ -187,12 +187,12 @@ cache_rw #(
   .arb_isEnableCache			  (rw_cache_is_enable							),
   .arb_bus_idle						  (arb_bus_idle               		),
   
-  .ctr_address						  (rw_to_ctr_addr									),    
+  .ctr_address						  (rw_to_ctr_addr									),
   .ctr_isIOAddrBlock			  (ctr_is_io_addr									),
   .ctr_isEnableCache			  (ctr_cache_is_enable  					),
-  .ri_isRequest						  (ri_is_request   						    ),   
-  .ri_cmd								    (ri_cmd                     		),         
-  .ri_cmd_ready					    (ri_cmd_ready										),   
+  .ri_isRequest						  (ri_is_request   						    ),
+  .ri_cmd								    (ri_cmd                     		),
+  .ri_cmd_ready					    (ri_cmd_ready										),
   .ri_rsp_data						  (ri_rsp_data							  		),
   .ri_last_arb_address	    (rw_last_av_s0_address					),
   .ri_last_arb_writeData    (rw_last_av_s0_writeData				),
@@ -209,24 +209,24 @@ cache_rw #(
   .data_ri_readData				  (data_ri_readData               ),       
   .data_ri_writeAddress		  (data_ri_writeAddress           ),   
   .data_ri_writeByteEnable  (data_ri_writeByteEnable        ),
-  .data_ri_writeEnable		  (data_ri_writeEnable            ),    
-  .data_ri_writeData			  (data_ri_writeData              ),      
+  .data_ri_writeEnable		  (data_ri_writeEnable            ),
+  .data_ri_writeData			  (data_ri_writeData              ), 
   
-  .tag_ri_readAddress			  (tag_ri_readAddress             ),     
-  .tag_ri_readChannel			  (tag_ri_readChannel             ),     
-  .tag_ri_readData				  (tag_ri_readData                ),        
-  .tag_ri_writeAddress		  (tag_ri_writeAddress            ),    
-  .tag_ri_writeChannel	    (tag_ri_writeChannel            ),    
-  .tag_ri_writeEnable			  (tag_ri_writeEnable             ),     
-  .tag_ri_writeData				  (tag_ri_writeData               ),       
+  .tag_ri_readAddress			  (tag_ri_readAddress             ),
+  .tag_ri_readChannel			  (tag_ri_readChannel             ),
+  .tag_ri_readData				  (tag_ri_readData                ),
+  .tag_ri_writeAddress		  (tag_ri_writeAddress            ),
+  .tag_ri_writeChannel	    (tag_ri_writeChannel            ),
+  .tag_ri_writeEnable			  (tag_ri_writeEnable             ),
+  .tag_ri_writeData				  (tag_ri_writeData               ),
 
-  .dre_ri_readAddress				(dre_ri_readAddress             ),     
-  .dre_ri_readChannel				(dre_ri_readChannel             ),     
-  .dre_ri_readData					(dre_ri_readData                ),        
+  .dre_ri_readAddress				(dre_ri_readAddress             ),
+  .dre_ri_readChannel				(dre_ri_readChannel             ),
+  .dre_ri_readData					(dre_ri_readData                ),
   .dre_ri_readRe						(dre_ri_readRe                  ),
-  .dre_ri_writeAddress			(dre_ri_writeAddress            ),    
-  .dre_ri_writeChannel			(dre_ri_writeChannel            ),    
-  .dre_ri_writeEnable				(dre_ri_writeEnable             ),     
+  .dre_ri_writeAddress			(dre_ri_writeAddress            ),
+  .dre_ri_writeChannel			(dre_ri_writeChannel            ),
+  .dre_ri_writeEnable				(dre_ri_writeEnable             ),
   .dre_ri_writeData					(dre_ri_writeData               )
 );
 
@@ -317,5 +317,12 @@ cache_ctr_inst0(
   .cmd                      (ctr_cmd                        ),
   .cmd_ready                (ctr_cmd_ready                  )
 );
+
+initial begin
+  $display("DATA_RAM_ADDR_WIDTH=%d",DATA_RAM_ADDR_WIDTH);
+  $display("TAG_RAM_ADDR_WIDTH =%d",TAG_RAM_ADDR_WIDTH );
+  $display("DRE_RAM_ADDR_WIDTH =%d",DRE_RAM_ADDR_WIDTH );
+  $display("TAG_ADDR_WIDTH     =%d",TAG_ADDR_WIDTH     );
+end
 
 endmodule

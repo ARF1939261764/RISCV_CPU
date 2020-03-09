@@ -23,7 +23,7 @@ module cache_rw_dre #(
 input                   clk;
 input                   sel;
 
-input  [ADDR_WIDTH-0:0] rw_readAddress;
+input  [ADDR_WIDTH-1:0] rw_readAddress;
 input  [1:0]            rw_readChannel;
 output [3:0]            rw_readRe;
 input  [ADDR_WIDTH-1:0] rw_writeAddress;
@@ -31,8 +31,8 @@ input  [1:0]            rw_writeChannel;
 input                   rw_writeEnable;
 input  [3:0]            rw_writeRe;
 
-input  [ADDR_WIDTH-0:0] ri_readAddress;
-input                   ri_readChannel;
+input  [ADDR_WIDTH-1:0] ri_readAddress;
+input  [1:0]            ri_readChannel;
 output [7:0]            ri_readData;
 output [3:0]            ri_readRe;
 input  [ADDR_WIDTH-1:0] ri_writeAddress;
@@ -52,12 +52,12 @@ wire                    writeEnable;
 wire [7:0]              wre;
 wire                    isReadable;
 
-assign readAddress      =   sel?ri_readAddress[ADDR_WIDTH:1]  : rw_readAddress[ADDR_WIDTH:1];
-assign readCh           =   sel?ri_readChannel                : rw_readChannel;
-assign writeAddress     =   sel?ri_writeAddress               : rw_writeAddress;
-assign writeCh          =   sel?ri_writeChannel               : rw_writeChannel;
-assign writeData        =   sel?ri_writeData                  : wre;
-assign writeEnable      =   sel?ri_writeEnable                : rw_writeEnable;
+assign readAddress      =   sel?ri_readAddress   : rw_readAddress;
+assign readCh           =   sel?ri_readChannel   : rw_readChannel;
+assign writeAddress     =   sel?ri_writeAddress  : rw_writeAddress;
+assign writeCh          =   sel?ri_writeChannel  : rw_writeChannel;
+assign writeData        =   sel?ri_writeData     : wre;
+assign writeEnable      =   sel?ri_writeEnable   : rw_writeEnable;
 
 assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
@@ -118,16 +118,16 @@ assign readReAll=rds[readCh];
 assign wd={4{writeRe}};
 
 dualPortRam #(
-	.WIDTH(32),		                                  /*数据位宽*/
-	.DEPTH(2**ADDR_WIDTH)	                          /*深度*/
+	.WIDTH(32),		                                /*数据位宽*/
+	.DEPTH(2**(ADDR_WIDTH-1))	                    /*深度*/
 )
 dualPortRam_inst0_tagRam(
 	.clk(clk),
-	.readAddress(readAddress[ADDR_WIDTH-1:1]),	    /*读地址*/
-	.readData(rd),							                    /*读出的数据*/
-	.writeAddress(writeAddress[ADDR_WIDTH-1:1]),    /*写地址*/
-	.writeData(wd),						                      /*需要写入的数据*/
-	.writeEnable(writeEnable),	                    /*写使能*/
+	.readAddress(readAddress[ADDR_WIDTH-1:1]),	  /*读地址*/
+	.readData(rd),							                  /*读出的数据*/
+	.writeAddress(writeAddress[ADDR_WIDTH-1:1]),  /*写地址*/
+	.writeData(wd),						                    /*需要写入的数据*/
+	.writeEnable(writeEnable),	                  /*写使能*/
 	.writeByteEnable(4'd8>>writeCh)		            /*字节使能信号*/
 );
 

@@ -56,7 +56,7 @@ wire m1_rsp_mask;
 
 assign is_io_addr=s0_address[31];
 assign rw_bus_idle=(count==0)?1'd1:1'd0;
-assign sel=(m0_waitRequest||(!is_io_addr))&&(count==0)&&!rw_cache_is_enable;/*1:选择左,0:IO*/
+assign sel=(m0_waitRequest||(!is_io_addr))&&(count==0)&&rw_cache_is_enable;/*1:选择左,0:IO*/
 assign m0_cmd_mask=sel;
 assign m1_rsp_mask=sel;
 

@@ -54,7 +54,7 @@ module cache_ri #(
   output logic                                         tag_ri_writeEnable,
   output logic [31:0]                                  tag_ri_writeData,
   /**/   
-  output logic [DRE_RAM_ADDR_WIDTH-0:0]                dre_ri_readAddress,
+  output logic [DRE_RAM_ADDR_WIDTH-1:0]                dre_ri_readAddress,
   output logic [1:0]                                   dre_ri_readChannel,
   input  logic [7:0]                                   dre_ri_readData,
   input  logic [3:0]                                   dre_ri_readRe,
@@ -209,7 +209,7 @@ reg  [31:0]               readAddress;                                /*读地�
 reg  [31:0]               writeAddress;                               /*写地址*/
 reg                       is_read_addr_change;                        /*读地址变化*/
 reg                       is_read_data_valid;                         /*读数据有效*/
-reg  [7:0]                count_a,count_b,count_c;
+reg  [7:0]                count_a,count_b,count_c,delay_count;
 reg  [31:0]               address_a,address_b;
 
 /**************************************************************************
@@ -231,8 +231,8 @@ assign tag_ri_writeAddress          =     writeAddress[TAG_RAM_ADDR_WIDTH+5:6];
 assign tag_ri_readChannel           =     rwChannel;
 assign tag_ri_writeChannel          =     rwChannel;
 
-assign dre_ri_readAddress           =     readAddress[DRE_RAM_ADDR_WIDTH+2:2];
-assign dre_ri_writeAddress          =     writeAddress[DRE_RAM_ADDR_WIDTH+2:3];
+assign dre_ri_readAddress           =     readAddress[DRE_RAM_ADDR_WIDTH+1:2];
+assign dre_ri_writeAddress          =     writeAddress[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_ri_readChannel           =     rwChannel;
 assign dre_ri_writeChannel          =     rwChannel;
 
@@ -265,8 +265,9 @@ localparam  state_idle                 =     4'd0,
             state_writeBackAll         =     4'd8,
             state_clearAll             =     4'd9,
             state_handleCtrCmd         =     4'd10,
-            state_end_handle_read_miss =     4'd11,
-            state_init                 =     4'd12;
+            state_wait_count_to_zero   =     4'd11,
+            state_init                 =     4'd12,
+            state_end_handleCtrCmd     =     4'd13;
 reg[3:0] state,return_state;
 
 wire end_state_waitReadIODone ;
@@ -276,12 +277,13 @@ wire end_state_readIn;
 wire end_state_clearRe;
 wire end_state_init;
 
-assign end_state_waitReadIODone  =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
-assign end_state_waitWriteIODone =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
-assign end_state_writeBack       =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
-assign end_state_readIn          =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
-assign end_state_clearRe         =(count_a>=8'd7);
-assign end_state_init            =(count_a<2**TAG_RAM_ADDR_WIDTH*4);
+assign end_state_waitReadIODone      =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
+assign end_state_waitWriteIODone     =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
+assign end_state_writeBack           =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_readIn              =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_clearRe             =(count_a>=8'd7);
+assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
+assign end_state_wait_count_to_zero  =(delay_count==8'd0);
 /*第一段*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -326,7 +328,7 @@ always @(posedge clk or negedge rest) begin
         end
       state_readIn:begin
           if(end_state_readIn) begin
-            state<=state_end_handle_read_miss;
+            state<=state_wait_count_to_zero;
           end
         end
       state_clearRe:begin
@@ -340,23 +342,28 @@ always @(posedge clk or negedge rest) begin
       state_clearAll:begin
 
         end
-      state_end_handle_read_miss:begin
-          state<=state_idle;
+      state_wait_count_to_zero:begin
+          if(end_state_wait_count_to_zero) begin
+            state<=state_idle;
+          end
         end
       state_handleCtrCmd:begin
           case(ctr_cmd)
             `cache_ctr_cmd_init:begin
                 state<=state_init;
               end
-             default:begin
+            default:begin
                 state<=state_idle;
               end
           endcase
         end
       state_init:begin
           if(end_state_init) begin
-            state<=state_init;
+            state<=state_end_handleCtrCmd;
           end
+        end
+      state_end_handleCtrCmd:begin
+          state<=state_idle;
         end
       default:begin
         end
@@ -408,9 +415,16 @@ always @(posedge clk or negedge rest) begin
           /*state_clearAll*/
         end
       state_handleCtrCmd:begin
+          state_handleCtrCmd_handle();
         end
       state_init:begin
           state_init_handle();
+        end
+      state_end_handleCtrCmd:begin
+          state_end_handleCtrCmd_handle();
+        end
+      state_wait_count_to_zero:begin
+          state_wait_count_to_zero_handle();
         end
       default:begin
         end  
@@ -432,15 +446,27 @@ always @(*) begin
     state_clearRe:begin
         rw_cmd_ready=end_state_clearRe;
       end
-    state_end_handle_read_miss:begin
-        rw_cmd_ready<=1'd1;
+    state_wait_count_to_zero:begin
+        rw_cmd_ready=end_state_wait_count_to_zero;
+      end
+    state_end_handleCtrCmd:begin
+        rw_cmd_ready=1'd1;
       end
     default:begin
         rw_cmd_ready=1'd0;
       end
   endcase
 end
-
+always @(*) begin
+  case(state)
+    state_end_handleCtrCmd:begin
+      ctr_cmd_ready=1'd1;
+    end
+    default:begin
+      ctr_cmd_ready<=1'd0;
+    end
+  endcase
+end
 /******************************************************************************************
 空闲处理任务
 ******************************************************************************************/
@@ -627,6 +653,7 @@ task state_readIn_handle();
     count_b<=8'd0;
     count_c<=8'd0;
   end
+  delay_count<=1'd1;/*这里置1,因为下一个状态会进入到state_wait_count_to_zero状态,等一个时钟周期*/
 endtask
 /******************************************************************************************
 清除可读信息任务
@@ -651,17 +678,31 @@ task state_clearRe_handle();
     count_a<=8'd0;
   end
 endtask
-
+/******************************************************************************************
+state_handleCtrCmd_handle
+******************************************************************************************/
 task state_handleCtrCmd_handle();
   address_a<=0;
   count_a<=0;
 endtask
-
+/******************************************************************************************
+state_init_handle
+******************************************************************************************/
 task state_init_handle();
-  {rwChannel,writeAddress}<={address_a+count_a*4}<<6;
-  tag_ri_writeData<=0;
+  logic[31:0] addr;
+  addr={address_a+count_a}<<6;
+  {rwChannel,writeAddress[TAG_RAM_ADDR_WIDTH+5:6]}<=addr[TAG_RAM_ADDR_WIDTH+7:6];
+  tag_ri_writeData<=32'h0;
   tag_ri_writeEnable<=1'd1;
   count_a<=count_a+8'd1;
+endtask
+
+task state_end_handleCtrCmd_handle();
+  tag_ri_writeEnable<=1'd0;
+endtask 
+
+task state_wait_count_to_zero_handle();
+  delay_count--;
 endtask
 
 

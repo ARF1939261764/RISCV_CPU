@@ -3,7 +3,7 @@
 module cache_rw #(
   parameter DATA_RAM_ADDR_WIDTH=9,
             TAG_RAM_ADDR_WIDTH=5,
-            DRE_RAM_ADDR_WIDTH=8,
+            DRE_RAM_ADDR_WIDTH=9,
             TAG_ADDR_WIDTH=21
 )(
   input                                    clk,
@@ -54,7 +54,7 @@ module cache_rw #(
   input                                    tag_ri_writeEnable,      /*写使能 */
   input       [31:0]                       tag_ri_writeData,        /*需要写入的数据*/
 
-  input       [DRE_RAM_ADDR_WIDTH-0:0]     dre_ri_readAddress,      /*读地址*/
+  input       [DRE_RAM_ADDR_WIDTH-1:0]     dre_ri_readAddress,      /*读地址*/
   input       [1:0]                        dre_ri_readChannel,      /*读通道*/
   output      [7:0]                        dre_ri_readData,         /*读出的数据(1次8bit)*/
   output      [3:0]                        dre_ri_readRe,
@@ -85,7 +85,7 @@ wire [1:0]                        tag_rw_hitBlockNum;           /*如果命中,�
 wire                              tag_rw_isHaveFreeBlock;
 wire [1:0]                        tag_rw_freeBlockNum;
 
-wire [DRE_RAM_ADDR_WIDTH-0:0]     dre_rw_readAddress;           /*读地址*/
+wire [DRE_RAM_ADDR_WIDTH-1:0]     dre_rw_readAddress;           /*读地址*/
 wire [1:0]                        dre_rw_readChannel;           /*读通道*/
 wire [3:0]                        dre_rw_readRe;                /*读出来的可读信息(一次4bit,分别表示4个字节是否可读)*/
 wire [DRE_RAM_ADDR_WIDTH-1:0]     dre_rw_writeAddress;          /*写地址*/
@@ -150,9 +150,9 @@ assign tag_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:6];
 assign tag_rw_writeEnable      =  last_arb_write;
 assign tag_rw_tag              =  last_arb_address[31:31-TAG_ADDR_WIDTH+1];
 
-assign dre_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+2:2];
+assign dre_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_readChannel      =  tag_rw_hitBlockNum;
-assign dre_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+2:3];
+assign dre_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_writeChannel     =  tag_rw_hitBlockNum;
 assign dre_rw_writeEnable      =  last_arb_write;
 assign dre_rw_writeRe          =  last_arb_byteEnable;

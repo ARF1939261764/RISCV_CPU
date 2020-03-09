@@ -68,8 +68,7 @@ reg last_en;
 always @(posedge clk or negedge rest) begin
   if(!rest) begin:restBlock
     integer i;
-    for(i=1;i<=ADDR_BLOCK_NUM;i=i+1) begin
-      regArray[i]<=22'd1<<21;
+    for(i=1;i<=2*ADDR_BLOCK_NUM;i=i+1) begin
       regArray[i]<=22'd1<<21;
     end
     regArray[0]<=22'd1<<6;/*使能位默认为1*/
@@ -129,7 +128,7 @@ end
 /*状态机第二部分*/
 always @(posedge clk) begin
   if(!rest) begin
-    cmd<=cmd_init;
+    cmd<=`cache_ctr_cmd_init;
   end
   else begin
     case(cmd_state)
