@@ -4,7 +4,7 @@ module cache_rw #(
   parameter DATA_RAM_ADDR_WIDTH=9,
             TAG_RAM_ADDR_WIDTH=5,
             DRE_RAM_ADDR_WIDTH=9,
-            TAG_ADDR_WIDTH=21
+            TAG_WIDTH=21
 )(
   input                                    clk,
   input                                    rest,
@@ -79,7 +79,7 @@ wire [31:0]                       data_rw_writeData;            /*写数据*/
 wire [TAG_RAM_ADDR_WIDTH-1:0]     tag_rw_readAddress;           /*读地址*/
 wire [TAG_RAM_ADDR_WIDTH-1:0]     tag_rw_writeAddress;          /*写地址*/
 wire                              tag_rw_writeEnable;           /*写使能*/
-wire [TAG_ADDR_WIDTH-1:0]         tag_rw_tag;                   /*需要对比的地址(高位地址),内部没有缓存的寄存器*/
+wire [TAG_WIDTH-1:0]              tag_rw_tag;                   /*需要对比的地址(高位地址),内部没有缓存的寄存器*/
 wire                              tag_rw_isHit;                 /*数据的地址是否命中*/
 wire [1:0]                        tag_rw_hitBlockNum;           /*如果命中,表示命中的是哪一个块*/
 wire                              tag_rw_isHaveFreeBlock;
@@ -148,7 +148,7 @@ assign data_rw_writeData       =  last_arb_writeData;
 assign tag_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+1:6];
 assign tag_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:6];
 assign tag_rw_writeEnable      =  last_arb_write;
-assign tag_rw_tag              =  last_arb_address[31:31-TAG_ADDR_WIDTH+1];
+assign tag_rw_tag              =  last_arb_address[31:31-TAG_WIDTH+1];
 
 assign dre_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_readChannel      =  tag_rw_hitBlockNum;
@@ -312,7 +312,7 @@ cache块信息
 **************************************************************************/
 cache_rw_tag #(
   .ADDR_WIDTH(TAG_RAM_ADDR_WIDTH),
-  .TAG_ADDR_WIDTH(TAG_ADDR_WIDTH)
+  .TAG_WIDTH (TAG_WIDTH)
 )
 cache_rw_tag_inst0(
   .clk(clk),

@@ -4,7 +4,7 @@ module cache_ri #(
   parameter DATA_RAM_ADDR_WIDTH=9,
             TAG_RAM_ADDR_WIDTH=5,
             DRE_RAM_ADDR_WIDTH=8,
-            TAG_ADDR_WIDTH =21  
+            TAG_WIDTH =21  
 )(
   input  logic                                         clk,
   input  logic                                         rest,
@@ -202,7 +202,7 @@ wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_readData;
 reg                       is_need_modific_tag;
 reg[31:0]                 modific_tag;
 wire                      isDirtyBlock;                               /*是否为脏块*/
-wire [TAG_ADDR_WIDTH-1:0] tag_ri_read_block_addr;                                 /*块标签*/
+wire [TAG_WIDTH-1:0]      tag_ri_read_block_addr;                                 /*块标签*/
 reg  [1:0]                replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];     /*替换FIFO,其实就是一个计数器*/
 reg  [1:0]                rwChannel;                                  /*读通道*/
 reg  [31:0]               readAddress;                                /*读地址*/
@@ -220,8 +220,8 @@ assign read_byte_en_fifo_writeData      = dre_ri_readRe;
 assign read_byte_en_fifo_read           = data_ri_writeEnable;
 assign read_byte_en_fifo_write          = is_read_data_valid;
 
-assign isDirtyBlock                 =     tag_ri_readData[TAG_ADDR_WIDTH+1];
-assign tag_ri_read_block_addr       =     tag_ri_readData[TAG_ADDR_WIDTH-1:0];
+assign isDirtyBlock                 =     tag_ri_readData[TAG_WIDTH+1];
+assign tag_ri_read_block_addr       =     tag_ri_readData[TAG_WIDTH-1:0];
 assign data_ri_readAddress          =     readAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_writeAddress         =     writeAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_rwChannel            =     rwChannel;
@@ -276,6 +276,7 @@ wire end_state_writeBack;
 wire end_state_readIn;
 wire end_state_clearRe;
 wire end_state_init;
+wire end_state_wait_count_to_zero;
 
 assign end_state_waitReadIODone      =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
 assign end_state_waitWriteIODone     =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
@@ -509,12 +510,12 @@ endtask
 ******************************************************************************************/
 task state_read_write_miss_handle();
   is_need_modific_tag<=!rw_isHit;
-  modific_tag<={{(32-TAG_ADDR_WIDTH-1){1'd0}},1'd1,rw_last_av_s0_address[31:31-TAG_ADDR_WIDTH+1]};
+  modific_tag<={{(32-TAG_WIDTH-1){1'd0}},1'd1,rw_last_av_s0_address[31:31-TAG_WIDTH+1]};
   count_a<=8'd0;
   count_b<=8'd0;
   count_c<=8'd0;
   is_read_addr_change<=1'd0;
-  address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_ADDR_WIDTH:0]};
+  address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:0]};
   address_b<=rw_last_av_s0_address;
 endtask
 
@@ -622,7 +623,7 @@ task state_readIn_handle();
     data_ri_writeData<=av_s0_readData;
     data_ri_writeEnable <= 1'd1;
     /*tag*/
-    tag_ri_writeData<={{(32-TAG_ADDR_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_ADDR_WIDTH+1]};
+    tag_ri_writeData<={{(32-TAG_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_WIDTH+1]};
     tag_ri_writeEnable  <= count_c==8'd0;
     /*dre*/
     dre_ri_writeData<=8'hff;
@@ -696,11 +697,15 @@ task state_init_handle();
   tag_ri_writeEnable<=1'd1;
   count_a<=count_a+8'd1;
 endtask
-
+/******************************************************************************************
+state_end_handleCtrCmd_handle
+******************************************************************************************/
 task state_end_handleCtrCmd_handle();
   tag_ri_writeEnable<=1'd0;
 endtask 
-
+/******************************************************************************************
+state_wait_count_to_zero_handle
+******************************************************************************************/
 task state_wait_count_to_zero_handle();
   delay_count--;
 endtask

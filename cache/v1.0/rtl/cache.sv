@@ -42,7 +42,7 @@ module cache #(
 localparam	DATA_RAM_ADDR_WIDTH	=	$clog2(SIZE/(32/8*4));/*8K:9*/
 localparam	TAG_RAM_ADDR_WIDTH	=	(DATA_RAM_ADDR_WIDTH-4);/*8K:5*/
 localparam	DRE_RAM_ADDR_WIDTH	=	$clog2(SIZE/32)+1;/*8K:9*/
-localparam	TAG_ADDR_WIDTH			=	32-(DATA_RAM_ADDR_WIDTH+2);/*8K:21*/
+localparam	TAG_WIDTH     			=	32-(DATA_RAM_ADDR_WIDTH+2);/*8K:21*/
 
 /*******************************************************************************
 wire
@@ -171,7 +171,7 @@ cache_rw #(
   .DATA_RAM_ADDR_WIDTH		  (DATA_RAM_ADDR_WIDTH						),
   .TAG_RAM_ADDR_WIDTH			  (TAG_RAM_ADDR_WIDTH							),
   .DRE_RAM_ADDR_WIDTH			  (DRE_RAM_ADDR_WIDTH							),
-  .TAG_ADDR_WIDTH					  (TAG_ADDR_WIDTH									)
+  .TAG_WIDTH					      (TAG_WIDTH									    )
 )cache_rw_inst0(  
   .clk										  (clk														),
   .rest										  (rest 													),
@@ -234,7 +234,7 @@ cache_ri #(
   .DATA_RAM_ADDR_WIDTH			(DATA_RAM_ADDR_WIDTH						),
   .TAG_RAM_ADDR_WIDTH				(TAG_RAM_ADDR_WIDTH							),
   .DRE_RAM_ADDR_WIDTH				(DRE_RAM_ADDR_WIDTH							),
-  .TAG_ADDR_WIDTH						(TAG_ADDR_WIDTH									)  
+  .TAG_WIDTH						    (TAG_WIDTH									    )  
 )
 cache_ri_inst0(
   .clk											(clk                            ),
@@ -322,7 +322,7 @@ initial begin
   $display("DATA_RAM_ADDR_WIDTH=%d",DATA_RAM_ADDR_WIDTH);
   $display("TAG_RAM_ADDR_WIDTH =%d",TAG_RAM_ADDR_WIDTH );
   $display("DRE_RAM_ADDR_WIDTH =%d",DRE_RAM_ADDR_WIDTH );
-  $display("TAG_ADDR_WIDTH     =%d",TAG_ADDR_WIDTH     );
+  $display("TAG_WIDTH         =%d" ,TAG_WIDTH          );
 end
 
 endmodule

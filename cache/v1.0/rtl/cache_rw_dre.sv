@@ -1,81 +1,73 @@
+/*****************************************************************************************************************
+module:cache_rw_dre
+存放cache块中每个byte是否可读的信息
+*****************************************************************************************************************/
 module cache_rw_dre #(
-  parameter ADDR_WIDTH=8
+  parameter ADDR_WIDTH=9
 )(
-  clk,
-  sel,
-  rw_readAddress,
-  rw_readChannel,
-  rw_readRe,
-  rw_writeAddress,
-  rw_writeChannel,
-  rw_writeEnable,
-  rw_writeRe,
-
-  ri_readAddress,
-  ri_readChannel,
-  ri_readData,
-  ri_readRe,
-  ri_writeAddress,
-  ri_writeChannel,
-  ri_writeEnable,
-  ri_writeData
+  input                   clk,
+  input                   sel,
+  /*连到rw*/
+  input  [ADDR_WIDTH-1:0] rw_readAddress,
+  input  [1:0]            rw_readChannel,
+  output [3:0]            rw_readRe,
+  input  [ADDR_WIDTH-1:0] rw_writeAddress,
+  input  [1:0]            rw_writeChannel,
+  input                   rw_writeEnable,
+  input  [3:0]            rw_writeRe,
+  /*连到ri*/
+  input  [ADDR_WIDTH-1:0] ri_readAddress,
+  input  [1:0]            ri_readChannel,
+  output [7:0]            ri_readData,
+  output [3:0]            ri_readRe,
+  input  [ADDR_WIDTH-1:0] ri_writeAddress,
+  input  [1:0]            ri_writeChannel,
+  input                   ri_writeEnable,
+  input  [7:0]            ri_writeData
 );
-input                   clk;
-input                   sel;
-
-input  [ADDR_WIDTH-1:0] rw_readAddress;
-input  [1:0]            rw_readChannel;
-output [3:0]            rw_readRe;
-input  [ADDR_WIDTH-1:0] rw_writeAddress;
-input  [1:0]            rw_writeChannel;
-input                   rw_writeEnable;
-input  [3:0]            rw_writeRe;
-
-input  [ADDR_WIDTH-1:0] ri_readAddress;
-input  [1:0]            ri_readChannel;
-output [7:0]            ri_readData;
-output [3:0]            ri_readRe;
-input  [ADDR_WIDTH-1:0] ri_writeAddress;
-input  [1:0]            ri_writeChannel;
-input                   ri_writeEnable;
-input  [7:0]            ri_writeData;
-
+/*****************************************************************************************************************
+wire and reg
+*****************************************************************************************************************/
 wire [ADDR_WIDTH-1:0]   readAddress;
-wire [1:0]              readCh;
+wire [1:0]              readChannel;
 wire [3:0]              readRe;
 wire [7:0]              readReAll;
 wire [ADDR_WIDTH-1:0]   writeAddress;
-wire [1:0]              writeCh;
+wire [1:0]              writeChannel;
 wire [7:0]              writeData;
 wire                    writeEnable;
-
 wire [7:0]              wre;
-wire                    isReadable;
 
+/*****************************************************************************************************************
+连线
+*****************************************************************************************************************/
 assign readAddress      =   sel?ri_readAddress   : rw_readAddress;
-assign readCh           =   sel?ri_readChannel   : rw_readChannel;
+assign readChannel      =   sel?ri_readChannel   : rw_readChannel;
 assign writeAddress     =   sel?ri_writeAddress  : rw_writeAddress;
-assign writeCh          =   sel?ri_writeChannel  : rw_writeChannel;
+assign writeChannel     =   sel?ri_writeChannel  : rw_writeChannel;
 assign writeData        =   sel?ri_writeData     : wre;
 assign writeEnable      =   sel?ri_writeEnable   : rw_writeEnable;
 
-assign wre              =   readReAll|({{4{!readAddress[0]}},{4{readAddress[0]}}}&{2{rw_writeRe}});
+assign wre              =   readReAll|({{4{readAddress[0]}},{4{!readAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
 assign ri_readRe        =   rw_readRe;
 
+/*****************************************************************************************************************
+实例化module
+*****************************************************************************************************************/
 cache_rw_dre_ram #(
   .ADDR_WIDTH(ADDR_WIDTH)
 )cache_rw_dre_ram_inst0(
-  .clk(clk),
-  .readAddress(readAddress),
-  .readCh(readCh),
-  .readRe(readRe),
-  .readReAll(readReAll),
-  .writeAddress(writeAddress),
-  .writeCh(writeCh),
-  .writeRe(writeData),
-  .writeEnable(writeEnable)
+  .clk          (clk            ),
+  .readAddress  (readAddress    ),
+  .readChannel  (readChannel    ),
+  .readRe       (readRe         ),
+  .readReAll    (readReAll      ),
+  .writeAddress (writeAddress   ),
+  .writeChannel (writeChannel   ),
+  .writeRe      (writeData      ),
+  .writeEnable  (writeEnable    )
 );
 
 endmodule
@@ -87,33 +79,25 @@ module:cache_rw_dre_ram
 module cache_rw_dre_ram #(
   parameter ADDR_WIDTH
 )(
-  clk,
-  readAddress,
-  readCh,
-  readRe,
-  readReAll,
-  writeAddress,
-  writeCh,
-  writeRe,
-  writeEnable
+  input                   clk,
+  input [ADDR_WIDTH-1:0]  readAddress,
+  input [1:0]             readChannel,
+  output[3:0]             readRe,
+  output[7:0]             readReAll,
+  input [ADDR_WIDTH-1:0]  writeAddress,
+  input [1:0]             writeChannel,
+  input [7:0]             writeRe,
+  input                   writeEnable
 );
-input clk;
-input [ADDR_WIDTH-1:0]  readAddress;
-input [1:0]             readCh;
-output[3:0]             readRe;
-output[7:0]             readReAll;
-input [ADDR_WIDTH-1:0]  writeAddress;
-input [1:0]             writeCh;
-input [7:0]             writeRe;
-input                   writeEnable;
+
 
 wire[31:0] rd,wd;
 wire[7:0] rds[3:0];
 
-assign {rds[0],rds[1],rds[2],rds[3]}=rd;
+assign {rds[3],rds[2],rds[1],rds[0]}=rd;
 
 assign readRe=readAddress[0]?readReAll[7:4]:readReAll[3:0];
-assign readReAll=rds[readCh];
+assign readReAll=rds[readChannel];
 
 assign wd={4{writeRe}};
 
@@ -128,7 +112,7 @@ dualPortRam_inst0_tagRam(
 	.writeAddress(writeAddress[ADDR_WIDTH-1:1]),  /*写地址*/
 	.writeData(wd),						                    /*需要写入的数据*/
 	.writeEnable(writeEnable),	                  /*写使能*/
-	.writeByteEnable(4'd8>>writeCh)		            /*字节使能信号*/
+	.writeByteEnable(4'd1<<writeChannel)		      /*字节使能信号*/
 );
 
 endmodule

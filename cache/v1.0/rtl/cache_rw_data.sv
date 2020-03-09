@@ -1,60 +1,53 @@
+/*****************************************************************************************************************
+module:cache_rw_data
+描述:存放数据,提供两组接口,当sel信号为0时,cache_rw_data模块由rw端口控制,当sel信号为1时:cache_rw_data模块由ri端口控制
+*****************************************************************************************************************/
 module cache_rw_data #(
-  parameter ADDR_WIDTH=8
+  parameter ADDR_WIDTH=9
 )(
-  clk,
-  /*选择信号*/
-  sel,
-  /*读写模块*/
-  rw_readAddress,
-  rw_rwChannel,
-  rw_readData,
-  rw_writeAddress,
-  rw_writeByteEnable,
-  rw_writeEnable,
-  rw_writeData,
-  /*替换模块*/
-  ri_readAddress,
-  ri_rwChannel,
-  ri_readData,
-  ri_writeAddress,
-  ri_writeByteEnable,
-  ri_writeEnable,
-  ri_writeData
+  /*时钟*/
+  input                       clk,
+  /*sel*/
+  input                       sel,
+  /*接到rw模块*/
+  input   [ADDR_WIDTH-1:0]    rw_readAddress,
+  input   [1:0]               rw_rwChannel,
+  output  [31:0]              rw_readData,
+  input   [ADDR_WIDTH-1:0]    rw_writeAddress,
+  input   [3:0]               rw_writeByteEnable,
+  input                       rw_writeEnable,
+  input   [31:0]              rw_writeData,
+  /*接到ri模块*/
+  input   [1:0]               ri_rwChannel,
+  input   [ADDR_WIDTH-1:0]    ri_readAddress,
+  output  [31:0]              ri_readData,
+  input   [ADDR_WIDTH-1:0]    ri_writeAddress,
+  input   [3:0]               ri_writeByteEnable,
+  input                       ri_writeEnable,
+  input   [31:0]              ri_writeData
 );
-input                       clk;
-input                       sel;
-
-input   [ADDR_WIDTH-1:0]    rw_readAddress;
-input   [1:0]               rw_rwChannel;
-output  [31:0]              rw_readData;
-input   [ADDR_WIDTH-1:0]    rw_writeAddress;
-input   [3:0]               rw_writeByteEnable;
-input                       rw_writeEnable;
-input   [31:0]              rw_writeData;
-
-input   [1:0]               ri_rwChannel;
-input   [ADDR_WIDTH-1:0]    ri_readAddress;
-output  [31:0]              ri_readData;
-input   [ADDR_WIDTH-1:0]    ri_writeAddress;
-input   [3:0]               ri_writeByteEnable;
-input                       ri_writeEnable;
-input   [31:0]              ri_writeData;
-
+/*****************************************************************************************************************
+wire and reg
+*****************************************************************************************************************/
 wire    [ADDR_WIDTH-1:0]    readAddress;
-wire    [1:0]               readCh;
+wire    [1:0]               readChannel;
 wire    [31:0]              readData;
 wire    [ADDR_WIDTH-1:0]    writeAddress;
-wire    [1:0]               writeCh;
-wire    [3:0]               writeByteEnabl;
+wire    [1:0]               writeChannel;
+wire    [3:0]               writeByteEnable;
 wire                        writeEnable;
 wire    [31:0]              writeData;
 
+/*****************************************************************************************************************
+连线
+*****************************************************************************************************************/
+/*mux*/
 assign {
   readAddress,
-  readCh,
+  readChannel,
   writeAddress,
-  writeCh,
-  writeByteEnabl,
+  writeChannel,
+  writeByteEnable,
   writeEnable,
   writeData
 }=sel?
@@ -76,23 +69,26 @@ assign {
   rw_writeEnable,
   rw_writeData
 };
-
+/*输出数据*/
 assign rw_readData=readData;
 assign ri_readData=readData;
 
+/*****************************************************************************************************************
+实例化module
+*****************************************************************************************************************/
 cache_rw_data_ram #(
   .ADDR_WIDTH(ADDR_WIDTH)
 )
 cache_rw_data_ram_inst0(
-  .clk(clk),
-  .readAddress(readAddress),
-  .readCh(readCh),
-  .readData(readData),
-  .writeAddress(writeAddress),
-  .writeCh(writeCh),
-  .writeData(writeData),
-  .writeEnable(writeEnable),
-  .writeByteEnable(writeByteEnabl)
+  .clk              (clk            ),
+  .readAddress      (readAddress    ),
+  .readChannel      (readChannel    ),
+  .readData         (readData       ),
+  .writeAddress     (writeAddress   ),
+  .writeChannel     (writeChannel   ),
+  .writeData        (writeData      ),
+  .writeEnable      (writeEnable    ),
+  .writeByteEnable  (writeByteEnable)
 );
 
 endmodule
@@ -102,41 +98,32 @@ module:cache_rw_data
 描述:存放数据
 *****************************************************************************************************************/
 module cache_rw_data_ram #(
-  parameter ADDR_WIDTH
+  parameter ADDR_WIDTH=9
 )(
-  clk,
-  readAddress,
-  readCh,
-  readData,
-  writeAddress,
-  writeCh,
-  writeData,
-  writeEnable,
-  writeByteEnable
+  input                   clk,
+  input [ADDR_WIDTH-1:0]  readAddress,
+  input [1:0]             readChannel,
+  output[31:0]            readData,
+  input [ADDR_WIDTH-1:0]  writeAddress,
+  input [1:0]             writeChannel,
+  input [31:0]            writeData,
+  input                   writeEnable,
+  input [3:0]             writeByteEnable
 );
-input                   clk;
-input [ADDR_WIDTH-1:0]  readAddress;
-input [1:0]             readCh;
-output[31:0]            readData;
-input [ADDR_WIDTH-1:0]  writeAddress;
-input [1:0]             writeCh;
-input [31:0]            writeData;
-input                   writeEnable;
-input [3:0]             writeByteEnable;
 
 wire [31:0]             rds[3:0];
 wire [127:0]            rd,wd;
 wire [15:0]             wbe;
 wire [3:0]              bem;
 
-assign {rds[0],rds[1],rds[2],rds[3]}  =  rd;
-assign readData                       =  rds[readCh];
+assign {rds[3],rds[2],rds[1],rds[0]}  =  rd;
+assign readData                       =  rds[readChannel];
 assign wd                             =  {4{writeData}};
-assign bem                            =  4'd1<<writeCh;
-assign wbe                            =  {{4{bem[0]}},{4{bem[1]}},{4{bem[2]}},{4{bem[3]}}}&{4{writeByteEnable}};
+assign bem                            =  4'd1<<writeChannel;
+assign wbe                            =  {{4{bem[3]}},{4{bem[2]}},{4{bem[1]}},{4{bem[0]}}}&{4{writeByteEnable}};
 
 dualPortRam #(
-	.WIDTH(32*4),		                            /*数据位宽*/
+	.WIDTH(128),		                            /*数据位宽*/
 	.DEPTH(2**ADDR_WIDTH)	                      /*深度*/
 )
 dualPortRam_inst0_dataRam(
