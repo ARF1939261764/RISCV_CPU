@@ -4,8 +4,10 @@ module cache_ri #(
   parameter DATA_RAM_ADDR_WIDTH=9,
             TAG_RAM_ADDR_WIDTH=5,
             DRE_RAM_ADDR_WIDTH=8,
-            TAG_WIDTH =21  
+            TAG_WIDTH =21,
+            BLOCK_ADDR_WIDTH=6
 )(
+  /*时钟,复位*/
   input  logic                                         clk,
   input  logic                                         rest,
 

@@ -4,7 +4,8 @@ module cache_rw #(
   parameter DATA_RAM_ADDR_WIDTH=9,
             TAG_RAM_ADDR_WIDTH=5,
             DRE_RAM_ADDR_WIDTH=9,
-            TAG_WIDTH=21
+            TAG_WIDTH=21,
+            BLOCK_ADDR_WIDTH=6
 )(
   input                                    clk,
   input                                    rest,
@@ -18,7 +19,7 @@ module cache_rw #(
   output                                   arb_waitRequest,         /*命令接受信号,为0表示接收了该条指令*/     
   output                                   arb_readDataValid,       /*数据有效信号*/
   output                                   arb_isEnableCache,       /*cache是否使能*/
-  input                                    arb_bus_idle,            /*总线空闲,高电平表示总线空闲*/
+  input                                    arb_bus_idle,            /*总线空闲,高电平表示ri模块可以使用总线,为什么rw模块要知道ri模块是否可以使用总线?因为这决定这rw模块能否给ri模块发生指令*/
   /**/  
   output      [31:0]                       ctr_address,             /*该信号输出至cache_ctr module,然后该模块返回一个信号表示这个地址是否为IO设备地址段的地址*/
   input                                    ctr_isIOAddrBlock,       /*ctr_address是否为IO设备地址段的地址*/      
@@ -91,17 +92,17 @@ wire [3:0]                        dre_rw_readRe;                /*读出来的�
 wire [DRE_RAM_ADDR_WIDTH-1:0]     dre_rw_writeAddress;          /*写地址*/
 wire [1:0]                        dre_rw_writeChannel;          /*写通道*/
 wire                              dre_rw_writeEnable;           /*写使能*/
-wire [3:0]                        dre_rw_writeRe;               /*写字节使能*/
+wire [3:0]                        dre_rw_writeRe;               /*需要写入的字节使能信息*/
 
 /**************************************************************************
-状态机的参数
+状态机的状态
 **************************************************************************/
 localparam  state_idle=1'd0,
             state_waitDone=1'd1;
 /**************************************************************************
 当前模块需要用到的reg、wire
 **************************************************************************/
-reg                               state;
+reg                               state;                        /*状态机的状态寄存器，为啥要定义在这里，因为连线要用到(先定义后使用)*/
 reg                               last_state;
 reg  [31:0]                       last_arb_address;             /*缓存一级*/
 reg  [3:0]                        last_arb_byteEnable;
@@ -109,12 +110,12 @@ reg                               last_arb_read;
 reg                               last_arb_write;
 reg  [31:0]                       last_arb_writeData;
 
-reg  [31:0]                       readBuff_arb_address;         /*再缓存一级*/
+reg  [31:0]                       readBuff_arb_address;         /*再缓存一级,这里缓存,是为了读一个刚写入的数据时避免冲突(如果读的数据正在写入,则从这里面读出那个数据)*/
 reg  [3:0]                        readBuff_arb_byteEnable;
 reg                               readBuff_arb_write;
 reg  [31:0]                       readBuff_arb_writeData;
 
-reg                               last_isHit;
+reg                               last_isHit;                   /*缓存一级,这里缓存，是因为当发生读写缺失、或者读写IO时，ri模块需要知道rw模块遇到了什么问题?是没命中,还是命中了,但是需要读的byte不可读*/
 reg  [1:0]                        last_hitBlockNum;
 reg                               last_isHaveFreeBlock;
 reg  [1:0]                        last_freeBlockNum;
@@ -131,6 +132,7 @@ wire                              isReadFault;                  /*读命令是�
 wire                              isWriteFault;                 /*写命令是否发生fault*/
 wire                              isFault;                      /*读写命令是否发生fault*/
 wire                              isNeedSendCmdToRi;            /*是否需要向ri模块发生命令*/
+wire                              isWriteBuffHit;
 
 wire[3:0]                         readableMask;                 /*可读掩码*/
 /**************************************************************************
@@ -138,34 +140,34 @@ wire[3:0]                         readableMask;                 /*可读掩码*/
 **************************************************************************/
 assign sel                     =  arb_waitRequest;
 
-assign data_rw_readAddress     =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];
-assign data_rw_rwChannel       =  tag_rw_hitBlockNum;
-assign data_rw_writeAddress    =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:2];
+assign data_rw_readAddress     =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];       /*[DATA_RAM_ADDR_WIDTH+1:2]是因为cache_rw_data模块中的RAM每个地址保存的字节数为4*/
+assign data_rw_rwChannel       =  tag_rw_hitBlockNum;                         /*哪一路命中，读哪一路*/
+assign data_rw_writeAddress    =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:2];  /*同上,这里用的是缓冲寄存器的结果是因为第一个时钟周期用来查找对应的cache块了,第二个时钟周期才能写入,所以要缓冲一级*/
 assign data_rw_writeByteEnable =  last_arb_byteEnable;
 assign data_rw_writeEnable     =  last_arb_write;
 assign data_rw_writeData       =  last_arb_writeData;
 
-assign tag_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+1:6];
-assign tag_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:6];
+assign tag_rw_readAddress      =  arb_address[TAG_RAM_ADDR_WIDTH + BLOCK_ADDR_WIDTH - 1:BLOCK_ADDR_WIDTH];
+assign tag_rw_writeAddress     =  last_arb_address[TAG_RAM_ADDR_WIDTH + BLOCK_ADDR_WIDTH - 1:BLOCK_ADDR_WIDTH];
 assign tag_rw_writeEnable      =  last_arb_write;
 assign tag_rw_tag              =  last_arb_address[31:31-TAG_WIDTH+1];
 
-assign dre_rw_readAddress      =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];
+assign dre_rw_readAddress      =  arb_address[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_readChannel      =  tag_rw_hitBlockNum;
-assign dre_rw_writeAddress     =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:2];
+assign dre_rw_writeAddress     =  last_arb_address[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_writeChannel     =  tag_rw_hitBlockNum;
 assign dre_rw_writeEnable      =  last_arb_write;
-assign dre_rw_writeRe          =  last_arb_byteEnable;
+assign dre_rw_writeRe          =  last_arb_byteEnable;                        /*这里的字节使能信号不是用来控制写入的，而是作为数据会被写入到RAM的*/
 
-assign ctr_address             =  arb_address;
+assign ctr_address             =  arb_address;                                /*这里直接赋值,不需要过寄存器缓冲*/
 assign arb_isEnableCache       =  isCacheEn;
-assign arb_readData            =  (state==state_idle)||(ri_cmd!=`cache_rw_cmd_iorw)?{
-                                    readBuff_arb_write&&readableMask[3]?readBuff_arb_writeData[31:24]:data_rw_readData[31:24],
-                                    readBuff_arb_write&&readableMask[2]?readBuff_arb_writeData[23:16]:data_rw_readData[23:16],
-                                    readBuff_arb_write&&readableMask[1]?readBuff_arb_writeData[15:8] :data_rw_readData[15:8] ,
-                                    readBuff_arb_write&&readableMask[0]?readBuff_arb_writeData[7:0]  :data_rw_readData[7:0]  
-                                  }:ri_rsp_data;
-assign arb_readDataValid       =  (state==state_idle)?(last_arb_read&&!rw_waitRequest&&(last_state!=state_waitDone)):ri_cmd_ready&&last_arb_read;
+assign arb_readData            =  (ri_cmd==`cache_rw_cmd_iorw)?ri_rsp_data:{  /*如果是读IO指令,则arb_readData接受来自ri模块的反馈数据*/
+                                    isWriteBuffHit&&readBuff_arb_byteEnable[3]?readBuff_arb_writeData[31:24]:data_rw_readData[31:24],/*如果写缓冲命中,则优先读写缓冲中的数据*/
+                                    isWriteBuffHit&&readBuff_arb_byteEnable[2]?readBuff_arb_writeData[23:16]:data_rw_readData[23:16],
+                                    isWriteBuffHit&&readBuff_arb_byteEnable[1]?readBuff_arb_writeData[15:8] :data_rw_readData[15:8] ,
+                                    isWriteBuffHit&&readBuff_arb_byteEnable[0]?readBuff_arb_writeData[7:0]  :data_rw_readData[7:0]
+                                  };
+assign arb_readDataValid       =  (state==state_idle)?(last_arb_read&&!rw_waitRequest&&(last_state!=state_waitDone)):ri_cmd_ready&&last_arb_read;/*idle:要求上一次是读命令,并且没遇到都错误、上一次的状态不是waiDone状态*/
 
 assign isCacheEn               =  ctr_isEnableCache;
 assign isIoAddr                =  ctr_isIOAddrBlock;
@@ -173,7 +175,8 @@ assign isHit                   =  tag_rw_isHit;
 assign isRe                    =  (readableMask&last_arb_byteEnable)==last_arb_byteEnable;
 assign isR                     =  last_arb_read;
 assign isW                     =  last_arb_write;
-assign readableMask            =  (readBuff_arb_write&&(readBuff_arb_address==last_arb_address))?(dre_rw_readRe|readBuff_arb_byteEnable):dre_rw_readRe;
+assign isWriteBuffHit          =  readBuff_arb_write&&(readBuff_arb_address==last_arb_address);
+assign readableMask            =  isWriteBuffHit?(dre_rw_readRe|readBuff_arb_byteEnable):dre_rw_readRe;
 
 assign isReadFault             =  isR             &&
                                   (
@@ -222,7 +225,7 @@ always @(posedge clk or negedge rest) begin
       {readBuff_arb_address,readBuff_arb_byteEnable,readBuff_arb_write,readBuff_arb_writeData}
         <={last_arb_address,last_arb_byteEnable,last_arb_write,last_arb_writeData};
     end
-    if(last_state==state_idle) begin
+    if(state==state_idle) begin
       /*缓存其它信号*/
       {last_isHit,last_hitBlockNum,last_isHaveFreeBlock,last_freeBlockNum}
         <={tag_rw_isHit,tag_rw_hitBlockNum,tag_rw_isHaveFreeBlock,tag_rw_freeBlockNum};
@@ -233,8 +236,6 @@ end
 /**************************************************************************
 状态机
 **************************************************************************/
-
-
 /*第一段*/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -260,7 +261,7 @@ end
 always @(posedge clk) begin
   case (state)
     state_idle:begin
-        if(rw_waitRequest) begin
+        if(rw_waitRequest) begin/*读写遇到了异常*/
           ri_cmd<=isIoAddr?`cache_rw_cmd_iorw:`cache_rw_cmd_rb;
         end
         else if(ri_waitRequest&&arb_bus_idle)begin
@@ -287,9 +288,9 @@ cache_rw_data #(
 )
 cache_rw_data_inst0(
   .clk(clk),
-   /*选择信号*/
+  /*选择信号*/
   .sel(sel),
-   /*读写模块*/
+  /*读写模块*/
   .rw_readAddress(data_rw_readAddress),
   .rw_rwChannel(data_rw_rwChannel),
   .rw_readData(data_rw_readData),
@@ -297,7 +298,7 @@ cache_rw_data_inst0(
   .rw_writeByteEnable(data_rw_writeByteEnable),
   .rw_writeEnable(data_rw_writeEnable),
   .rw_writeData(data_rw_writeData),
-   /*替换模块*/
+  /*替换模块*/
   .ri_readAddress(data_ri_readAddress),
   .ri_rwChannel(data_ri_rwChannel),
   .ri_readData(data_ri_readData),
