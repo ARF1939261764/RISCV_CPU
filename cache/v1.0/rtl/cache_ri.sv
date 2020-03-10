@@ -283,7 +283,7 @@ wire end_state_wait_count_to_zero;
 
 assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest||!av_m0_read)&&av_m0_readDataValid;
 assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
-assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=8'd15);
 assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
 assign end_state_clearRe             =(count_a>=8'd7);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
@@ -540,27 +540,26 @@ endtask
   3,rwChannel修改为对应的通道
 ******************************************************************************************/
 task state_writeBack_handle();
+  logic[DATA_RAM_ADDR_WIDTH-1:0] block_addr;
+  block_addr=get_cache_block_addr(address_a);
   /*改变内部SRAM读地址*/
   if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
-    readAddress<=address_a+count_a*4;
+    readAddress<=block_addr+count_a*4;
     is_read_addr_change<=1'd1;
   end
   else begin
     is_read_addr_change<=1'd0;
   end
   /*将内部SRAM中读出的数据压到fifo中*/
-  if(is_read_data_valid) begin
+  if(is_read_data_valid&&!end_state_writeBack) begin
     av_cmd_fifo_push_write(
       .fifo_port          (av_m0_cmd_fifo_port  ),
-      .address            (address_a+count_b*4  ),
+      .address            (block_addr+count_b*4 ),
       .byteEnable         (dre_ri_readRe        ),
       .writeData          (data_ri_readData     ),
       .beginBurstTransfer (count_b==8'd0        ),
       .burstCount         (16                   )
     );
-  end
-  else begin
-    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
   end
   /*当fifo满，并且av_m0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
     所以is_read_data_valid需要保持，反之则需要更新*/
@@ -584,6 +583,7 @@ task state_writeBack_handle();
   end
   else begin
     /*如果下一步需要进入到其它状态,全部清零*/
+    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
     count_a<=8'd0;
     count_b<=8'd0;
     count_c<=8'd0;
@@ -678,7 +678,9 @@ endtask
   3,rwChannel修改为对应的通道
 ******************************************************************************************/
 task state_clearRe_handle();
-  writeAddress<=address_a+count_a*8;
+  logic[DATA_RAM_ADDR_WIDTH-1:0] block_addr;
+  block_addr=get_cache_block_addr(address_a);
+  writeAddress<=block_addr+count_a*8;
   /*如果需要修改标签，则修改标签*/
   tag_ri_writeData<=modific_tag;
   tag_ri_writeEnable<=(count_a==8'd0)&&is_need_modific_tag;

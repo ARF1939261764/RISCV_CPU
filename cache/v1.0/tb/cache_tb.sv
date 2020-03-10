@@ -59,15 +59,11 @@ initial begin
 	int i;
 	#10 system_rest();
 	wait(s0_waitRequest==0);
-	task_s0_writeData(8,4'hf,32'h12345678);
-	task_s0_readData(8,4'hf,data);
-//	for(i=0;i<10000;i++) begin
-//		task_s0_readData(4*i,4'b1111,data);
-//		if(data!=i*i) begin
-//			$error("read data err:%d",i);
-//      $stop();
-//		end
-//	end
+	task_s0_writeData(8+512*0,4'hf,32'h12345678);
+	task_s0_writeData(8+512*4,4'hf,32'h69325678);
+	task_s0_writeData(8+512*8,4'hf,32'h32695678);
+	task_s0_writeData(8+512*12,4'hf,32'h43215678);
+	task_s0_writeData(8+512*16,4'hf,32'h58585678);
 end
 
 task system_rest();
