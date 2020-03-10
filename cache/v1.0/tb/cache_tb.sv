@@ -65,6 +65,13 @@ initial begin
       $stop();
 		end
 	end
+	for(i=0;i<1000;i++) begin
+		task_s0_readData(4*i,4'b1111,data);
+		if(data!=i*i) begin
+			$error("read data err:%d",i);
+      $stop();
+		end
+	end
 end
 
 task system_rest();

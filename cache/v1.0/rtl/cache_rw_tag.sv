@@ -161,8 +161,8 @@ assign isHaveFreeBlock=!(rds[0][TAG_WIDTH]
                         &rds[3][TAG_WIDTH]);
 
 /*第几块是空闲的*/
-assign freeBlockNum=rds[0][TAG_WIDTH]?2'd0:
-                    rds[1][TAG_WIDTH]?2'd1:
-                    rds[2][TAG_WIDTH]?2'd2:
-                    rds[3][TAG_WIDTH]?2'd3:2'd0;
+assign freeBlockNum=!rds[0][TAG_WIDTH]?2'd0:
+                    !rds[1][TAG_WIDTH]?2'd1:
+                    !rds[2][TAG_WIDTH]?2'd2:
+                    !rds[3][TAG_WIDTH]?2'd3:2'd0;
 endmodule

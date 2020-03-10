@@ -10,17 +10,17 @@ module cache_ri #(
   /*时钟,复位*/
   input  logic                                         clk,
   input  logic                                         rest,
-
-  output logic  [31:0]                                 av_s0_address,
-  output logic  [3:0]                                  av_s0_byteEnable,
-  output logic                                         av_s0_read,
-  output logic                                         av_s0_write,
-  output logic  [31:0]                                 av_s0_writeData,
-  input  logic                                         av_s0_waitRequest,
-  output logic                                         av_s0_beginBurstTransfer,
-  output logic  [`CACHE_AVALON_BURST_COUNT_WIDTH-1:0]  av_s0_burstCount,
-  input  logic  [31:0]                                 av_s0_readData,
-  input  logic                                         av_s0_readDataValid,
+  /*avalon总线*/
+  output logic  [31:0]                                 av_m0_address,
+  output logic  [3:0]                                  av_m0_byteEnable,
+  output logic                                         av_m0_read,
+  output logic                                         av_m0_write,
+  output logic  [31:0]                                 av_m0_writeData,
+  input  logic                                         av_m0_waitRequest,
+  output logic                                         av_m0_beginBurstTransfer,
+  output logic  [`CACHE_AVALON_BURST_COUNT_WIDTH-1:0]  av_m0_burstCount,
+  input  logic  [31:0]                                 av_m0_readData,
+  input  logic                                         av_m0_readDataValid,
 
   input  logic  [2:0]                                  ctr_cmd,
   output logic                                         ctr_cmd_ready,
@@ -70,52 +70,39 @@ module cache_ri #(
 av从机s0的指令fifo
 **************************************************************************/
 /*fifo实例的参数*/
-localparam AVALON_S0_CMD_FIFO_WIDTH     = $bits({
-                                            av_s0_address,        
-                                            av_s0_byteEnable,     
-                                            av_s0_read,
-                                            av_s0_write,          
-                                            av_s0_writeData,
-                                            av_s0_beginBurstTransfer,
-                                            av_s0_burstCount
-                                          });
 localparam AVALON_S0_CMD_FIFO_DEPTH     = 2;
+localparam AVALON_S0_CMD_FIFO_WIDTH     = $bits({
+                                            av_m0_address,        
+                                            av_m0_byteEnable,     
+                                            av_m0_read,
+                                            av_m0_write,          
+                                            av_m0_writeData,
+                                            av_m0_beginBurstTransfer,
+                                            av_m0_burstCount
+                                          });
 /*fifo的端口*/
-wire                                    av_s0_cmd_fifo_full;
-wire                                    av_s0_cmd_fifo_empty;
-wire                                    av_s0_cmd_fifo_half;
-wire                                    av_s0_cmd_fifo_write;
-wire                                    av_s0_cmd_fifo_read;
-wire [AVALON_S0_CMD_FIFO_WIDTH-1:0]     av_s0_cmd_fifo_writeData;
-wire [AVALON_S0_CMD_FIFO_WIDTH-1:0]     av_s0_cmd_fifo_readData;
+wire                                    av_m0_cmd_fifo_full;
+wire                                    av_m0_cmd_fifo_empty;
+wire                                    av_m0_cmd_fifo_half;
+wire                                    av_m0_cmd_fifo_write;
+wire                                    av_m0_cmd_fifo_read;
+wire [AVALON_S0_CMD_FIFO_WIDTH-1:0]     av_m0_cmd_fifo_writeData;
+wire [AVALON_S0_CMD_FIFO_WIDTH-1:0]     av_m0_cmd_fifo_readData;
 
 /**************************************************************************
-av_s0_cmd_fifo操作任务
+av_m0_cmd_fifo操作任务
 **************************************************************************/
 typedef struct
 {
-  reg                                      push;
-  reg[31:0]                                address;
-  reg[3:0]                                 byteEnable;
-  reg                                      read;
-  reg                                      write;
-  reg[31:0]                                writeData;
-  reg                                      beginBurstTransfer;
-  reg[`CACHE_AVALON_BURST_COUNT_WIDTH-1:0] burstCount;
+  logic                                       push;
+  logic [31:0]                                address;
+  logic [3:0]                                 byteEnable;
+  logic                                       read;
+  logic                                       write;
+  logic [31:0]                                writeData;
+  logic                                       beginBurstTransfer;
+  logic [`CACHE_AVALON_BURST_COUNT_WIDTH-1:0] burstCount;
 }av_cmd_fifo_port_type;
-
-av_cmd_fifo_port_type av_s0_cmd_fifo_port;
-
-assign {av_s0_cmd_fifo_write,av_s0_cmd_fifo_writeData}={
-                                      av_s0_cmd_fifo_port.push,
-                                      av_s0_cmd_fifo_port.address,
-                                      av_s0_cmd_fifo_port.byteEnable,
-                                      av_s0_cmd_fifo_port.read,
-                                      av_s0_cmd_fifo_port.write,
-                                      av_s0_cmd_fifo_port.writeData,
-                                      av_s0_cmd_fifo_port.beginBurstTransfer,
-                                      av_s0_cmd_fifo_port.burstCount
-                                    };
 
 /*-------------------压入一读条指令-------------------*/
 task av_cmd_fifo_push_read(
@@ -188,15 +175,15 @@ endtask
 /**************************************************************************
 从dre ram中读出的可读信息的fifo
 **************************************************************************/
-localparam READ_BYTE_EN_FIFO_WIDTH      = 4;
-localparam READ_BYTE_EN_FIFO_DEPTH      = 4;
-wire                                    read_byte_en_fifo_full;
-wire                                    read_byte_en_fifo_empty;
-wire                                    read_byte_en_fifo_half;
-wire                                    read_byte_en_fifo_write;
-wire                                    read_byte_en_fifo_read;
-wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_writeData;
-wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_readData;
+localparam READ_BYTE_EN_FIFO_WIDTH = 4;
+localparam READ_BYTE_EN_FIFO_DEPTH = 4;
+wire                               read_byte_en_fifo_full;
+wire                               read_byte_en_fifo_empty;
+wire                               read_byte_en_fifo_half;
+wire                               read_byte_en_fifo_write;
+wire                               read_byte_en_fifo_read;
+wire [READ_BYTE_EN_FIFO_WIDTH-1:0] read_byte_en_fifo_writeData;
+wire [READ_BYTE_EN_FIFO_WIDTH-1:0] read_byte_en_fifo_readData;
 
 /**************************************************************************
 其它wire与reg
@@ -204,32 +191,32 @@ wire [READ_BYTE_EN_FIFO_WIDTH-1:0]      read_byte_en_fifo_readData;
 reg                       is_need_modific_tag;
 reg[31:0]                 modific_tag;
 wire                      isDirtyBlock;                               /*是否为脏块*/
-wire [TAG_WIDTH-1:0]      tag_ri_read_block_addr;                                 /*块标签*/
+wire [TAG_WIDTH-1:0]      tag_ri_read_block_addr;                     /*块标签*/
 reg  [1:0]                replaceFIFO[2**TAG_RAM_ADDR_WIDTH-1:0];     /*替换FIFO,其实就是一个计数器*/
 reg  [1:0]                rwChannel;                                  /*读通道*/
 reg  [31:0]               readAddress;                                /*读地址*/
 reg  [31:0]               writeAddress;                               /*写地址*/
-reg                       is_read_addr_change;                        /*读地址变化*/
-reg                       is_read_data_valid;                         /*读数据有效*/
-reg  [7:0]                count_a,count_b,count_c,delay_count;
+reg                       is_read_addr_change;                        /*读地址变化:这里指读内部SRAM的*/
+reg                       is_read_data_valid;                         /*读数据有效:这里指读内部SRAM的*/
+reg  [7:0]                count_a,count_b,count_c,delay_count;        /*计数器*/
 reg  [31:0]               address_a,address_b;
+av_cmd_fifo_port_type     av_m0_cmd_fifo_port;
 
 /**************************************************************************
 连线
 **************************************************************************/
+assign read_byte_en_fifo_writeData  =     dre_ri_readRe;
+assign read_byte_en_fifo_write      =     is_read_data_valid;
+assign read_byte_en_fifo_read       =     data_ri_writeEnable;
 
-assign read_byte_en_fifo_writeData      = dre_ri_readRe;
-assign read_byte_en_fifo_read           = data_ri_writeEnable;
-assign read_byte_en_fifo_write          = is_read_data_valid;
-
-assign isDirtyBlock                 =     tag_ri_readData[TAG_WIDTH+1];
+assign isDirtyBlock                 =     tag_ri_readData[TAG_WIDTH]&&tag_ri_readData[TAG_WIDTH+1];/*被占用，并且被修改才能算是脏块*/
 assign tag_ri_read_block_addr       =     tag_ri_readData[TAG_WIDTH-1:0];
 assign data_ri_readAddress          =     readAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_writeAddress         =     writeAddress[DATA_RAM_ADDR_WIDTH+1:2];
 assign data_ri_rwChannel            =     rwChannel;
 
-assign tag_ri_readAddress           =     readAddress[TAG_RAM_ADDR_WIDTH+5:6];
-assign tag_ri_writeAddress          =     writeAddress[TAG_RAM_ADDR_WIDTH+5:6];
+assign tag_ri_readAddress           =     readAddress[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH];
+assign tag_ri_writeAddress          =     writeAddress[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH];
 assign tag_ri_readChannel           =     rwChannel;
 assign tag_ri_writeChannel          =     rwChannel;
 
@@ -238,20 +225,33 @@ assign dre_ri_writeAddress          =     writeAddress[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_ri_readChannel           =     rwChannel;
 assign dre_ri_writeChannel          =     rwChannel;
 
-assign rw_rsp_data                  =     av_s0_readData;
+assign rw_rsp_data                  =     av_m0_readData;
 
-assign rw_isRequest                 =     ctr_cmd!=`cache_ctr_cmd_nop;
+assign rw_isRequest                 =     ctr_cmd!=`cache_ctr_cmd_nop;/*ctr模块发过来指令了*/
 
 assign {
-        av_s0_address,
-        av_s0_byteEnable,
-        av_s0_read,
-        av_s0_write,
-        av_s0_writeData,
-        av_s0_beginBurstTransfer,
-        av_s0_burstCount
-}                                   =     av_s0_cmd_fifo_readData;
-assign av_s0_cmd_fifo_read          =     !av_s0_waitRequest;
+        av_m0_address,
+        av_m0_byteEnable,
+        av_m0_read,
+        av_m0_write,
+        av_m0_writeData,
+        av_m0_beginBurstTransfer,
+        av_m0_burstCount
+} = av_m0_cmd_fifo_readData;
+assign {
+        av_m0_cmd_fifo_write,
+        av_m0_cmd_fifo_writeData
+} = {
+  av_m0_cmd_fifo_port.push,
+  av_m0_cmd_fifo_port.address,
+  av_m0_cmd_fifo_port.byteEnable,
+  av_m0_cmd_fifo_port.read,
+  av_m0_cmd_fifo_port.write,
+  av_m0_cmd_fifo_port.writeData,
+  av_m0_cmd_fifo_port.beginBurstTransfer,
+  av_m0_cmd_fifo_port.burstCount
+};
+assign av_m0_cmd_fifo_read          =     !av_m0_waitRequest;
 
 /*************************************************************************
 状态机
@@ -280,10 +280,10 @@ wire end_state_clearRe;
 wire end_state_init;
 wire end_state_wait_count_to_zero;
 
-assign end_state_waitReadIODone      =av_s0_cmd_fifo_empty&&(!av_s0_waitRequest||!av_s0_read)&&av_s0_readDataValid;
-assign end_state_waitWriteIODone     =av_s0_cmd_fifo_empty&&!av_s0_waitRequest;
-assign end_state_writeBack           =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
-assign end_state_readIn              =av_s0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest||!av_m0_read)&&av_m0_readDataValid;
+assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
+assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
+assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
 assign end_state_clearRe             =(count_a>=8'd7);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
 assign end_state_wait_count_to_zero  =(delay_count==8'd0);
@@ -315,7 +315,6 @@ always @(posedge clk or negedge rest) begin
       state_readMiss:begin
           if(rw_isHit) begin
             state<=state_readIn;
-            
           end
           else begin
             state<=isDirtyBlock?state_writeBack:state_readIn;
@@ -381,7 +380,7 @@ always @(posedge clk or negedge rest) begin
     dre_ri_writeEnable<=1'd0;
     is_read_addr_change<=1'd0;
     is_read_data_valid<=1'd0;
-    av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
+    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
   end
   else begin
     case(state)
@@ -389,10 +388,10 @@ always @(posedge clk or negedge rest) begin
           state_idle_handle();
         end
       state_waitReadIODone:begin
-          av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
+          av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
         end
       state_waitWriteIODone:begin
-          av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
+          av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
         end
       state_readMiss,state_writeMiss:begin
           state_read_write_miss_handle();
@@ -477,6 +476,9 @@ task state_idle_handle();
   case(rw_cmd)
     `cache_rw_cmd_rb:begin
         /*没有命中,且没用空块了,开始淘汰*/
+        $display("%t:\nrw_isHit=%d\nrw_isHaveFreeBlock=%d\nrwChannel=%d",$time,rw_isHit,rw_isHaveFreeBlock, rw_isHit? rw_hitBlockNum:
+                                                                                                          rw_isHaveFreeBlock?rw_freeBlockNum:
+                                                                                                          replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]]);
         if(!rw_isHit&&!rw_isHaveFreeBlock) begin
           replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]]<=
             replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+5:6]]+2'd1;
@@ -486,7 +488,7 @@ task state_idle_handle();
     `cache_rw_cmd_iorw:begin
         /*将rw模块收到的IO读写请求发送到总线上*/
         av_cmd_fifo_push_read_write(
-          .fifo_port  (av_s0_cmd_fifo_port      ),
+          .fifo_port  (av_m0_cmd_fifo_port      ),
           .address    (rw_last_av_s0_address    ),
           .byteEnable (rw_last_av_s0_byteEnable ),
           .read       (rw_last_av_s0_read       ),
@@ -530,7 +532,7 @@ endtask
 ******************************************************************************************/
 task state_writeBack_handle();
   /*改变内部SRAM读地址*/
-  if(!(av_s0_write&&av_s0_waitRequest)&&(count_a<8'd16)) begin
+  if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
     readAddress<=address_a+count_a*4;
     is_read_addr_change<=1'd1;
   end
@@ -540,7 +542,7 @@ task state_writeBack_handle();
   /*将内部SRAM中读出的数据压到fifo中*/
   if(is_read_data_valid) begin
     av_cmd_fifo_push_write(
-      .fifo_port          (av_s0_cmd_fifo_port  ),
+      .fifo_port          (av_m0_cmd_fifo_port  ),
       .address            (address_a+count_b*4  ),
       .byteEnable         (dre_ri_readRe        ),
       .writeData          (data_ri_readData     ),
@@ -549,17 +551,17 @@ task state_writeBack_handle();
     );
   end
   else begin
-    av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
+    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
   end
-  /*当fifo满，并且av_s0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
+  /*当fifo满，并且av_m0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
     所以is_read_data_valid需要保持，反之则需要更新*/
-  if(!(av_s0_cmd_fifo_full&&av_s0_waitRequest)) begin
+  if(!(av_m0_cmd_fifo_full&&av_m0_waitRequest)) begin
     is_read_data_valid<=is_read_addr_change;
   end
   /*-----------------计数器控制--------------------------------------*/
   if(!end_state_writeBack) begin
     /*修改一次地址,count_a加一*/
-    if(!(av_s0_write&&av_s0_waitRequest)&&(count_a<8'd16)) begin
+    if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
       count_a++;
     end
     /*没向FIFO中压入一条写数据指令,count_b加一*/
@@ -567,7 +569,7 @@ task state_writeBack_handle();
       count_b++;
     end
     /*每写一个数据count_c加一*/
-    if(av_s0_write&&!av_s0_waitRequest) begin
+    if(av_m0_write&&!av_m0_waitRequest) begin
       count_c++;
     end
   end
@@ -604,10 +606,10 @@ task state_readIn_handle();
     /*地址没有改变,置0*/
     is_read_addr_change<=1'd0;
   end
-  if((!av_s0_cmd_fifo_full||av_s0_waitRequest)&&(count_b<8'd16)) begin
+  if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<8'd16)) begin
     /*总线指令fifo还能装,向fifo写读数据入指令*/
     av_cmd_fifo_push_read(
-      .fifo_port          (av_s0_cmd_fifo_port  ),
+      .fifo_port          (av_m0_cmd_fifo_port  ),
       .address            (address_b+count_b*4  ),
       .byteEnable         (4'hf                 ),
       .beginBurstTransfer (count_b==8'd0        ),
@@ -615,17 +617,18 @@ task state_readIn_handle();
     );
   end
   else begin
-    av_cmd_fifo_push_nop(av_s0_cmd_fifo_port);
+    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
   end
-  if(av_s0_readDataValid) begin
+  if(av_m0_readDataValid) begin
     /*数据从总线读出来了，写入到cache块*/
     writeAddress<=address_b+count_c*4;
     /*data*/
     data_ri_writeByteEnable<=rw_isHit?~read_byte_en_fifo_readData:4'hf;
-    data_ri_writeData<=av_s0_readData;
+    data_ri_writeData<=av_m0_readData;
     data_ri_writeEnable <= 1'd1;
     /*tag*/
     tag_ri_writeData<={{(32-TAG_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_WIDTH+1]};
+    $display("write tag:%d",{{(32-TAG_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_WIDTH+1]});
     tag_ri_writeEnable  <= count_c==8'd0;
     /*dre*/
     dre_ri_writeData<=8'hff;
@@ -642,10 +645,10 @@ task state_readIn_handle();
     if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<8'd16)) begin
       count_a++;
     end
-    if((!av_s0_cmd_fifo_full||av_s0_waitRequest)&&(count_b<8'd16)) begin
+    if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<8'd16)) begin
       count_b++;
     end
-    if(av_s0_readDataValid) begin
+    if(av_m0_readDataValid) begin
       count_c++;
     end
   end
@@ -721,16 +724,16 @@ fifo_sync_bypass #(
   .WIDTH(AVALON_S0_CMD_FIFO_WIDTH),
   .DEPTH(AVALON_S0_CMD_FIFO_DEPTH)
 )
-fifo_sync_bypass_inst0_av_s0_cmd_fifo(
+fifo_sync_bypass_inst0_av_m0_cmd_fifo(
   .clk       (clk                      ),
   .rest      (rest                     ),
-  .full      (av_s0_cmd_fifo_full      ),
-  .empty     (av_s0_cmd_fifo_empty     ),
-  .half      (av_s0_cmd_fifo_half      ),
-  .write     (av_s0_cmd_fifo_write     ),
-  .read      (av_s0_cmd_fifo_read      ),
-  .writeData (av_s0_cmd_fifo_writeData ),
-  .readData  (av_s0_cmd_fifo_readData  )
+  .full      (av_m0_cmd_fifo_full      ),
+  .empty     (av_m0_cmd_fifo_empty     ),
+  .half      (av_m0_cmd_fifo_half      ),
+  .write     (av_m0_cmd_fifo_write     ),
+  .read      (av_m0_cmd_fifo_read      ),
+  .writeData (av_m0_cmd_fifo_writeData ),
+  .readData  (av_m0_cmd_fifo_readData  )
 );
 /*-----可读mask fifo------------------------*/
 fifo_sync_bypass #(
