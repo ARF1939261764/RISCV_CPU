@@ -93,13 +93,18 @@ module cache_rw_dre_ram #(
 
 wire[31:0] rd,wd;
 wire[7:0] rds[3:0];
+reg last_addr_bit0;
 
 assign {rds[3],rds[2],rds[1],rds[0]}=rd;
 
-assign readRe=readAddress[0]?readReAll[7:4]:readReAll[3:0];
+assign readRe=last_addr_bit0?readReAll[7:4]:readReAll[3:0];
 assign readReAll=rds[readChannel];
 
 assign wd={4{writeRe}};
+
+always @(posedge clk) begin
+  last_addr_bit0<=readAddress[0];
+end
 
 dualPortRam #(
 	.WIDTH(32),		                                /*数据位宽*/

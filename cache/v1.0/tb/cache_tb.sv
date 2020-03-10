@@ -58,20 +58,16 @@ reg[31:0] data;
 initial begin
 	int i;
 	#10 system_rest();
-	for(i=0;i<1000;i++) begin
-		task_s0_readData(4*i,4'b1111,data);
-		if(data!=i*i) begin
-			$error("read data err:%d",i);
-      $stop();
-		end
-	end
-	for(i=0;i<1000;i++) begin
-		task_s0_readData(4*i,4'b1111,data);
-		if(data!=i*i) begin
-			$error("read data err:%d",i);
-      $stop();
-		end
-	end
+	wait(s0_waitRequest==0);
+	task_s0_writeData(8,4'hf,32'h12345678);
+	task_s0_readData(8,4'hf,data);
+//	for(i=0;i<10000;i++) begin
+//		task_s0_readData(4*i,4'b1111,data);
+//		if(data!=i*i) begin
+//			$error("read data err:%d",i);
+//      $stop();
+//		end
+//	end
 end
 
 task system_rest();
@@ -95,8 +91,6 @@ initial begin
 	s1_write=0;
 	s1_writeData=0;
 
-	m0_waitRequest=0;
-	m0_readDataValid=0;
 end
 
 always begin
@@ -127,7 +121,26 @@ task task_s0_readData(
 		end
 	end
 	data=s0_readData;
-	$display("task_s0_readData return data:%x",data);
+	$display("address:%d,task_s0_readData return data:%x",addr,data);
+endtask
+
+task task_s0_writeData(
+	input[31:0] addr,
+	input[3:0]  byteEnable,
+	input[31:0] data
+);
+	s0_address			=  addr;
+	s0_byteEnable		=  byteEnable;
+	s0_read					=	 0;
+	s0_write				=  1;
+	s0_writeData		=data;
+	while (1) begin
+		@(posedge clk);
+		if(!s0_waitRequest) begin
+			s0_write=0;
+			break;
+		end
+	end
 endtask
 
 
@@ -166,7 +179,7 @@ assign s0_waitRequest=0;
 
 initial begin
   int i;
-  for(i=0;i<1000;i++) begin
+  for(i=0;i<10000;i++) begin
     ram[i]=i*i;
   end
 end
