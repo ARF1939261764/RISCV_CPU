@@ -27,34 +27,18 @@ module dualPortRam #(
 /********************************************************
 地址宽度
 ********************************************************/
-localparam ADDR_WIDTH=log2(DEPTH);
+localparam ADDR_WIDTH=$clog2(DEPTH);
 
 /********************************************************
 输入输出端口
 ********************************************************/
-input 											clk;
-input		[ADDR_WIDTH-1:0] 		readAddress;
-output	[WIDTH-1:0] 				readData;
-input		[ADDR_WIDTH-1:0] 		writeAddress;
-input		[WIDTH-1:0] 				writeData;
-input 											writeEnable;
-input		[(WIDTH+7)/8-1:0] 	writeByteEnable;
-
-
-
-/********************************************************
-function:计算数据位宽
-********************************************************/
-function integer log2;
-	input integer num;
-	begin
-		log2=0;
-		while(2**log2<num) begin
-			log2=log2+1;
-		end
-	end
-endfunction
-
+input 	logic 										clk;
+input		logic [ADDR_WIDTH-1:0] 		readAddress;
+output	logic [WIDTH-1:0] 				readData;
+input		logic [ADDR_WIDTH-1:0] 		writeAddress;
+input		logic [WIDTH/8-1:0][7:0] 	writeData;
+input 	logic 										writeEnable;
+input		logic [(WIDTH+7)/8-1:0] 	writeByteEnable;
 /********************************************************
 生成RAM(需要根据不同FPGA类型进行适配)
 ********************************************************/
@@ -112,10 +96,21 @@ endfunction
 	*/
 `elsif FPGA_TYPE_NULL
 	/*---生成verilog描述的RAM-------------------------*/
-	/*
-	...
-	*/
+	logic [WIDTH/8-1:0][7:0] ram[DEPTH-1:0];
+	initial begin:ram_init_block
+		int i;
+		for(i=0;i<DEPTH;i++) begin
+			ram[i]=0;
+		end
+	end
+	always@(posedge clk) begin:ram_rw_block
+    int i;
+    for(i=0;i<WIDTH/8;i++) begin
+      if(writeByteEnable[i]&&writeEnable) begin
+        ram[writeAddress][i] <= writeData[i];
+      end
+    end
+		readData<=ram[readAddress];
+	end
 `endif
-
-
 endmodule

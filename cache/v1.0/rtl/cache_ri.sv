@@ -188,20 +188,20 @@ wire [READ_BYTE_EN_FIFO_WIDTH-1:0] read_byte_en_fifo_readData;
 /**************************************************************************
 其它wire与reg
 **************************************************************************/
-localparam  state_idle                 =     4'd0,
-            state_waitReadIODone       =     4'd1,
-            state_waitWriteIODone      =     4'd2,
-            state_readMiss             =     4'd3,
-            state_writeMiss            =     4'd4,
-            state_writeBack            =     4'd5,
-            state_readIn               =     4'd6,
-            state_clearRe              =     4'd7,
-            state_writeBackAll         =     4'd8,
-            state_clearAll             =     4'd9,
-            state_handleCtrCmd         =     4'd10,
-            state_wait_count_to_zero   =     4'd11,
-            state_init                 =     4'd12,
-            state_end_handleCtrCmd     =     4'd13;
+localparam                state_idle                 =     4'd0,
+                          state_waitReadIODone       =     4'd1,
+                          state_waitWriteIODone      =     4'd2,
+                          state_readMiss             =     4'd3,
+                          state_writeMiss            =     4'd4,
+                          state_writeBack            =     4'd5,
+                          state_readIn               =     4'd6,
+                          state_clearRe              =     4'd7,
+                          state_writeBackAll         =     4'd8,
+                          state_clearAll             =     4'd9,
+                          state_handleCtrCmd         =     4'd10,
+                          state_wait_count_to_zero   =     4'd11,
+                          state_init                 =     4'd12,
+                          state_end_handleCtrCmd     =     4'd13;
 reg[3:0]                  state,return_state;
 reg                       is_need_modific_tag;
 reg[31:0]                 modific_tag;
@@ -639,7 +639,7 @@ task state_readIn_handle();
     data_ri_writeEnable <= 1'd1;
     /*tag*/
     tag_ri_writeData<={{(32-TAG_WIDTH-1){1'd0}},1'd1,address_b[31:31-TAG_WIDTH+1]};
-    tag_ri_writeEnable  <= count_c==8'd0;
+    tag_ri_writeEnable  <= (count_c==8'd0)&&is_need_modific_tag;
     /*dre*/
     dre_ri_writeData<=8'hff;
     dre_ri_writeEnable  <= 1'd1;

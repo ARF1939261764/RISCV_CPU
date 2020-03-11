@@ -1,3 +1,5 @@
+`timescale 1ns/100ps 
+
 `include "cache_define.sv"
 
 module cache_rw #(
@@ -138,7 +140,7 @@ wire[3:0]                         readableMask;                 /*可读掩码*/
 /**************************************************************************
 连线
 **************************************************************************/
-assign sel                     =  arb_waitRequest;
+assign #0.1 sel                     =  arb_waitRequest;
 
 assign data_rw_readAddress     =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];       /*[DATA_RAM_ADDR_WIDTH+1:2]是因为cache_rw_data模块中的RAM每个地址保存的字节数为4*/
 assign data_rw_rwChannel       =  tag_rw_hitBlockNum;                         /*哪一路命中，读哪一路*/

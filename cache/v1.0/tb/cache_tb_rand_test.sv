@@ -63,24 +63,43 @@ sdram_sim_model sdram_sim_model_inst0(
 /*******************************************************************
 测试过程
 *******************************************************************/
-reg[31:0] data;
 initial begin
 	int i;
+	reg[31:0] data,temp,addr;
+	reg[3:0] byteEnable;
 	#10 system_rest();
 	wait(s0_waitRequest==0);
-	for(i=0;i<20000;i++) begin
-    writeData(i*4+0,4'hf,i*i*i);
+	forever begin
+    temp=$random();
+		addr=get_rand_addr();
+		byteEnable={$random()}%16;
+		data=$random();
+		if(temp[0]) begin
+			writeData(addr,byteEnable,data);
+			$display("i=%d,write:address:%x,data=%x",i,addr,data);
+		end
+		addr=get_rand_addr();
+		if(temp[1]) begin
+			readData(addr,4'hf,data);
+			$display("i=%d,read :address:%x,data=%x",i,addr,data);
+		end
+		i++;
   end
-  for(i=0;i<20000;i++) begin
-    readData(i*4+0,4'hf,data);
-  end
-	writeData(4,4'hc,32'h12345678);
-	readData(4,4'hf,data);
-	writeData(8,4'hc,32'h12345678);
-	readData(8,4'hf,data);
-	writeData(12,4'hc,32'h12345678);
-	readData(12,4'hf,data);
 end
+
+/*******************************************************************
+获取一次随机地址
+*******************************************************************/
+reg signed[31:0] temp_addr_a=0,temp_addr_b=0,temp_addr=0;
+reg[4:0] div_count=0;
+function[31:0] get_rand_addr();
+	temp_addr+=$random()%64+(div_count==0?1:0);
+	if(temp_addr<0)  begin
+		temp_addr=0;
+	end
+	div_count++;
+	return temp_addr[31:2]<<2;
+endfunction
 
 /*******************************************************************
 系统复位任务
@@ -124,8 +143,8 @@ ram，和模拟的sdram读出的数据对比
 logic [3:0][7:0] ram[32*1024*1024-1:0];
 initial begin
   int i;
-  for(i=0;i<1000000;i++) begin
-    ram[i]=i*i;
+  for(i=0;i<32*1024*1024;i++) begin
+    ram[i]=0;
   end
 end
 
@@ -139,8 +158,9 @@ task readData(
 );
   logic[31:0] rd;
   task_s0_readData(addr,byteEnable,rd);
+	data=rd;
   if(rd!=ram[addr/4]) begin
-    $error("error:%d",addr);
+    $error("error:addr:%x,sdram=%x,ram=%x",addr,data,ram[addr/4]);
     $stop();
   end
 endtask
@@ -188,7 +208,6 @@ task task_s0_readData(
 		end
 	end
 	data=s0_readData;
-	$display("address:%d,task_s0_readData return data:%x",addr,data);
 endtask
 
 /*******************************************************************
@@ -249,8 +268,8 @@ assign s0_waitRequest=0;
 
 initial begin
   int i;
-  for(i=0;i<1000000;i++) begin
-    ram[i]=i*i;
+  for(i=0;i<SIZE*1024;i++) begin
+    ram[i]=0;
   end
 end
 
