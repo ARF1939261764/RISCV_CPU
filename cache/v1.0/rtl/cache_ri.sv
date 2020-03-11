@@ -188,6 +188,21 @@ wire [READ_BYTE_EN_FIFO_WIDTH-1:0] read_byte_en_fifo_readData;
 /**************************************************************************
 其它wire与reg
 **************************************************************************/
+localparam  state_idle                 =     4'd0,
+            state_waitReadIODone       =     4'd1,
+            state_waitWriteIODone      =     4'd2,
+            state_readMiss             =     4'd3,
+            state_writeMiss            =     4'd4,
+            state_writeBack            =     4'd5,
+            state_readIn               =     4'd6,
+            state_clearRe              =     4'd7,
+            state_writeBackAll         =     4'd8,
+            state_clearAll             =     4'd9,
+            state_handleCtrCmd         =     4'd10,
+            state_wait_count_to_zero   =     4'd11,
+            state_init                 =     4'd12,
+            state_end_handleCtrCmd     =     4'd13;
+reg[3:0]                  state,return_state;
 reg                       is_need_modific_tag;
 reg[31:0]                 modific_tag;
 wire                      isDirtyBlock;                               /*是否为脏块*/
@@ -206,7 +221,7 @@ av_cmd_fifo_port_type     av_m0_cmd_fifo_port;
 连线
 **************************************************************************/
 assign read_byte_en_fifo_writeData  =     dre_ri_readRe;
-assign read_byte_en_fifo_write      =     is_read_data_valid;
+assign read_byte_en_fifo_write      =     is_read_data_valid&&(state==state_readIn);
 assign read_byte_en_fifo_read       =     data_ri_writeEnable;
 
 assign isDirtyBlock                 =     tag_ri_readData[TAG_WIDTH]&&tag_ri_readData[TAG_WIDTH+1];/*被占用，并且被修改才能算是脏块*/
@@ -257,22 +272,6 @@ assign av_m0_cmd_fifo_read          =     !av_m0_waitRequest;
 /*************************************************************************
 状态机
 *************************************************************************/
-localparam  state_idle                 =     4'd0,
-            state_waitReadIODone       =     4'd1,
-            state_waitWriteIODone      =     4'd2,
-            state_readMiss             =     4'd3,
-            state_writeMiss            =     4'd4,
-            state_writeBack            =     4'd5,
-            state_readIn               =     4'd6,
-            state_clearRe              =     4'd7,
-            state_writeBackAll         =     4'd8,
-            state_clearAll             =     4'd9,
-            state_handleCtrCmd         =     4'd10,
-            state_wait_count_to_zero   =     4'd11,
-            state_init                 =     4'd12,
-            state_end_handleCtrCmd     =     4'd13;
-reg[3:0] state,return_state;
-
 wire end_state_waitReadIODone ;
 wire end_state_waitWriteIODone;
 wire end_state_writeBack;
@@ -285,7 +284,7 @@ assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest|
 assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
 assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=8'd15);
 assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
-assign end_state_clearRe             =(count_a>=8'd7);
+assign end_state_clearRe             =(count_a>=8'd8);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
 assign end_state_wait_count_to_zero  =(delay_count==8'd0);
 /*第一段*/
@@ -336,7 +335,7 @@ always @(posedge clk or negedge rest) begin
         end
       state_clearRe:begin
           if(end_state_clearRe) begin
-            state<=state_idle;
+            state<=state_wait_count_to_zero;
           end
         end
       state_writeBackAll:begin
@@ -400,6 +399,7 @@ always @(posedge clk or negedge rest) begin
         end
       state_readMiss,state_writeMiss:begin
           state_read_write_miss_handle();
+          $display("address=%d\nstate=%s\nisHit=%d\nisHaveFreeBlock=%d\nrwChannel=%d\n",rw_last_av_s0_address,state==state_readIn?"readMiss":"writeMiss",rw_isHit,rw_isHaveFreeBlock,rwChannel);
         end
       state_writeBack:begin
           /*写回处理*/
@@ -450,9 +450,6 @@ always @(*) begin
     state_waitWriteIODone:begin
         rw_cmd_ready=end_state_waitWriteIODone;
       end
-    state_clearRe:begin
-        rw_cmd_ready=end_state_clearRe;
-      end
     state_wait_count_to_zero:begin
         rw_cmd_ready=end_state_wait_count_to_zero;
       end
@@ -477,8 +474,8 @@ end
 /******************************************************************************************
 通过一个完整的地址获取对应cache块的首地址
 ******************************************************************************************/
-function[DATA_RAM_ADDR_WIDTH-1:0] get_cache_block_addr(input[31:0] address);
-  return {address[DATA_RAM_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
+function[31:0] get_cache_block_addr(input[31:0] address);
+  return {address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
 endfunction
 
 /******************************************************************************************
@@ -523,13 +520,13 @@ endtask
 ******************************************************************************************/
 task state_read_write_miss_handle();
   is_need_modific_tag<=!rw_isHit;
-  modific_tag<={{(32-TAG_WIDTH-1){1'd0}},1'd1,rw_last_av_s0_address[31:31-TAG_WIDTH+1]};
+  modific_tag<=rw_last_av_s0_address[31:31-TAG_WIDTH+1]|(1<<TAG_WIDTH);
   count_a<=8'd0;
   count_b<=8'd0;
   count_c<=8'd0;
   is_read_addr_change<=1'd0;
-  address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:0]};
-  address_b<=rw_last_av_s0_address;
+  address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
+  address_b<={rw_last_av_s0_address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
 endtask
 
 /******************************************************************************************
@@ -540,7 +537,7 @@ endtask
   3,rwChannel修改为对应的通道
 ******************************************************************************************/
 task state_writeBack_handle();
-  logic[DATA_RAM_ADDR_WIDTH-1:0] block_addr;
+  logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_a);
   /*改变内部SRAM读地址*/
   if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
@@ -554,7 +551,7 @@ task state_writeBack_handle();
   if(is_read_data_valid&&!end_state_writeBack) begin
     av_cmd_fifo_push_write(
       .fifo_port          (av_m0_cmd_fifo_port  ),
-      .address            (block_addr+count_b*4 ),
+      .address            (address_a+count_b*4  ),
       .byteEnable         (dre_ri_readRe        ),
       .writeData          (data_ri_readData     ),
       .beginBurstTransfer (count_b==8'd0        ),
@@ -604,7 +601,7 @@ endtask
   这三个寄存器置0
 ******************************************************************************************/
 task state_readIn_handle();
-  logic[DATA_RAM_ADDR_WIDTH-1:0] block_addr;
+  logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_b);
   if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<8'd16)) begin
     /*字节使能信号fifo占用还没过半，还能装，命中了(说明是因为byte不可读造成的，写cache块时不能覆
@@ -678,7 +675,7 @@ endtask
   3,rwChannel修改为对应的通道
 ******************************************************************************************/
 task state_clearRe_handle();
-  logic[DATA_RAM_ADDR_WIDTH-1:0] block_addr;
+  logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_a);
   writeAddress<=block_addr+count_a*8;
   /*如果需要修改标签，则修改标签*/
@@ -691,6 +688,7 @@ task state_clearRe_handle();
     count_a++;
   end
   else begin
+    delay_count<=8'd0;
     readAddress<=rw_last_av_s0_address;
     count_a<=8'd0;
   end

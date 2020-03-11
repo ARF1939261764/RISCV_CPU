@@ -38,6 +38,9 @@ wire [7:0]              writeData;
 wire                    writeEnable;
 wire [7:0]              wre;
 
+reg                     last_is_write_during_read;
+reg  [7:0]              last_writeRe;
+
 /*****************************************************************************************************************
 连线
 *****************************************************************************************************************/
@@ -48,10 +51,15 @@ assign writeChannel     =   sel?ri_writeChannel  : rw_writeChannel;
 assign writeData        =   sel?ri_writeData     : wre;
 assign writeEnable      =   sel?ri_writeEnable   : rw_writeEnable;
 
-assign wre              =   readReAll|({{4{readAddress[0]}},{4{!readAddress[0]}}}&{2{rw_writeRe}});
+assign wre              =   (last_is_write_during_read?last_writeRe:readReAll)|({{4{writeAddress[0]}},{4{!writeAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
 assign ri_readRe        =   rw_readRe;
+
+always @(posedge clk) begin
+  last_is_write_during_read<=writeEnable&&(writeAddress[ADDR_WIDTH-1:1]==readAddress[ADDR_WIDTH-1:1]);
+  last_writeRe<=writeData;
+end
 
 /*****************************************************************************************************************
 实例化module
