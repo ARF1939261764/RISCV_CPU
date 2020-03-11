@@ -399,7 +399,6 @@ always @(posedge clk or negedge rest) begin
         end
       state_readMiss,state_writeMiss:begin
           state_read_write_miss_handle();
-          $display("address=%d\nstate=%s\nisHit=%d\nisHaveFreeBlock=%d\nrwChannel=%d\n",rw_last_av_s0_address,state==state_readIn?"readMiss":"writeMiss",rw_isHit,rw_isHaveFreeBlock,rwChannel);
         end
       state_writeBack:begin
           /*写回处理*/
@@ -527,6 +526,11 @@ task state_read_write_miss_handle();
   is_read_addr_change<=1'd0;
   address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
   address_b<={rw_last_av_s0_address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
+  $display("address=%d\nstate=%s\nisHit=%d\nisHaveFreeBlock=%d\nrwChannel=%d\n",rw_last_av_s0_address,
+                                                                              rw_last_av_s0_read?"readMiss":"writeMiss",
+                                                                              rw_isHit,
+                                                                              rw_isHaveFreeBlock,
+                                                                              rwChannel);
 endtask
 
 /******************************************************************************************
@@ -551,7 +555,7 @@ task state_writeBack_handle();
   if(is_read_data_valid&&!end_state_writeBack) begin
     av_cmd_fifo_push_write(
       .fifo_port          (av_m0_cmd_fifo_port  ),
-      .address            (address_a+count_b*4  ),
+      .address            (block_addr+count_b*4 ),
       .byteEnable         (dre_ri_readRe        ),
       .writeData          (data_ri_readData     ),
       .beginBurstTransfer (count_b==8'd0        ),
@@ -659,7 +663,7 @@ task state_readIn_handle();
     end
   end
   else begin
-    readAddress<=address_b;
+    readAddress<=rw_last_av_s0_address;
     /*如果下一步需要进入到其它状态,全部清零*/
     count_a<=8'd0;
     count_b<=8'd0;

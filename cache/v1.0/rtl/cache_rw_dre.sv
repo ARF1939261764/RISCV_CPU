@@ -38,8 +38,6 @@ wire [7:0]              writeData;
 wire                    writeEnable;
 wire [7:0]              wre;
 
-reg                     last_is_write_during_read;
-reg  [7:0]              last_writeRe;
 
 /*****************************************************************************************************************
 连线
@@ -51,15 +49,10 @@ assign writeChannel     =   sel?ri_writeChannel  : rw_writeChannel;
 assign writeData        =   sel?ri_writeData     : wre;
 assign writeEnable      =   sel?ri_writeEnable   : rw_writeEnable;
 
-assign wre              =   (last_is_write_during_read?last_writeRe:readReAll)|({{4{writeAddress[0]}},{4{!writeAddress[0]}}}&{2{rw_writeRe}});
+assign wre              =   readReAll|({{4{writeAddress[0]}},{4{!writeAddress[0]}}}&{2{rw_writeRe}});
 assign rw_readRe        =   readRe;
 assign ri_readData      =   readReAll;
 assign ri_readRe        =   rw_readRe;
-
-always @(posedge clk) begin
-  last_is_write_during_read<=writeEnable&&(writeAddress[ADDR_WIDTH-1:1]==readAddress[ADDR_WIDTH-1:1]);
-  last_writeRe<=writeData;
-end
 
 /*****************************************************************************************************************
 实例化module
@@ -97,21 +90,23 @@ module cache_rw_dre_ram #(
   input [7:0]             writeRe,
   input                   writeEnable
 );
-
-
-wire[31:0] rd,wd;
-wire[7:0] rds[3:0];
-reg last_addr_bit0;
+wire         [31:0] rd,wd;
+wire         [7:0] rds[3:0];
+reg          last_addr_bit0;
+reg          last_is_write_during_read;
+reg  [7:0]   last_writeRe;
 
 assign {rds[3],rds[2],rds[1],rds[0]}=rd;
 
 assign readRe=last_addr_bit0?readReAll[7:4]:readReAll[3:0];
-assign readReAll=rds[readChannel];
+assign readReAll=last_is_write_during_read?last_writeRe:rds[readChannel];
 
 assign wd={4{writeRe}};
 
 always @(posedge clk) begin
   last_addr_bit0<=readAddress[0];
+  last_is_write_during_read<=(readAddress[ADDR_WIDTH-1:1]==writeAddress[ADDR_WIDTH-1:1])&&(readChannel==writeChannel)&&writeEnable;
+  last_writeRe<=writeRe;
 end
 
 dualPortRam #(
