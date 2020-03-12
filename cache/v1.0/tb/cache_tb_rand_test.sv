@@ -39,7 +39,8 @@ logic [8-1:0]  	 m0_burstCount;
 cache模块实例化
 *******************************************************************/
 cache #(
-	.SIZE(8*1024)
+	.SIZE(8*1024),
+	.BLOCK_SIZE(256)
 )
 cache_inst0(
 	.*
@@ -68,7 +69,7 @@ initial begin
 	reg[31:0] data,temp,addr;
 	reg[3:0] byteEnable;
 	#10 system_rest();
-	$random(56546961);
+	$random(12021961);
 	wait(s0_waitRequest==0);
 	forever begin
     temp=$random();
@@ -80,9 +81,10 @@ initial begin
 			$display("i=%d,write:address:%x,data=%x,byte=%1x",i,addr[24:0],data,byteEnable);
 		end
 		addr=get_rand_addr();
+		byteEnable={$random()}%16;
 		if(temp[1]) begin
-			readData(addr[24:0],4'hf,data);
-			$display("i=%d,read :address:%x,data=%x",i,addr[24:0],data);
+			readData(addr[24:0],byteEnable,data);
+			$display("i=%d,read :address:%x,data=%x,byte=%1x",i,addr[24:0],data,byteEnable);
 		end
 		i++;
   end
@@ -160,7 +162,12 @@ task readData(
   logic[31:0] rd;
   task_s0_readData(addr,byteEnable,rd);
 	data=rd;
-  if(rd!=ram[addr/4]) begin
+	if(
+		((rd[31:24]!=ram[addr/4][3])&&byteEnable[3])||
+		((rd[23:16]!=ram[addr/4][2])&&byteEnable[2])||
+		((rd[15:8] !=ram[addr/4][1])&&byteEnable[1])||
+		((rd[7:0]  !=ram[addr/4][0])&&byteEnable[0])
+	) begin
     $error("error:addr:%x,sdram=%x,ram=%x",addr,data,ram[addr/4]);
     $stop();
   end

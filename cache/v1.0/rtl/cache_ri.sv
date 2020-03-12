@@ -65,6 +65,7 @@ module cache_ri #(
   output logic                                         dre_ri_writeEnable,
   output logic [7:0]                                   dre_ri_writeData
 );
+localparam BLOCK_DEPTH=2**BLOCK_ADDR_WIDTH/4;
 
 /**************************************************************************
 av从机s0的指令fifo
@@ -213,7 +214,7 @@ reg  [31:0]               readAddress;                                /*读地�
 reg  [31:0]               writeAddress;                               /*写地址*/
 reg                       is_read_addr_change;                        /*读地址变化:这里指读内部SRAM的*/
 reg                       is_read_data_valid;                         /*读数据有效:这里指读内部SRAM的*/
-reg  [7:0]                count_a,count_b,count_c,delay_count;        /*计数器*/
+reg  [15:0]               count_a,count_b,count_c,delay_count;        /*计数器*/
 reg  [31:0]               address_a,address_b;
 av_cmd_fifo_port_type     av_m0_cmd_fifo_port;
 
@@ -282,9 +283,9 @@ wire end_state_wait_count_to_zero;
 
 assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest||!av_m0_read)&&av_m0_readDataValid;
 assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
-assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=8'd15);
-assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=8'd16);
-assign end_state_clearRe             =(count_a>=8'd8);
+assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=BLOCK_DEPTH-1);
+assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=BLOCK_DEPTH);
+assign end_state_clearRe             =(count_a>=BLOCK_DEPTH/2);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
 assign end_state_wait_count_to_zero  =(delay_count==8'd0);
 /*第一段*/
@@ -544,7 +545,7 @@ task state_writeBack_handle();
   logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_a);
   /*改变内部SRAM读地址*/
-  if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
+  if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<BLOCK_DEPTH)) begin
     readAddress<=block_addr+count_a*4;
     is_read_addr_change<=1'd1;
   end
@@ -559,7 +560,7 @@ task state_writeBack_handle();
       .byteEnable         (dre_ri_readRe        ),
       .writeData          (data_ri_readData     ),
       .beginBurstTransfer (count_b==8'd0        ),
-      .burstCount         (16                   )
+      .burstCount         (BLOCK_DEPTH          )
     );
   end
   /*当fifo满，并且av_m0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
@@ -570,7 +571,7 @@ task state_writeBack_handle();
   /*-----------------计数器控制--------------------------------------*/
   if(!end_state_writeBack) begin
     /*修改一次地址,count_a加一*/
-    if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<8'd16)) begin
+    if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<BLOCK_DEPTH)) begin
       count_a++;
     end
     /*没向FIFO中压入一条写数据指令,count_b加一*/
@@ -607,7 +608,7 @@ endtask
 task state_readIn_handle();
   logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_b);
-  if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<8'd16)) begin
+  if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<BLOCK_DEPTH)) begin
     /*字节使能信号fifo占用还没过半，还能装，命中了(说明是因为byte不可读造成的，写cache块时不能覆
       盖原来的数据，所以需要考虑字节可读信号)*/
     readAddress<=block_addr+count_a*4;
@@ -618,14 +619,14 @@ task state_readIn_handle();
     /*地址没有改变,置0*/
     is_read_addr_change<=1'd0;
   end
-  if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<8'd16)) begin
+  if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<BLOCK_DEPTH)) begin
     /*总线指令fifo还能装,向fifo写读数据入指令*/
     av_cmd_fifo_push_read(
       .fifo_port          (av_m0_cmd_fifo_port  ),
       .address            (block_addr+count_b*4 ),
       .byteEnable         (4'hf                 ),
       .beginBurstTransfer (count_b==8'd0        ),
-      .burstCount         (8'd16                )
+      .burstCount         (BLOCK_DEPTH          )
     );
   end
   else begin
@@ -652,10 +653,10 @@ task state_readIn_handle();
   is_read_data_valid<=is_read_addr_change;
   /*-----------------计数器控制--------------------------------------*/
   if(!end_state_readIn) begin
-    if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<8'd16)) begin
+    if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<BLOCK_DEPTH)) begin
       count_a++;
     end
-    if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<8'd16)) begin
+    if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<BLOCK_DEPTH)) begin
       count_b++;
     end
     if(av_m0_readDataValid) begin
@@ -687,7 +688,7 @@ task state_clearRe_handle();
   tag_ri_writeEnable<=(count_a==8'd0)&&is_need_modific_tag;
   /*清除Readable info*/
   dre_ri_writeData<=8'd0;
-  dre_ri_writeEnable<=count_a<8'd8;
+  dre_ri_writeEnable<=count_a<BLOCK_DEPTH/2;
   if(!end_state_clearRe) begin
     count_a++;
   end
@@ -709,8 +710,8 @@ state_init_handle
 ******************************************************************************************/
 task state_init_handle();
   logic[31:0] addr;
-  addr={address_a+count_a}<<6;
-  {rwChannel,writeAddress[TAG_RAM_ADDR_WIDTH+5:6]}<=addr[TAG_RAM_ADDR_WIDTH+7:6];
+  addr={address_a+count_a}<<BLOCK_ADDR_WIDTH;
+  {rwChannel,writeAddress[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH]}<=addr[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH+1:BLOCK_ADDR_WIDTH];
   tag_ri_writeData<=32'h0;
   tag_ri_writeEnable<=1'd1;
   count_a<=count_a+8'd1;
