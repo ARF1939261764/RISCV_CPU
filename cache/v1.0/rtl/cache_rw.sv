@@ -69,7 +69,7 @@ module cache_rw #(
 /**************************************************************************
 连接到实例module的wire
 **************************************************************************/
-wire                              sel;                          /*选择信号，值与arb_waitRequest绑定*/
+logic                             sel;                          /*选择信号，值与arb_waitRequest绑定*/
 
 wire [DATA_RAM_ADDR_WIDTH-1:0]    data_rw_readAddress;          /*读地址*/
 wire [1:0]                        data_rw_rwChannel;            /*读通道*/
@@ -112,6 +112,8 @@ reg                               last_arb_read;
 reg                               last_arb_write;
 reg  [31:0]                       last_arb_writeData;
 
+reg                               last_isNeedSendCmdToRi;
+
 reg  [31:0]                       readBuff_arb_address;         /*再缓存一级,这里缓存,是为了读一个刚写入的数据时避免冲突(如果读的数据正在写入,则从这里面读出那个数据)*/
 reg  [3:0]                        readBuff_arb_byteEnable;
 reg                               readBuff_arb_write;
@@ -140,25 +142,23 @@ wire[3:0]                         readableMask;                 /*可读掩码*/
 /**************************************************************************
 连线
 **************************************************************************/
-assign #0.1 sel                     =  arb_waitRequest;
-
 assign data_rw_readAddress     =  arb_address[DATA_RAM_ADDR_WIDTH+1:2];       /*[DATA_RAM_ADDR_WIDTH+1:2]是因为cache_rw_data模块中的RAM每个地址保存的字节数为4*/
 assign data_rw_rwChannel       =  tag_rw_hitBlockNum;                         /*哪一路命中，读哪一路*/
 assign data_rw_writeAddress    =  last_arb_address[DATA_RAM_ADDR_WIDTH+1:2];  /*同上,这里用的是缓冲寄存器的结果是因为第一个时钟周期用来查找对应的cache块了,第二个时钟周期才能写入,所以要缓冲一级*/
 assign data_rw_writeByteEnable =  last_arb_byteEnable;
-assign data_rw_writeEnable     =  last_arb_write;
+assign data_rw_writeEnable     =  last_arb_write&&!arb_waitRequest;
 assign data_rw_writeData       =  last_arb_writeData;
 
 assign tag_rw_readAddress      =  arb_address[TAG_RAM_ADDR_WIDTH + BLOCK_ADDR_WIDTH - 1:BLOCK_ADDR_WIDTH];
 assign tag_rw_writeAddress     =  last_arb_address[TAG_RAM_ADDR_WIDTH + BLOCK_ADDR_WIDTH - 1:BLOCK_ADDR_WIDTH];
-assign tag_rw_writeEnable      =  last_arb_write;
+assign tag_rw_writeEnable      =  last_arb_write&&!arb_waitRequest;
 assign tag_rw_tag              =  last_arb_address[31:31-TAG_WIDTH+1];
 
 assign dre_rw_readAddress      =  arb_address[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_readChannel      =  tag_rw_hitBlockNum;
 assign dre_rw_writeAddress     =  last_arb_address[DRE_RAM_ADDR_WIDTH+1:2];
 assign dre_rw_writeChannel     =  tag_rw_hitBlockNum;
-assign dre_rw_writeEnable      =  last_arb_write;
+assign dre_rw_writeEnable      =  last_arb_write&&!arb_waitRequest;
 assign dre_rw_writeRe          =  last_arb_byteEnable;                        /*这里的字节使能信号不是用来控制写入的，而是作为数据会被写入到RAM的*/
 
 assign ctr_address             =  arb_address;                                /*这里直接赋值,不需要过寄存器缓冲*/
@@ -209,6 +209,11 @@ assign ri_hitBlockNum          =  last_hitBlockNum;
 assign ri_isHaveFreeBlock      =  last_isHaveFreeBlock;
 assign ri_freeBlockNum         =  last_freeBlockNum;
 
+always @(posedge clk)  begin
+  last_isNeedSendCmdToRi<=isNeedSendCmdToRi;
+  sel<=isNeedSendCmdToRi&&!ri_cmd_ready;
+end
+
 /**************************************************************************
 缓存指令
 **************************************************************************/
@@ -227,7 +232,7 @@ always @(posedge clk or negedge rest) begin
       {readBuff_arb_address,readBuff_arb_byteEnable,readBuff_arb_write,readBuff_arb_writeData}
         <={last_arb_address,last_arb_byteEnable,last_arb_write,last_arb_writeData};
     end
-    if(state==state_idle) begin
+    if(!last_isNeedSendCmdToRi) begin
       /*缓存其它信号*/
       {last_isHit,last_hitBlockNum,last_isHaveFreeBlock,last_freeBlockNum}
         <={tag_rw_isHit,tag_rw_hitBlockNum,tag_rw_isHaveFreeBlock,tag_rw_freeBlockNum};

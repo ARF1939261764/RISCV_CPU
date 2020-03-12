@@ -68,6 +68,7 @@ initial begin
 	reg[31:0] data,temp,addr;
 	reg[3:0] byteEnable;
 	#10 system_rest();
+	$random(56546961);
 	wait(s0_waitRequest==0);
 	forever begin
     temp=$random();
@@ -75,13 +76,13 @@ initial begin
 		byteEnable={$random()}%16;
 		data=$random();
 		if(temp[0]) begin
-			writeData(addr,byteEnable,data);
-			$display("i=%d,write:address:%x,data=%x",i,addr,data);
+			writeData(addr[24:0],byteEnable,data);
+			$display("i=%d,write:address:%x,data=%x,byte=%1x",i,addr[24:0],data,byteEnable);
 		end
 		addr=get_rand_addr();
 		if(temp[1]) begin
-			readData(addr,4'hf,data);
-			$display("i=%d,read :address:%x,data=%x",i,addr,data);
+			readData(addr[24:0],4'hf,data);
+			$display("i=%d,read :address:%x,data=%x",i,addr[24:0],data);
 		end
 		i++;
   end
