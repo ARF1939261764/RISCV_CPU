@@ -1,7 +1,7 @@
 /**************************************************************************
-带旁路的同步fifo
+同步fifo
 **************************************************************************/
-module fifo_sync_bypass #(
+module fifo_sync #(
   parameter DEPTH=2,  /*允许为0,2,4,8,16*/
             WIDTH=32
 )(
@@ -46,16 +46,7 @@ generate
     /***************************************************************************
     选择器，选择读哪一个数据
     ***************************************************************************/
-    always @(*) begin
-      case(count)
-        0:begin
-          readData=writeData;
-        end
-        default:begin
-          readData=array[front[ADDR_WIDTH-2:0]];
-        end
-      endcase
-    end
+    assign readData=array[front[ADDR_WIDTH-2:0]];
 
     /***************************************************************************
     fifo读写控制
@@ -65,12 +56,9 @@ generate
         int i;
         front<=0;
         rear<=0;
-        for(i=0;i<DEPTH;i++) begin
-          array[i]<=0;
-        end
       end
       else begin
-        if(write&&!full&&((count!=0)||!read)) begin
+        if(write&&(!full||read)) begin
           array[rear[ADDR_WIDTH-2:0]]<=writeData;
           rear++;
         end
