@@ -1,4 +1,4 @@
-module core_ifu(
+module core_if(
   input                 clk,
   input                 rest,
   /*主机接口,访问总线*/
@@ -10,13 +10,26 @@ module core_ifu(
   /*分支预测接口*/
   output  logic[31:0]   bp_istr,
   output  logic[31:0]   bp_pc,
-  input   logic         bp_jump_em,
+  input   logic         bp_jump_en,
   /*指令交付给下一级*/
   output  logic[31:0]   dely_istr,
   output  logic[31:0]   dely_pc,
   output  logic         dely_valid,
   input   logic         dely_ready
 );
+reg[31:1] next_pc;
+
+always @(*) begin
+  if(jump_en) begin
+    next_pc=jump_addr[31:1];
+  end
+  else if(bp_jump_en)
+    /**/
+  end
+  else begin
+    
+  end
+end
 
 
 

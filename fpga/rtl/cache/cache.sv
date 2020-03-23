@@ -328,7 +328,7 @@ initial begin
   $display("DATA_RAM_ADDR_WIDTH=%d",DATA_RAM_ADDR_WIDTH);
   $display("TAG_RAM_ADDR_WIDTH =%d",TAG_RAM_ADDR_WIDTH );
   $display("DRE_RAM_ADDR_WIDTH =%d",DRE_RAM_ADDR_WIDTH );
-  $display("TAG_WIDTH         =%d" ,TAG_WIDTH          );
+  $display("TAG_WIDTH          =%d" ,TAG_WIDTH         );
 end
 
 endmodule
