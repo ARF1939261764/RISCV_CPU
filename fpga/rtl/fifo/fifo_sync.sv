@@ -5,22 +5,24 @@ module fifo_sync #(
   parameter DEPTH=2,  /*允许为0,2,4,8,16*/
             WIDTH=32
 )(
-  input  logic              clk,
-  input  logic              rest,
-  output logic              full,
-  output logic              empty,
-  output logic              half,
-  input  logic              write,
-  input  logic              read,
-  input  logic [WIDTH-1:0]  writeData,
-  output logic [WIDTH-1:0]  readData
+  input  logic             clk,
+  input  logic             rest,
+  output logic             full,
+  output logic             empty,
+  output logic             half,
+  input  logic             write,
+  input  logic             read,
+  input  logic [WIDTH-1:0] write_data,
+  output logic [WIDTH-1:0] read_data,
+  output logic [WIDTH-1:0] all_data[(DEPTH==0?1:DEPTH)-1:0]
 );
 generate
   if(DEPTH==0) begin
-    assign full     = !read&&write;
-    assign empty    = read||!write;
-    assign half     = !read&&write;
-    assign readData = writeData;
+    assign full       = !read&&write;
+    assign empty      = read||!write;
+    assign half       = !read&&write;
+    assign read_data  = write_data;
+    assign all_data[0]= 0;
   end
   else begin
     /***************************************************************************
@@ -40,13 +42,13 @@ generate
     ***************************************************************************/
     assign count  =  rear-front;
     assign full   =  ((front[ADDR_WIDTH-1]^rear[ADDR_WIDTH-1])&&(front[ADDR_WIDTH-2:0]==rear[ADDR_WIDTH-2:0]))&&!read;
-    assign empty  =   front==rear;
+    assign empty  =  front==rear;
     assign half   =  count>=DEPTH/2;
 
     /***************************************************************************
     选择器，选择读哪一个数据
     ***************************************************************************/
-    assign readData=array[front[ADDR_WIDTH-2:0]];
+    assign read_data=array[front[ADDR_WIDTH-2:0]];
 
     /***************************************************************************
     fifo读写控制
@@ -59,12 +61,21 @@ generate
       end
       else begin
         if(write&&(!full||read)) begin
-          array[rear[ADDR_WIDTH-2:0]]<=writeData;
+          array[rear[ADDR_WIDTH-2:0]]<=write_data;
           rear++;
         end
         if(read&&!empty) begin
           front++;
         end
+      end
+    end
+    /***************************************************************************
+      引出所有数据
+    ***************************************************************************/
+    always @(*) begin:block_1
+      int i;
+      for(i=0;i<DEPTH;i++) begin
+        all_data[i]=array[i];
       end
     end
   end

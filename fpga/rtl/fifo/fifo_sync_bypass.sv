@@ -13,14 +13,16 @@ module fifo_sync_bypass #(
   input  logic              write,
   input  logic              read,
   input  logic [WIDTH-1:0]  writeData,
-  output logic [WIDTH-1:0]  readData
+  output logic [WIDTH-1:0]  readData,
+  output logic [WIDTH-1:0]  allData[(DEPTH==0?1:DEPTH)-1:0]
 );
 generate
   if(DEPTH==0) begin
-    assign full     = !read&&write;
-    assign empty    = read||!write;
-    assign half     = !read&&write;
-    assign readData = writeData;
+    assign full       = !read&&write;
+    assign empty      = read||!write;
+    assign half       = !read&&write;
+    assign readData   = writeData;
+    assign allData[0] = 0;
   end
   else begin
     /***************************************************************************
@@ -77,6 +79,15 @@ generate
         if(read&&!empty) begin
           front++;
         end
+      end
+    end
+    /***************************************************************************
+    引出所有数据
+    ***************************************************************************/
+    always @(*) begin:block_1
+      int i;
+      for(i=0;i<DEPTH;i++) begin
+        allData[i]=array[i];
       end
     end
   end
