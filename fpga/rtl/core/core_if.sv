@@ -70,12 +70,12 @@ logic       generate_istr_istr_valid;
 **********************************************************************************/
 assign pc_en                              = !pc_valid||istr_valid; /*计算下一个pc*/
 
-assign shift_fifo_write                   = avl_m0.read_data_valid;
+assign shift_fifo_write                   = avl_m0.read_data_valid&&!wait_fifo_empty;
 assign shift_fifo_addr                    = wait_fifo_read_data;
 assign shift_fifo_data                    = avl_m0.read_data;
 
 assign wait_fifo_write                    = avl_m0.read&&avl_m0.request_ready;
-assign wait_fifo_write_data               = {1'd1,1'd0,avl_m0.address[29:0]};
+assign wait_fifo_write_data               = {1'd1,1'd0,avl_m0.address[31:2]};
 assign wait_fifo_read                     = avl_m0.read_data_valid;
 
 assign generate_addr_next_pc              = next_pc;
@@ -95,7 +95,7 @@ generate
     assign generate_istr_all_valid_addr[i]=shift_fifo_all_addr[i];
     assign generate_istr_all_valid_data[i]=shift_fifo_all_data[i];
   end
-  assign generate_istr_all_valid_addr[i]=wait_fifo_read_data;
+  assign generate_istr_all_valid_addr[i]={avl_m0.read_data_valid,1'd0,wait_fifo_read_data[29:0]};
   assign generate_istr_all_valid_data[i]=avl_m0.read_data;
   for(i=0;i<WAIT_FIFO_MAX_NUM;i++) begin:block4
     assign generate_istr_all_sent_addr[i]=wait_fifo_all_data[i];
@@ -106,7 +106,7 @@ assign generate_istr_pc=pc;
 assign istr_valid                         = generate_istr_istr_valid;
 assign avl_m0.read                        = generate_addr_read;
 assign avl_m0.address                     = generate_addr_read_addr;
-assign pc_offset                          = (generate_istr_istr[1:0]==2'd3)?(3'd4):3'd2;
+assign pc_offset                          = generate_istr_istr[1:0]==2'd3?4:2;
 assign istr_is_mret                       = generate_istr_istr_valid&&(generate_istr_istr==`ISTR_MRET);
 assign avl_m0.write                       = 1'd0;
 assign avl_m0.write_data                  = 32'd0;
@@ -122,7 +122,7 @@ always @(posedge clk) begin
   dely_valid<=generate_istr_istr_valid&!flush_en;
   dely_pc<=pc;
 end
-
+/*计算next_pc_sel*/
 always @(*) begin
   if(jump_en) begin
     next_pc_sel<=4'd2;
