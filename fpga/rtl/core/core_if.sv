@@ -24,21 +24,119 @@ module core_if #(
 localparam  PREFETCHED_NUM = 2,/*预取多少个内存单元(至少两个)*/
             WAIT_FIFO_MAX_NUM=2,
             SHIFT_BUFF_MAX_NUM=2;
+`define     ISTR_MRET       (32'b00110000001000000000000000000011)
+genvar      i;
+reg [31:0]  pc;
+wire        pc_en;
+reg         pc_valid;
+wire[31:0]  next_pc;
+wire[2:0]   next_pc_sel;
+wire[2:0]   pc_offset;
+wire        istr_valid;      /*指令有效,表示已经取到了当前pc对应的指令*/
+wire        istr_is_mret;
 
-reg [31:0] pc;
-wire       pc_en;
-reg        pc_valid;
-wire[31:0] next_pc;
-wire[2:0]  next_pc_sel;
-wire[2:0]  pc_offset;
-
-wire       istr_valid;      /*指令有效,表示已经取到了当前pc对应的指令*/
-
+/**shift fifo的端口****/
+logic       shift_fifo_write;
+logic[31:0] shift_fifo_addr;
+logic[31:0] shift_fifo_data;
+logic[31:0] shift_fifo_all_addr[SHIFT_BUFF_MAX_NUM-1:0];
+logic[31:0] shift_fifo_all_data[SHIFT_BUFF_MAX_NUM-1:0];
+/**wait fifo的端口**/
+logic       wait_fifo_full;
+logic       wait_fifo_empty;
+logic       wait_fifo_half;
+logic       wait_fifo_write;
+logic[31:0] wait_fifo_write_data;
+logic       wait_fifo_read;
+logic[31:0] wait_fifo_read_data;
+logic[31:0] wait_fifo_all_data[WAIT_FIFO_MAX_NUM-1:0];
+/**generate addr模块**/
+logic[31:0] generate_addr_next_pc;
+logic[31:0] generate_addr_pc;
+logic[1:0]  generate_addr_pc_read_data_request;
+logic[31:0] generate_addr_all_sent_addr[WAIT_FIFO_MAX_NUM+SHIFT_BUFF_MAX_NUM-1:0];
+logic[31:0] generate_addr_read_addr;
+logic       generate_addr_read;
+/**generate istr模块**/
+logic[31:0] generate_istr_all_valid_addr[SHIFT_BUFF_MAX_NUM:0];
+logic[31:0] generate_istr_all_sent_addr[WAIT_FIFO_MAX_NUM-1:0];
+logic[31:0] generate_istr_all_valid_data[SHIFT_BUFF_MAX_NUM:0];
+logic[31:0] generate_istr_pc;
+logic[1:0]  generate_istr_pc_read_data_request;
+logic[31:0] generate_istr_istr;
+logic       generate_istr_istr_valid;
 /**********************************************************************************
 连线
 **********************************************************************************/
-assign pc_en=!pc_valid||istr_valid; /*计算下一个pc*/
+assign pc_en                              = !pc_valid||istr_valid; /*计算下一个pc*/
 
+assign shift_fifo_write                   = avl_m0.read_data_valid;
+assign shift_fifo_addr                    = wait_fifo_read_data;
+assign shift_fifo_data                    = avl_m0.read_data;
+
+assign wait_fifo_write                    = avl_m0.read&&avl_m0.request_ready;
+assign wait_fifo_write_data               = {1'd1,1'd0,avl_m0.address[29:0]};
+assign wait_fifo_read                     = avl_m0.read_data_valid;
+
+assign generate_addr_next_pc              = next_pc;
+assign generate_addr_pc                   = pc;
+assign generate_addr_pc_read_data_request = generate_istr_pc_read_data_request;
+generate
+  for(i=0;i<WAIT_FIFO_MAX_NUM;i++) begin:block1
+    assign generate_addr_all_sent_addr[i]=wait_fifo_all_data[i];
+  end
+  for(i=i;i<WAIT_FIFO_MAX_NUM+SHIFT_BUFF_MAX_NUM;i++) begin:block2
+    assign generate_addr_all_sent_addr[i]=shift_fifo_all_addr[i-WAIT_FIFO_MAX_NUM];
+  end
+endgenerate
+
+generate
+  for(i=0;i<SHIFT_BUFF_MAX_NUM;i++) begin:block3
+    assign generate_istr_all_valid_addr[i]=shift_fifo_all_addr[i];
+    assign generate_istr_all_valid_data[i]=shift_fifo_all_data[i];
+  end
+  assign generate_istr_all_valid_addr[i]=wait_fifo_read_data;
+  assign generate_istr_all_valid_data[i]=avl_m0.read_data;
+  for(i=0;i<WAIT_FIFO_MAX_NUM;i++) begin:block4
+    assign generate_istr_all_sent_addr[i]=wait_fifo_all_data[i];
+  end
+endgenerate
+assign generate_istr_pc=pc;
+
+assign istr_valid                         = generate_istr_istr_valid;
+assign avl_m0.read                        = generate_addr_read;
+assign avl_m0.address                     = generate_addr_read_addr;
+assign pc_offset                          = (generate_istr_istr[1:0]==2'd3)?(3'd4):3'd2;
+assign istr_is_mret                       = generate_istr_istr_valid&&(generate_istr_istr==`ISTR_MRET);
+assign avl_m0.write                       = 1'd0;
+assign avl_m0.write_data                  = 32'd0;
+assign avl_m0.byte_en                     = 4'hf;
+assign avl_m0.begin_burst_transfer        = 1'd0;
+assign avl_m0.burst_count                 = 0;
+assign bp_istr                            = generate_istr_istr;
+assign bp_pc                              = pc;
+
+/*寄存器打一拍再送出去，不然组合逻辑太多了*/
+always @(posedge clk) begin
+  dely_istr<=generate_istr_istr;
+  dely_valid<=generate_istr_istr_valid&!flush_en;
+  dely_pc<=pc;
+end
+
+always @(*) begin
+  if(jump_en) begin
+    next_pc_sel<=4'd2;
+  end
+  else if(bp_jump_en||istr_is_mret) begin
+    next_pc_sel<=bp_jump_en?4'd3:4'd1;
+  end
+  else if(generate_istr_istr_valid) begin
+    next_pc_sel<=4'd4;
+  end
+  else begin
+    next_pc_sel=4'd0;
+  end
+end
 /*计算下一个pc*/
 always @(*) begin
   case(next_pc_sel)
@@ -78,13 +176,13 @@ core_if_addr_data_shift_buff #(
   .DEPTH(SHIFT_BUFF_MAX_NUM)
 )
 core_if_addr_data_shift_buff_inst0(
-  .clk(),
-  .rest(),
-  .write(),
-  .addr(),
-  .data(),
-  .all_addr(),
-  .all_data()
+  .clk                  (clk                                ),
+  .rest                 (rest                               ),
+  .write                (shift_fifo_write                   ),
+  .addr                 (shift_fifo_addr                    ),
+  .data                 (shift_fifo_data                    ),
+  .all_addr             (shift_fifo_all_addr                ),
+  .all_data             (shift_fifo_all_data                )
 );
 /**********************************************************************************
 同步FIFO:存放已经发送到总线，但是还未返回数据的读命令的地址
@@ -94,16 +192,16 @@ fifo_sync #(
   .WIDTH(32)
 )
 fifo_sync_inst0_wait_data_valid(
-  .clk(),
-  .rest(),
-  .full(),
-  .empty(),
-  .half(),
-  .write(),
-  .read(),
-  .write_data(),
-  .read_data(),
-  .all_data()
+  .clk                  (clk                                ),
+  .rest                 (rest                               ),
+  .full                 (wait_fifo_full                     ),
+  .empty                (wait_fifo_empty                    ),
+  .half                 (wait_fifo_half                     ),
+  .write                (wait_fifo_write                    ),
+  .read                 (wait_fifo_read                     ),
+  .write_data           (wait_fifo_write_data               ),
+  .read_data            (wait_fifo_read_data                ),
+  .all_data             (wait_fifo_all_data                 )
 );
 /**********************************************************************************
 读总线地址生成
@@ -114,26 +212,28 @@ core_if_generate_access_bus_addr #(
   .PREFETCHED_NUM(PREFETCHED_NUM)
 )
 core_if_generate_access_bus_addr_inst0(
-  .next_pc(),
-  .pc(),
-  .pc_read_data_request(),
-  .all_sent_addr(),
-  .read_addr(),
-  .read()
+  .next_pc              (generate_addr_next_pc              ),
+  .pc                   (generate_addr_pc                   ),
+  .pc_read_data_request (generate_addr_pc_read_data_request ),
+  .all_sent_addr        (generate_addr_all_sent_addr        ),
+  .read_addr            (generate_addr_read_addr            ),
+  .read                 (generate_addr_read                 )
 );
-
+/**********************************************************************************
+读取指令
+**********************************************************************************/
 core_if_generate_istr #(
   .SHIFT_BUFF_MAX_NUM(SHIFT_BUFF_MAX_NUM),
   .WAIT_FIFO_MAX_NUM(WAIT_FIFO_MAX_NUM)
 )
 core_if_generate_istr_inst0(
-  .all_valid_addr(),
-  .all_sent_addr(),
-  .all_valid_data(),
-  .pc(),
-  .pc_read_data_request(),
-  .istr(),
-  .istr_valid()
+  .all_valid_addr       (generate_istr_all_valid_addr       ),
+  .all_sent_addr        (generate_istr_all_sent_addr        ),
+  .all_valid_data       (generate_istr_all_valid_data       ),
+  .pc                   (generate_istr_pc                   ),
+  .pc_read_data_request (generate_istr_pc_read_data_request ),
+  .istr                 (generate_istr_istr                 ),
+  .istr_valid           (generate_istr_istr_valid           )
 );
 
 endmodule
@@ -289,9 +389,14 @@ module core_if_generate_istr #(
   output logic[31:0] istr,
   output logic       istr_valid
 );
-
+/*******************************************************************
+参数
+*******************************************************************/
 localparam ISTR_SEL_WIDTH=$clog2((SHIFT_BUFF_MAX_NUM+1)*2);
 
+/*******************************************************************
+变量
+*******************************************************************/
 logic[31:0]                  pf_addr[1:0];
 logic[SHIFT_BUFF_MAX_NUM:0]  addr_is_exist[1:0];
 logic                        addr_is_sent[1:0];
@@ -299,8 +404,14 @@ logic[1:0][15:0]             istrs;
 logic[ISTR_SEL_WIDTH-1:0]    istrs_0_sel;
 logic[ISTR_SEL_WIDTH-1:0]    istrs_1_sel;
 
+/*******************************************************************
+连线
+*******************************************************************/
 assign istr=istrs;
 
+/*******************************************************************
+获取当前指令所处的地址和下一个地址
+*******************************************************************/
 always @(*) begin:block1
   int i;
   for(i=0;i<2;i++) begin
@@ -308,6 +419,9 @@ always @(*) begin:block1
   end
 end
 
+/*******************************************************************
+检查需要的地址是否存在或者已经发送到总线
+*******************************************************************/
 always @(*) begin:block2
   int i,j;
   for(i=0;i<2;i++) begin
@@ -321,6 +435,9 @@ always @(*) begin:block2
   end
 end
 
+/*******************************************************************
+求出sel
+*******************************************************************/
 always @(*) begin:block3
   int i;
   for(i=0;i<SHIFT_BUFF_MAX_NUM+1;i++) begin
@@ -328,19 +445,25 @@ always @(*) begin:block3
       break;
     end
   end
-  istrs_0_sel=(addr_is_exist[0]!=0)?(i[ISTR_SEL_WIDTH-2:0]<<1)|pc[1]:{ISTR_SEL_WIDTH{1'd0}};
+  istrs_0_sel=(i[ISTR_SEL_WIDTH-2:0]<<1)|pc[1];
   for(i=0;i<SHIFT_BUFF_MAX_NUM+1;i++) begin
     if(addr_is_exist[1][i]) begin
       break;
     end
   end
-  istrs_1_sel=(addr_is_exist[1]!=0)?(i[ISTR_SEL_WIDTH-2:0]<<1)|!pc[1]:{ISTR_SEL_WIDTH{1'd0}};
+  istrs_1_sel=(i[ISTR_SEL_WIDTH-2:0]<<1)|!pc[1];
 end
 
+/*******************************************************************
+取出指令
+*******************************************************************/
 assign istrs[0]=istrs_0_sel[0]?all_valid_data[istrs_0_sel/2][31:16]:all_valid_data[istrs_0_sel/2][15:0];
 assign istrs[1]=istrs_1_sel[0]?all_valid_data[istrs_1_sel/2][31:16]:all_valid_data[istrs_1_sel/2][15:0];
 assign istr_valid=((istrs[0][1:0]!=2'h3)||(addr_is_exist[1]!=0))&&(addr_is_exist[0]!=0);
 
+/*******************************************************************
+发出读请求
+*******************************************************************/
 assign pc_read_data_request[0]=(addr_is_exist[0]==0)&&(addr_is_sent[0]==0);
 assign pc_read_data_request[1]=(addr_is_exist[1]==0)&&(addr_is_sent[1]==0)&&(addr_is_exist[0]!=0)&&(istrs[0][1:0]==2'h3)&&pc[1];
 

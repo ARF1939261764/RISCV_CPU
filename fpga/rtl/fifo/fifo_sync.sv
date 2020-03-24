@@ -58,6 +58,9 @@ generate
         int i;
         front<=0;
         rear<=0;
+        for(i=0;i<DEPTH;i++) begin
+          array[i]<=0;
+        end
       end
       else begin
         if(write&&(!full||read)) begin
