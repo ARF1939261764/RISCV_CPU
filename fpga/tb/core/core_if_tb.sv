@@ -2,6 +2,7 @@
 
 module core_if_tb;
 
+/*clk,rest*/
 logic             clk;
 logic             rest;
 /*主机接口,访问总线*/
@@ -21,7 +22,11 @@ logic[31:0]       dely_istr;
 logic[31:0]       dely_pc;
 logic             dely_valid;
 logic             dely_ready;
+logic             dely_jump;
+/*其它控制信号*/
+logic             ctr_stop;/*停止cpu*/
 
+/*取指模块*/
 core_if #(
   .REST_ADDR(0)
 )
@@ -29,6 +34,7 @@ core_if_inst0(
   .*
 );
 
+/*sdram模块*/
 sdram_sim_model #(
   .SIZE(32*1024)
 )

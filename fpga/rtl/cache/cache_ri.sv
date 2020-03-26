@@ -474,7 +474,7 @@ end
 /******************************************************************************************
 通过一个完整的地址获取对应cache块的首地址
 ******************************************************************************************/
-function[31:0] get_cache_block_addr(input[31:0] address);
+function logic[31:0] get_cache_block_addr(input[31:0] address);
   return {address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
 endfunction
 

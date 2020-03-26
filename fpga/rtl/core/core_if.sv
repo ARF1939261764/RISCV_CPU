@@ -19,7 +19,10 @@ module core_if #(
   output  logic[31:0]   dely_istr,
   output  logic[31:0]   dely_pc,
   output  logic         dely_valid,
-  input   logic         dely_ready
+  output  logic         dely_jump,
+  input   logic         dely_ready,
+  /*其它控制信号*/
+  input   logic         ctr_stop/*停止cpu*/
 );
 localparam  PREFETCHED_NUM = 2,/*预取多少个内存单元(至少两个)*/
             WAIT_FIFO_MAX_NUM=2,
@@ -68,7 +71,7 @@ logic       generate_istr_istr_valid;
 /**********************************************************************************
 连线
 **********************************************************************************/
-assign pc_en                              = !pc_valid||istr_valid||jump_en; /*计算下一个pc*/
+assign pc_en                              = (!pc_valid||istr_valid||jump_en)&&!ctr_stop; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
 
 assign shift_fifo_write                   = avl_m0.read_data_valid&&!wait_fifo_empty;
 assign shift_fifo_addr                    = wait_fifo_read_data;
@@ -103,11 +106,11 @@ generate
 endgenerate
 assign generate_istr_pc=pc;
 
-assign istr_valid                         = generate_istr_istr_valid;
+assign istr_valid                         = generate_istr_istr_valid&&!ctr_stop;
 assign avl_m0.read                        = generate_addr_read;
 assign avl_m0.address                     = generate_addr_read_addr;
 assign pc_offset                          = (generate_istr_istr[1:0]==2'd3)?3'd4:3'd2;
-assign istr_is_mret                       = generate_istr_istr_valid&&(generate_istr_istr==`ISTR_MRET);
+assign istr_is_mret                       = istr_valid&&(generate_istr_istr==`ISTR_MRET);
 assign avl_m0.write                       = 1'd0;
 assign avl_m0.write_data                  = 32'd0;
 assign avl_m0.byte_en                     = 4'hf;
@@ -123,8 +126,9 @@ always @(posedge clk or negedge rest) begin
   end
   else begin
     dely_istr<=generate_istr_istr;
-    dely_valid<=generate_istr_istr_valid&!flush_en;
+    dely_valid<=istr_valid&!flush_en;/*如果冲刷流水线,则丢掉当前取出的指令*/
     dely_pc<=pc;
+    dely_jump<=bp_jump_en||istr_is_mret;
   end
 end
 /*计算next_pc_sel*/
@@ -135,7 +139,7 @@ always @(*) begin
   else if(bp_jump_en||istr_is_mret) begin
     next_pc_sel<=bp_jump_en?4'd3:4'd1;
   end
-  else if(generate_istr_istr_valid) begin
+  else if(istr_valid) begin
     next_pc_sel<=4'd4;
   end
   else begin
