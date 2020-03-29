@@ -8,7 +8,27 @@ module core_id(
   input   logic         if_jump,
   output  logic         if_ready
   /*来自ex级的信号*/
+  input  logic          flush_en,
   /*给到下一级*/
+  output logic          de_valid,
+  input  logic          de_ready,
+  output logic[3:0]     de_alu_op,
+  output logic[31:0]    de_rs1_value,
+  output logic[31:0]    de_rs2_value,
+  output logic[12:0]    de_sb_imm,     /*SB类型指令中的立即数*/
+  output logic[31:0]    de_pc,
+  output logic[4:0]     de_rd,
+  output logic[11:0]    de_csr,
+  output logic          de_reg_write,
+  output logic          de_csr_write,
+  output logic          de_mem_write,
+  output logic          de_mem_read,
+  output logic          de_mem_op_type,
+  output logic          de_istr_width,
+  output logic          de_is_br,      /*是否为分支指令*/
+  output logic[3:0]     de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
+  output logic          de_jump,       /*这条指令是否在前面已经跳转了*/
+
 );
 /****************************************************************************************
 function
@@ -71,18 +91,16 @@ logic[4:0]   reg_file_write_addr;
 logic[31:0]  reg_file_write_data;
 logic        reg_file_write_en;
 
-
 /****************************************************************************************
 连线
 ****************************************************************************************/
-assign reg_file_clk=clk;
 
 /****************************************************************************************
 module实例化
 ****************************************************************************************/
 /*寄存器文件*/
 core_id_reg_file core_id_reg_file_inst0(
-  .clk          (reg_file_clk          ),
+  .clk          (clk                   ),
   .read_0_addr  (reg_file_read_0_addr  ),
   .read_0_data  (reg_file_read_0_data  ),
   .read_1_addr  (reg_file_read_1_addr  ),

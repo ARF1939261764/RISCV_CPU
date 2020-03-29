@@ -22,12 +22,12 @@ module core_if #(
   output  logic         dely_jump,
   input   logic         dely_ready,
   /*其它控制信号*/
-  input   logic         ctr_stop/*停止cpu*/
+  input   logic         ctr_stop            /*停止cpu*/
 );
-localparam  PREFETCHED_NUM = 2,/*预取多少个内存单元(至少两个)*/
-            WAIT_FIFO_MAX_NUM=2,
-            SHIFT_BUFF_MAX_NUM=2;
-`define     ISTR_MRET       (32'h30200003)
+localparam  PREFETCHED_NUM = 2,             /*预取多少个内存单元(至少两个)*/
+            WAIT_FIFO_MAX_NUM=2,            /*等待队列深度*/
+            SHIFT_BUFF_MAX_NUM=2;           /*移位缓冲区大小*/
+`define     ISTR_MRET       (32'h30200003)  /*mret指令*/
 genvar      i;
 reg [31:0]  pc;
 wire        pc_en;
@@ -35,7 +35,7 @@ reg         pc_valid;
 logic[31:0] next_pc;
 logic[2:0]  next_pc_sel;
 wire[2:0]   pc_offset;
-wire        istr_valid;      /*指令有效,表示已经取到了当前pc对应的指令*/
+wire        istr_valid;                     /*指令有效,表示已经取到了当前pc对应的指令*/
 wire        istr_is_mret;
 
 /**shift fifo的端口****/
@@ -72,15 +72,15 @@ logic       generate_istr_istr_valid;
 连线
 **********************************************************************************/
 assign pc_en                              = (!pc_valid||istr_valid||jump_en)&&!ctr_stop; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
-
+/*移位缓冲区*/
 assign shift_fifo_write                   = avl_m0.read_data_valid&&!wait_fifo_empty;
 assign shift_fifo_addr                    = wait_fifo_read_data;
 assign shift_fifo_data                    = avl_m0.read_data;
-
+/*等待队列*/
 assign wait_fifo_write                    = avl_m0.read&&avl_m0.request_ready;
 assign wait_fifo_write_data               = {1'd1,1'd0,avl_m0.address[31:2]};
 assign wait_fifo_read                     = avl_m0.read_data_valid;
-
+/*地址生成*/
 assign generate_addr_next_pc              = next_pc;
 assign generate_addr_pc                   = pc;
 assign generate_addr_pc_read_data_request = generate_istr_pc_read_data_request;
@@ -92,7 +92,7 @@ generate
     assign generate_addr_all_sent_addr[i]=shift_fifo_all_addr[i-WAIT_FIFO_MAX_NUM];
   end
 endgenerate
-
+/*指令生成*/
 generate
   for(i=0;i<SHIFT_BUFF_MAX_NUM;i++) begin:block3
     assign generate_istr_all_valid_addr[i]=shift_fifo_all_addr[i];
@@ -106,6 +106,7 @@ generate
 endgenerate
 assign generate_istr_pc=pc;
 
+/*其它*/
 assign istr_valid                         = generate_istr_istr_valid&&!ctr_stop;
 assign avl_m0.read                        = generate_addr_read;
 assign avl_m0.address                     = generate_addr_read_addr;
