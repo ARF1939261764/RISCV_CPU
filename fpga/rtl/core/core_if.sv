@@ -16,17 +16,24 @@ module core_if #(
   input   logic[31:0]   bp_jump_addr,
   input   logic         bp_jump_en,
   /*指令交付给下一级*/
-  output  logic[31:0]   dely_istr,
-  output  logic[31:0]   dely_pc,
-  output  logic         dely_valid,
-  output  logic         dely_jump,
-  input   logic         dely_ready,
+  output  logic[31:0]   fd_istr,
+  output  logic[31:0]   fd_pc,
+  output  logic         fd_valid,
+  output  logic         fd_jump,
+  input   logic         fd_ready,
   /*其它控制信号*/
   input   logic         ctr_stop            /*停止cpu*/
 );
 localparam  PREFETCHED_NUM = 2,             /*预取多少个内存单元(至少两个)*/
             WAIT_FIFO_MAX_NUM=2,            /*等待队列深度*/
-            SHIFT_BUFF_MAX_NUM=2;           /*移位缓冲区大小*/
+            SHIFT_BUFF_MAX_NUM=2,           /*移位缓冲区大小*/
+            ISTR_FIFO_WIDTH=$bits(
+              {
+                fd_istr,
+                fd_pc,
+                fd_jump
+              }
+            );
 `define     ISTR_MRET       (32'h30200003)  /*mret指令*/
 genvar      i;
 reg [31:0]  pc;
@@ -37,6 +44,7 @@ logic[2:0]  next_pc_sel;
 wire[2:0]   pc_offset;
 wire        istr_valid;                     /*指令有效,表示已经取到了当前pc对应的指令*/
 wire        istr_is_mret;
+logic       if_stop;
 
 /**shift fifo的端口****/
 logic       shift_fifo_write;
@@ -68,10 +76,19 @@ logic[31:0] generate_istr_pc;
 logic[1:0]  generate_istr_pc_read_data_request;
 logic[31:0] generate_istr_istr;
 logic       generate_istr_istr_valid;
+/*指令fifo*/
+logic                       istr_fifo_flush;
+logic                       istr_fifo_full;
+logic                       istr_fifo_empty;
+logic                       istr_fifo_half;
+logic                       istr_fifo_write;
+logic                       istr_fifo_read;
+logic [ISTR_FIFO_WIDTH-1:0] istr_fifo_write_data;
+logic [ISTR_FIFO_WIDTH-1:0] istr_fifo_read_data;
 /**********************************************************************************
 连线
 **********************************************************************************/
-assign pc_en                              = (!pc_valid||istr_valid||jump_en)&&!ctr_stop; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
+assign pc_en                              = (!pc_valid||istr_valid||jump_en)&&!if_stop; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
 /*移位缓冲区*/
 assign shift_fifo_write                   = avl_m0.read_data_valid&&!wait_fifo_empty;
 assign shift_fifo_addr                    = wait_fifo_read_data;
@@ -106,8 +123,18 @@ generate
 endgenerate
 assign generate_istr_pc=pc;
 
+/*指令fifo*/
+assign istr_fifo_flush          = flush_en;
+assign istr_fifo_write          = istr_valid&&!flush_en;
+assign istr_fifo_write_data     = {generate_istr_istr,pc,bp_jump_en||istr_is_mret};
+assign istr_fifo_read           = fd_ready;
+
+/*从fifo中读出指令给到下一级*/  
+assign {fd_istr,fd_pc,fd_jump}  = istr_fifo_read_data;
+assign fd_valid                 = !istr_fifo_empty;
+
 /*其它*/
-assign istr_valid                         = generate_istr_istr_valid&&!ctr_stop;
+assign istr_valid                         = generate_istr_istr_valid&&!if_stop;
 assign avl_m0.read                        = generate_addr_read;
 assign avl_m0.address                     = generate_addr_read_addr;
 assign pc_offset                          = (generate_istr_istr[1:0]==2'd3)?3'd4:3'd2;
@@ -119,19 +146,8 @@ assign avl_m0.begin_burst_transfer        = 1'd0;
 assign avl_m0.burst_count                 = 0;
 assign bp_istr                            = generate_istr_istr;
 assign bp_pc                              = pc;
+assign if_stop                            = ctr_stop||istr_fifo_full;
 
-/*寄存器打一拍再送出去，不然组合逻辑太多了*/
-always @(posedge clk or negedge rest) begin
-  if(!rest) begin
-    dely_valid<=0;
-  end
-  else begin
-    dely_istr<=generate_istr_istr;
-    dely_valid<=istr_valid&!flush_en;/*如果冲刷流水线,则丢掉当前取出的指令*/
-    dely_pc<=pc;
-    dely_jump<=bp_jump_en||istr_is_mret;
-  end
-end
 /*计算next_pc_sel*/
 always @(*) begin
   if(jump_en) begin
@@ -204,6 +220,7 @@ fifo_sync #(
 fifo_sync_inst0_wait_data_valid(
   .clk                  (clk                                ),
   .rest                 (rest                               ),
+  .flush                (1'd0                               ),
   .full                 (wait_fifo_full                     ),
   .empty                (wait_fifo_empty                    ),
   .half                 (wait_fifo_half                     ),
@@ -230,7 +247,7 @@ core_if_generate_access_bus_addr_inst0(
   .read                 (generate_addr_read                 )
 );
 /**********************************************************************************
-读取指令
+指令生成
 **********************************************************************************/
 core_if_generate_istr #(
   .SHIFT_BUFF_MAX_NUM(SHIFT_BUFF_MAX_NUM),
@@ -244,6 +261,25 @@ core_if_generate_istr_inst0(
   .pc_read_data_request (generate_istr_pc_read_data_request ),
   .istr                 (generate_istr_istr                 ),
   .istr_valid           (generate_istr_istr_valid           )
+);
+/**********************************************************************************
+指令fifo
+**********************************************************************************/
+fifo_sync #(
+  .DEPTH(2               ),
+  .WIDTH(ISTR_FIFO_WIDTH )
+)
+fifo_sync_inst0_istr_fifo(
+  .clk        (clk                  ),
+  .rest       (rest                 ),
+  .flush      (istr_fifo_flush      ),
+  .full       (istr_fifo_full       ),
+  .empty      (istr_fifo_empty      ),
+  .half       (istr_fifo_half       ),
+  .write      (istr_fifo_write      ),
+  .read       (istr_fifo_read       ),
+  .write_data (istr_fifo_write_data ),
+  .read_data  (istr_fifo_read_data  )
 );
 
 endmodule

@@ -741,6 +741,7 @@ fifo_sync_bypass #(
 fifo_sync_bypass_inst0_av_m0_cmd_fifo(
   .clk       (clk                      ),
   .rest      (rest                     ),
+  .flush     (1'd0                     ),
   .full      (av_m0_cmd_fifo_full      ),
   .empty     (av_m0_cmd_fifo_empty     ),
   .half      (av_m0_cmd_fifo_half      ),
@@ -757,6 +758,7 @@ fifo_sync_bypass #(
 fifo_sync_bypass_inst1_read_byten_en_fifo(
   .clk       (clk                         ),
   .rest      (rest                        ),
+  .flush     (1'd0                        ),
   .full      (read_byte_en_fifo_full      ),
   .empty     (read_byte_en_fifo_empty     ),
   .half      (read_byte_en_fifo_half      ),

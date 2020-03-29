@@ -1,15 +1,24 @@
 module core_id(
   input   logic         clk,
   input   logic         rest,
-  /*来自取指阶段的信号*/
-  input   logic[31:0]   if_istr,
-  input   logic[31:0]   if_pc,
-  input   logic         if_valid,
-  input   logic         if_jump,
-  output  logic         if_ready
+  /*来自if级的信号*/
+  input   logic         fd_valid,
+  output  logic         fd_ready,
+  input   logic[31:0]   fd_istr,
+  input   logic[31:0]   fd_pc,
+  input   logic         fd_jump,
   /*来自ex级的信号*/
-  input  logic          flush_en,
-  /*给到下一级*/
+  input  logic          ex_flush_en,
+  /*来自wb级的信号*/
+  input  logic          wd_valid,
+  output logic          wd_ready,
+  input  logic[31:0]    wd_reg_data,
+  input  logic[4:0]     wd_rd,
+  input  logic          wd_reg_write,
+  input  logic[31:0]    wd_csr_data,
+  input  logic[11:0]    wd_csr,
+  input  logic          wd_csr_write,
+  /*给到ex*/
   output logic          de_valid,
   input  logic          de_ready,
   output logic[3:0]     de_alu_op,
@@ -28,7 +37,13 @@ module core_id(
   output logic          de_is_br,      /*是否为分支指令*/
   output logic[3:0]     de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
   output logic          de_jump,       /*这条指令是否在前面已经跳转了*/
-
+  /*csr接口*/
+  output logic          csr_read,
+  output logic[11:0]    csr_read_addr,
+  input  logic[31:0]    csr_read_data,
+  output logic          csr_write,
+  output logic[11:0]    csr_write_addr,
+  output logic[31:0]    csr_write_data
 );
 /****************************************************************************************
 function
@@ -77,7 +92,6 @@ endfunction
 function logic[20:0] istr_ui_get_imm(logic[31:0] istr);
   return {istr[31],istr[19:12],istr[20],istr[30:21],1'b0};
 endfunction
-
 
 /****************************************************************************************
 变量

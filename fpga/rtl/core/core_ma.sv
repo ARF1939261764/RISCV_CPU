@@ -11,6 +11,7 @@ module core_ma(
   input  logic       em_mem_op_type,
   input  logic       em_rd,
   input  logic       em_reg_write,
+  output logic       em_reg_write_sel,
   input  logic[11:0] em_csr,
   input  logic       em_csr_write,
   /*去往wb*/
@@ -20,9 +21,12 @@ module core_ma(
   output logic[31:0] mw_mem_data,
   output logic[31:0] mw_csr_data,
   output logic[4:0]  mw_rd,
-  output logic[11:0] mw_csr,
   output logic       mw_reg_write,
-  output logic       mw_csr_write
+  output logic       mw_reg_write_sel,
+  output logic[11:0] mw_csr,
+  output logic       mw_csr_write,
+  /*mem访问接口*/
+  i_avl_bus.master  avl_m0
 );
 
 endmodule

@@ -7,6 +7,7 @@ module fifo_sync_bypass #(
 )(
   input  logic              clk,
   input  logic              rest,
+  input  logic              flush,
   output logic              full,
   output logic              empty,
   output logic              half,
@@ -74,10 +75,10 @@ generate
       else begin
         if(write&&!full&&((count!=0)||!read)) begin
           array[rear[ADDR_WIDTH-2:0]]<=writeData;
-          rear++;
+          rear=flush?1'd0:rear+1'd1;
         end
         if(read&&!empty) begin
-          front++;
+          front=flush?1'd0:front+1'd1;
         end
       end
     end

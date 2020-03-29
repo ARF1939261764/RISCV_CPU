@@ -31,6 +31,7 @@ module core_ex(
   output logic       em_mem_op_type,
   output logic       em_rd,
   output logic       em_reg_write,
+  output logic       em_reg_write_sel,
   output logic[11:0] em_csr,
   output logic       em_csr_write,
   /*异常/中断接口*/
@@ -47,8 +48,11 @@ module core_ex(
   output logic[31:0] jump_addr,
   output logic       flush_en,
   /*给到分支预测器*/
+  output logic[31:0] bp_pc,
+  output logic[31:0] bp_istr,
   output logic[31:0] bp_jump_pc,
-  output logic       bp_jump_en
+  output logic       bp_jump_en,
+  output logic       bp_is_exception
 );
 /**************************************************************
 变量
