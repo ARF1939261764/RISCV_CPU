@@ -34,7 +34,7 @@ localparam  PREFETCHED_NUM = 2,             /*预取多少个内存单元(至少
                 fd_jump
               }
             );
-`define     ISTR_MRET       (32'h30200003)  /*mret指令*/
+`define     ISTR_MRET       (32'h30200073)  /*mret指令*/
 genvar      i;
 reg [31:0]  pc;
 wire        pc_en;

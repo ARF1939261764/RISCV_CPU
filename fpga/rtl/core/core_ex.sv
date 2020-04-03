@@ -3,15 +3,18 @@ module core_ex(
   input  logic       clk,
   input  logic       rest,
   /*ID/EX级寄存器数据*/
+  /*给到ex*/
   input  logic       de_valid,
+  input  logic       de_wait_handle,
   output logic       de_ready,
   input  logic[3:0]  de_alu_op,
   input  logic[31:0] de_rs1_value,
-  input  logic[31:0] de_rs2_value,
-  input  logic[12:0] de_sb_imm,     /*SB类型指令中的立即数*/
+  input  logic[4:0]  de_zimm,
   input  logic[31:0] de_pc,
-  input  logic[4:0]  de_rd,
+  input  logic[31:0] de_rs2_value,
+  input  logic[31:0] de_imm,       /*指令中的立即数*/
   input  logic[11:0] de_csr,
+  input  logic[4:0]  de_rd,
   input  logic       de_reg_write,
   input  logic       de_csr_write,
   input  logic       de_mem_write,
@@ -21,8 +24,13 @@ module core_ex(
   input  logic       de_is_br,      /*是否为分支指令*/
   input  logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
   input  logic       de_jump,       /*这条指令是否在前面已经跳转了*/
+  input  logic[4:0]  de_rs1,
+  input  logic[4:0]  de_rs2,
+  input  logic       de_rs1_valid,
+  input  logic       de_rs2_valid,
   /*EX/MEM级寄存器数据*/
   output logic       em_valid,
+  output logic       em_wait_handle,
   input  logic       em_ready,
   output logic[31:0] em_reg_data_mem_addr,
   output logic[31:0] em_csr_data_mem_data,
@@ -76,14 +84,14 @@ assign alu_op_valid   = de_valid;
 **************************************************************/
 /*alu*/
 core_ex_alu core_ex_alu_inst0(
-  .clk      (clk          ),
-  .rest     (rest         ),
-  .op       (alu_op       ),
-  .op_valid (alu_op_valid ),
-  .op_ready (alu_op_ready ),
-  .in1      (alu_in1      ),
-  .in2      (alu_in2      ),
-  .out      (alu_out      )
+  .clk             (clk          ),
+  .rest            (rest         ),
+  .op              (alu_op       ),
+  .op_wait_handle  (alu_op_valid ),
+  .op_ready        (alu_op_ready ),
+  .in1             (alu_in1      ),
+  .in2             (alu_in2      ),
+  .out             (alu_out      )
 );
 
 endmodule

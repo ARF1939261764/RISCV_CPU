@@ -2,7 +2,7 @@ module core_ex_alu(
   input  logic       clk,
   input  logic       rest,
   input  logic[4:0]  op,
-  input  logic       op_valid,
+  input  logic       op_wait_handle,
   output logic       op_ready,
   input  logic[31:0] in1,
   input  logic[31:0] in2,
@@ -49,17 +49,17 @@ assign op_ready=1'd1;
 /*译码,选择对应的输出*/
 always @(*) begin
   case(op)
-    5'b0000:out=in1+in2;
-    5'b0001:out=in1-in2;
-    5'b0010:out=shift_out;
-    5'b1010:out=shift_out;
-    5'b1011:out=shift_out;
-    5'b0100:out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
-    5'b0110:out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
-    5'b1000:out=in1^in2;
-    5'b1100:out=in1|in2;
-    5'b1110:out=in1&in2;
-    5'b1111:out=in1;
+    5'b00000:out=in1+in2;
+    5'b00010:out=in1-in2;
+    5'b00100:out=shift_out;
+    5'b10100:out=shift_out;
+    5'b10110:out=shift_out;
+    5'b01000:out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
+    5'b01100:out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
+    5'b10000:out=in1^in2;
+    5'b11000:out=in1|in2;
+    5'b11100:out=in1&in2;
+    5'b11110:out=in1;
     default:out=in1;
   endcase
 end
