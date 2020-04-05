@@ -49,17 +49,17 @@ assign op_ready=1'd1;
 /*译码,选择对应的输出*/
 always @(*) begin
   case(op)
-    5'b00000:out=in1+in2;
-    5'b00010:out=in1-in2;
-    5'b00100:out=shift_out;
-    5'b10100:out=shift_out;
-    5'b10110:out=shift_out;
-    5'b01000:out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
-    5'b01100:out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
-    5'b10000:out=in1^in2;
-    5'b11000:out=in1|in2;
-    5'b11100:out=in1&in2;
-    5'b11110:out=in1;
+    `ALU_OP_ADD    :out=in1+in2;
+    `ALU_OP_SUB    :out=in1-in2;
+    `ALU_OP_SLL    :out=shift_out;
+    `ALU_OP_SLT    :out=shift_out;
+    `ALU_OP_SLTU   :out=shift_out;
+    `ALU_OP_XOR    :out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
+    `ALU_OP_SRL    :out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
+    `ALU_OP_SRA    :out=in1^in2;
+    `ALU_OP_OR     :out=in1|in2;
+    `ALU_OP_AND    :out=in1&in2;
+    `ALU_OP_NOT_AND:out=~in1&in2;
     default:out=in1;
   endcase
 end

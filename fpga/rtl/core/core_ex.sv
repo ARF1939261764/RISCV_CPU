@@ -3,31 +3,35 @@ module core_ex(
   input  logic       clk,
   input  logic       rest,
   /*ID/EX级寄存器数据*/
-  /*给到ex*/
-  input  logic       de_valid,
-  input  logic       de_wait_handle,
-  output logic       de_ready,
-  input  logic[3:0]  de_alu_op,
-  input  logic[31:0] de_rs1_value,
-  input  logic[4:0]  de_zimm,
-  input  logic[31:0] de_pc,
-  input  logic[31:0] de_rs2_value,
-  input  logic[31:0] de_imm,       /*指令中的立即数*/
-  input  logic[11:0] de_csr,
-  input  logic[4:0]  de_rd,
-  input  logic       de_reg_write,
-  input  logic       de_csr_write,
-  input  logic       de_mem_write,
-  input  logic       de_mem_read,
-  input  logic       de_mem_op_type,
-  input  logic       de_istr_width,
-  input  logic       de_is_br,      /*是否为分支指令*/
-  input  logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
-  input  logic       de_jump,       /*这条指令是否在前面已经跳转了*/
-  input  logic[4:0]  de_rs1,
-  input  logic[4:0]  de_rs2,
-  input  logic       de_rs1_valid,
-  input  logic       de_rs2_valid,
+  output logic       de_valid,
+  output logic       de_wait_handle,
+  input  logic       de_ready,
+  output logic[3:0]  de_alu_op,
+  output logic[31:0] de_rs1_value,
+  output logic[31:0] de_csr_value,
+  output logic[4:0]  de_zimm,
+  output logic[31:0] de_pc,
+  output logic[31:0] de_rs2_value,
+  output logic[31:0] de_imm,       /*指令中的立即数*/
+  output logic[11:0] de_csr,
+  output logic[4:0]  de_rd,
+  output logic       de_reg_write,
+  output logic       de_csr_write,
+  output logic       de_mem_write,
+  output logic       de_mem_read,
+  output logic       de_mem_op,
+  output logic       de_istr_width,
+  output logic       de_is_br,      /*是否为分支指令*/
+  output logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
+  output logic       de_jump,       /*这条指令是否在前面已经跳转了*/
+  output logic[4:0]  de_rs1,
+  output logic[4:0]  de_rs2,
+  output logic       de_rs1_valid,
+  output logic       de_rs2_valid,
+  output logic[1:0]  de_alu_port_1_sel,
+  output logic[1:0]  de_alu_port_2_sel,
+  output logic[1:0]  de_em_reg_data_addr_sel,
+  output logic[1:0]  de_em_csr_data_sel,
   /*EX/MEM级寄存器数据*/
   output logic       em_valid,
   output logic       em_wait_handle,
@@ -65,6 +69,7 @@ module core_ex(
 /**************************************************************
 变量
 **************************************************************/
+/*alu 端口*/
 logic[4:0]  alu_op;
 logic       alu_op_valid;
 logic       alu_op_ready;
@@ -72,11 +77,25 @@ logic[31:0] alu_in1;
 logic[31:0] alu_in2;
 logic[31:0] alu_out;
 
+logic[1:0]  alu_in1_sel;
+logic[1:0]  alu_in2_sel;
+
+logic[31:0] rs1_value;
+logic[1:0]  rs1_sel;
+logic[31:0] rs2_value;
+logic[1:0]  rs2_sel;
+
+logic[31:0] csr_value;
+
+  
+
 /**************************************************************
 连线
 **************************************************************/
 assign alu_op         = de_alu_op;
 assign alu_op_valid   = de_valid;
+
+
 
 
 /**************************************************************
@@ -95,3 +114,5 @@ core_ex_alu core_ex_alu_inst0(
 );
 
 endmodule
+
+

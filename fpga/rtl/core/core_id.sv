@@ -1,56 +1,68 @@
 `include "core_define.sv"
 module core_id(
-  input  logic          clk,
-  input  logic          rest,
-  /*来自if级的信号*/ 
-  input  logic          fd_valid,
-  output logic          fd_ready,
-  input  logic[31:0]    fd_istr,
-  input  logic[31:0]    fd_pc,
-  input  logic          fd_jump,
-  input  logic          fd_istr_width,
+  /*clk,rest*/
+  input  logic       clk,
+  input  logic       rest,
+  /*来自if级的信号*/
+  input  logic       fd_valid,
+  output logic       fd_ready,
+  input  logic[31:0] fd_istr,
+  input  logic[31:0] fd_pc,
+  input  logic       fd_jump,
+  input  logic       fd_istr_width,
   /*来自ex级的信号*/
-  input  logic          ex_flush_en,
-  /*来自wb级的信号*/
-  input  logic          wd_valid,
-  output logic          wd_ready,
-  input  logic[31:0]    wd_reg_data,
-  input  logic[4:0]     wd_rd,
-  input  logic          wd_reg_write,
-  input  logic[31:0]    wd_csr_data,
-  input  logic[11:0]    wd_csr,
-  input  logic          wd_csr_write,
+  input  logic       ex_flush_en,
   /*给到ex*/
-  output logic          de_valid,
-  output logic          de_wait_handle,
-  input  logic          de_ready,
-  output logic[3:0]     de_alu_op,
-  output logic[31:0]    de_rs1_value,
-  output logic[31:0]    de_csr_valud,
-  output logic[4:0]     de_zimm,
-  output logic[31:0]    de_pc,
-  output logic[31:0]    de_rs2_value,
-  output logic[31:0]    de_imm,       /*指令中的立即数*/
-  output logic[11:0]    de_csr,
-  output logic[4:0]     de_rd,
-  output logic          de_reg_write,
-  output logic          de_csr_write,
-  output logic          de_mem_write,
-  output logic          de_mem_read,
-  output logic          de_mem_op,
-  output logic          de_istr_width,
-  output logic          de_is_br,      /*是否为分支指令*/
-  output logic[3:0]     de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
-  output logic          de_jump,       /*这条指令是否在前面已经跳转了*/
-  output logic[4:0]     de_rs1,
-  output logic[4:0]     de_rs2,
+  output logic       de_valid,
+  output logic       de_wait_handle,
+  input  logic       de_ready,
+  output logic[3:0]  de_alu_op,
+  output logic[31:0] de_rs1_value,
+  output logic[31:0] de_csr_value,
+  output logic[4:0]  de_zimm,
+  output logic[31:0] de_pc,
+  output logic[31:0] de_rs2_value,
+  output logic[31:0] de_imm,       /*指令中的立即数*/
+  output logic[4:0]  de_rd,
+  output logic       de_reg_write,
+  output logic       de_csr_write,
+  output logic       de_mem_write,
+  output logic       de_mem_read,
+  output logic       de_mem_op,
+  output logic       de_istr_width,
+  output logic       de_is_br,      /*是否为分支指令*/
+  output logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
+  output logic       de_jump,       /*这条指令是否在前面已经跳转了*/
+  output logic[11:0] de_csr,
+  output logic       de_csr_valid,
+  output logic[4:0]  de_rs1,
+  output logic[4:0]  de_rs2,
+  output logic       de_rs1_valid,
+  output logic       de_rs2_valid,
+  output logic[1:0]  de_alu_port_1_sel,
+  output logic[1:0]  de_alu_port_2_sel,
+  output logic[1:0]  de_em_reg_data_addr_sel,
+  output logic[1:0]  de_em_csr_data_sel,
+  /*来自wb级的信号*/
+  input  logic       wb_valid,
+  output logic       wb_ready,
+  input  logic[31:0] wb_reg_data,
+  input  logic[4:0]  wb_rd,
+  input  logic       wb_reg_write,
+  input  logic[31:0] wb_csr_data,
+  input  logic[11:0] wb_csr,
+  input  logic       wb_csr_write,
   /*csr接口*/
-  output logic          csr_read,
-  output logic[11:0]    csr_read_addr,
-  input  logic[31:0]    csr_read_data,
-  output logic          csr_write,
-  output logic[11:0]    csr_write_addr,
-  output logic[31:0]    csr_write_data
+  output logic       csr_read,
+  output logic[11:0] csr_read_addr,
+  input  logic[31:0] csr_read_data,
+  output logic       csr_write,
+  output logic[11:0] csr_write_addr,
+  output logic[31:0] csr_write_data,
+  /*冲突检测*/
+  input  logic[4:0]  em_rd,
+  input  logic       em_reg_write,
+  input  logic       em_mem_read
 );
 /****************************************************************************************
 函数
@@ -79,9 +91,8 @@ endfunction
 function logic[31:0] istr_get_imm_ui(logic[31:0] istr);
   return {{11{istr[31]}},istr[31],istr[19:12],istr[20],istr[30:21],1'b0};
 endfunction
-
-function logic[31:0] istr_get_imm (logic [31:0] istr);
 /*从指令中获取立即数*/
+function logic[31:0] istr_get_imm (logic [31:0] istr);
   logic[31:0] imm;
   case(istr[6:2])
     5'b00100:begin
@@ -113,7 +124,6 @@ endfunction
 function logic[11:0] istr_get_csr(logic[31:0] istr);
   return istr[31:20];
 endfunction
-
 /****************************************************************************************
 变量
 ****************************************************************************************/
@@ -127,11 +137,26 @@ logic[4:0]   istr_rs2;
 /*寄存器文件端口*/
 logic[4:0]   reg_file_read_0_addr;
 logic[31:0]  reg_file_read_0_data;
+logic        reg_file_read_0_en;
 logic[4:0]   reg_file_read_1_addr;
 logic[31:0]  reg_file_read_1_data;
+logic        reg_file_read_1_en;
 logic[4:0]   reg_file_write_addr;
 logic[31:0]  reg_file_write_data;
 logic        reg_file_write_en;
+/*冲突检测端口*/
+logic[4:0]   risk_detct_rs1;
+logic        risk_detct_rs1_valid;
+logic[4:0]   risk_detct_rs2;
+logic        risk_detct_rs2_valid;
+logic        risk_detct_mem_write;
+logic[4:0]   risk_detct_de_rd;
+logic        risk_detct_de_reg_write;
+logic        risk_detct_de_mem_read;
+logic[4:0]   risk_detct_em_rd;
+logic        risk_detct_em_reg_write;
+logic        risk_detct_em_mem_read;
+logic        risk_detct_insert_nop;
 /*指令译码相关变量*/
 logic        istr_is_ra;          /*10:ADD,SUB,SLL,SLT,SLTU,XOR,SRL,SRA,OR,AND                     */
 logic        istr_is_ia;          /*9 :ADDI,SLTI,SLTIU,XORI,ORI,ANDI,SLLI,SRLI,SRAI                */
@@ -221,74 +246,80 @@ logic        istr_width;
 logic        is_br;
 logic[3:0]   br_op;
 logic        jump;
-
+logic        rs1_valid;
+logic        rs2_valid;
+logic[1:0]   alu_port_1_sel;
+logic[1:0]   alu_port_2_sel;
+logic[1:0]   em_reg_data_addr_sel;
+logic[1:0]   em_csr_data_sel;
 /****************************************************************************************
 译码
 ****************************************************************************************/
 /*字段分离*/
-assign       istr_opcode      = fd_istr[6:2];
-assign       istr_funct3      = fd_istr[14:12];
-assign       istr_funct7      = fd_istr[31:25];
-assign       istr_rd          = fd_istr[11: 7];
-assign       istr_rs1         = fd_istr[19:15];
-assign       istr_rs2         = fd_istr[24:20];
+assign istr_opcode       = fd_istr[6:2];
+assign istr_funct3       = fd_istr[14:12];
+assign istr_funct7       = fd_istr[31:25];
+assign istr_rd           = fd_istr[11: 7];
+assign istr_rs1          = fd_istr[19:15];
+assign istr_rs2          = fd_istr[24:20];
 /*opcode decode*/
-assign       istr_is_ra       = istr_opcode==`ISTR_RA;
-assign       istr_is_ia       = istr_opcode==`ISTR_RA;
-assign       istr_is_ld       = istr_opcode==`ISTR_LD;
-assign       istr_is_sd       = istr_opcode==`ISTR_SD;
-assign       istr_is_br       = istr_opcode==`ISTR_BR;
-assign       istr_is_jr       = istr_opcode==`ISTR_JR;
-assign       istr_is_j        = istr_opcode==`ISTR_J;
-assign       istr_is_lui      = istr_opcode==`ISTR_LUI;
-assign       istr_is_auipc    = istr_opcode==`ISTR_AUIPC;
-assign       istr_is_fence    = istr_opcode==`ISTR_FENCE;
-assign       istr_is_sys      = istr_opcode==`ISTR_SYS;
+assign istr_is_ra        = istr_opcode==`ISTR_RA;
+assign istr_is_ia        = istr_opcode==`ISTR_RA;
+assign istr_is_ld        = istr_opcode==`ISTR_LD;
+assign istr_is_sd        = istr_opcode==`ISTR_SD;
+assign istr_is_br        = istr_opcode==`ISTR_BR;
+assign istr_is_jr        = istr_opcode==`ISTR_JR;
+assign istr_is_j         = istr_opcode==`ISTR_J;
+assign istr_is_lui       = istr_opcode==`ISTR_LUI;
+assign istr_is_auipc     = istr_opcode==`ISTR_AUIPC;
+assign istr_is_fence     = istr_opcode==`ISTR_FENCE;
+assign istr_is_sys       = istr_opcode==`ISTR_SYS;
 /*ra系*/
-assign       istr_is_ra_add   = istr_is_ra&&((istr_funct3==`ISTR_RA_ADD_FUNCT3   )&&(istr_funct7==`ISTR_RA_ADD_FUNCT7   ));
-assign       istr_is_ra_sub   = istr_is_ra&&((istr_funct3==`ISTR_RA_SUB_FUNCT3   )&&(istr_funct7==`ISTR_RA_SUB_FUNCT7   ));
-assign       istr_is_ra_sll   = istr_is_ra&&((istr_funct3==`ISTR_RA_SLL_FUNCT3   )&&(istr_funct7==`ISTR_RA_SLL_FUNCT7   ));
-assign       istr_is_ra_slt   = istr_is_ra&&((istr_funct3==`ISTR_RA_SLT_FUNCT3   )&&(istr_funct7==`ISTR_RA_SLT_FUNCT7   ));
-assign       istr_is_ra_sltu  = istr_is_ra&&((istr_funct3==`ISTR_RA_SLTU_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLTU_FUNCT7  ));
-assign       istr_is_ra_xor   = istr_is_ra&&((istr_funct3==`ISTR_RA_XOR_FUNCT3   )&&(istr_funct7==`ISTR_RA_XOR_FUNCT7   ));
-assign       istr_is_ra_srl   = istr_is_ra&&((istr_funct3==`ISTR_RA_SRL_FUNCT3   )&&(istr_funct7==`ISTR_RA_SRL_FUNCT7   ));
-assign       istr_is_ra_sra   = istr_is_ra&&((istr_funct3==`ISTR_RA_SRA_FUNCT3   )&&(istr_funct7==`ISTR_RA_SRA_FUNCT7   ));
-assign       istr_is_ra_or    = istr_is_ra&&((istr_funct3==`ISTR_RA_OR_FUNCT3    )&&(istr_funct7==`ISTR_RA_OR_FUNCT7    ));
-assign       istr_is_ra_and   = istr_is_ra&&((istr_funct3==`ISTR_RA_AND_FUNCT3   )&&(istr_funct7==`ISTR_RA_AND_FUNCT7   ));
+assign istr_is_ra_add    = istr_is_ra&&((istr_funct3==`ISTR_RA_ADD_FUNCT3   )&&(istr_funct7==`ISTR_RA_ADD_FUNCT7   ));
+assign istr_is_ra_sub    = istr_is_ra&&((istr_funct3==`ISTR_RA_SUB_FUNCT3   )&&(istr_funct7==`ISTR_RA_SUB_FUNCT7   ));
+assign istr_is_ra_sll    = istr_is_ra&&((istr_funct3==`ISTR_RA_SLL_FUNCT3   )&&(istr_funct7==`ISTR_RA_SLL_FUNCT7   ));
+assign istr_is_ra_slt    = istr_is_ra&&((istr_funct3==`ISTR_RA_SLT_FUNCT3   )&&(istr_funct7==`ISTR_RA_SLT_FUNCT7   ));
+assign istr_is_ra_sltu   = istr_is_ra&&((istr_funct3==`ISTR_RA_SLTU_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLTU_FUNCT7  ));
+assign istr_is_ra_xor    = istr_is_ra&&((istr_funct3==`ISTR_RA_XOR_FUNCT3   )&&(istr_funct7==`ISTR_RA_XOR_FUNCT7   ));
+assign istr_is_ra_srl    = istr_is_ra&&((istr_funct3==`ISTR_RA_SRL_FUNCT3   )&&(istr_funct7==`ISTR_RA_SRL_FUNCT7   ));
+assign istr_is_ra_sra    = istr_is_ra&&((istr_funct3==`ISTR_RA_SRA_FUNCT3   )&&(istr_funct7==`ISTR_RA_SRA_FUNCT7   ));
+assign istr_is_ra_or     = istr_is_ra&&((istr_funct3==`ISTR_RA_OR_FUNCT3    )&&(istr_funct7==`ISTR_RA_OR_FUNCT7    ));
+assign istr_is_ra_and    = istr_is_ra&&((istr_funct3==`ISTR_RA_AND_FUNCT3   )&&(istr_funct7==`ISTR_RA_AND_FUNCT7   ));
 /*ia系*/
-assign      istr_is_ia_addi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ADDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ADDI_FUNCT7  ));
-assign      istr_is_ia_slti   = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SLTI_FUNCT7  ));
-assign      istr_is_ia_sltiu  = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTIU_FUNCT3 )&&(istr_funct7==`ISTR_IA_SLTIU_FUNCT7 ));
-assign      istr_is_ia_xori   = istr_is_ia&&((istr_funct3==`ISTR_IA_XORI_FUNCT3  )&&(istr_funct7==`ISTR_IA_XORI_FUNCT7  ));
-assign      istr_is_ia_ori    = istr_is_ia&&((istr_funct3==`ISTR_IA_ORI_FUNCT3   )&&(istr_funct7==`ISTR_IA_ORI_FUNCT7   ));
-assign      istr_is_ia_andi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ANDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ANDI_FUNCT7  ));
-assign      istr_is_ia_slli   = istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLLI_FUNCT7  ));
-assign      istr_is_ia_srli   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRLI_FUNCT7  ));
-assign      istr_is_ia_srai   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRAI_FUNCT7  ));
+assign istr_is_ia_addi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ADDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ADDI_FUNCT7  ));
+assign istr_is_ia_slti   = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SLTI_FUNCT7  ));
+assign istr_is_ia_sltiu  = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTIU_FUNCT3 )&&(istr_funct7==`ISTR_IA_SLTIU_FUNCT7 ));
+assign istr_is_ia_xori   = istr_is_ia&&((istr_funct3==`ISTR_IA_XORI_FUNCT3  )&&(istr_funct7==`ISTR_IA_XORI_FUNCT7  ));
+assign istr_is_ia_ori    = istr_is_ia&&((istr_funct3==`ISTR_IA_ORI_FUNCT3   )&&(istr_funct7==`ISTR_IA_ORI_FUNCT7   ));
+assign istr_is_ia_andi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ANDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ANDI_FUNCT7  ));
+assign istr_is_ia_slli   = istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLLI_FUNCT7  ));
+assign istr_is_ia_srli   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRLI_FUNCT7  ));
+assign istr_is_ia_srai   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRAI_FUNCT7  ));
 /*ld系*/
-assign      istr_is_ld_lb     = istr_is_ld&&(istr_funct3==`ISTR_LD_LB_FUNCT3     );
-assign      istr_is_ld_lh     = istr_is_ld&&(istr_funct3==`ISTR_LD_LH_FUNCT3     );
-assign      istr_is_ld_lw     = istr_is_ld&&(istr_funct3==`ISTR_LD_LW_FUNCT3     );
-assign      istr_is_ld_lbu    = istr_is_ld&&(istr_funct3==`ISTR_LD_LBU_FUNCT3    );
-assign      istr_is_ld_lhu    = istr_is_ld&&(istr_funct3==`ISTR_LD_LHU_FUNCT3    );
+assign istr_is_ld_lb     = istr_is_ld&&(istr_funct3==`ISTR_LD_LB_FUNCT3     );
+assign istr_is_ld_lh     = istr_is_ld&&(istr_funct3==`ISTR_LD_LH_FUNCT3     );
+assign istr_is_ld_lw     = istr_is_ld&&(istr_funct3==`ISTR_LD_LW_FUNCT3     );
+assign istr_is_ld_lbu    = istr_is_ld&&(istr_funct3==`ISTR_LD_LBU_FUNCT3    );
+assign istr_is_ld_lhu    = istr_is_ld&&(istr_funct3==`ISTR_LD_LHU_FUNCT3    );
 /*sd系*/
-assign      istr_is_sd_sb     = istr_is_sd&&(istr_funct3==`ISTR_SD_SB_FUNCT3     );
-assign      istr_is_sd_sh     = istr_is_sd&&(istr_funct3==`ISTR_SD_SH_FUNCT3     );
-assign      istr_is_sd_sw     = istr_is_sd&&(istr_funct3==`ISTR_SD_SW_FUNCT3     );
+assign istr_is_sd_sb     = istr_is_sd&&(istr_funct3==`ISTR_SD_SB_FUNCT3     );
+assign istr_is_sd_sh     = istr_is_sd&&(istr_funct3==`ISTR_SD_SH_FUNCT3     );
+assign istr_is_sd_sw     = istr_is_sd&&(istr_funct3==`ISTR_SD_SW_FUNCT3     );
 /*br系*/
-assign      istr_is_br_beq    = istr_is_br&&(istr_funct3==`ISTR_BR_BEQ_FUNCT3    );
-assign      istr_is_br_bne    = istr_is_br&&(istr_funct3==`ISTR_BR_BNE_FUNCT3    );
-assign      istr_is_br_blt    = istr_is_br&&(istr_funct3==`ISTR_BR_BLT_FUNCT3    );
-assign      istr_is_br_bge    = istr_is_br&&(istr_funct3==`ISTR_BR_BGE_FUNCT3    );
-assign      istr_is_br_bliu   = istr_is_br&&(istr_funct3==`ISTR_BR_BLIU_FUNCT3   );
-assign      istr_is_br_bgeu   = istr_is_br&&(istr_funct3==`ISTR_BR_BGEU_FUNCT3   );
+assign istr_is_br_beq    = istr_is_br&&(istr_funct3==`ISTR_BR_BEQ_FUNCT3    );
+assign istr_is_br_bne    = istr_is_br&&(istr_funct3==`ISTR_BR_BNE_FUNCT3    );
+assign istr_is_br_blt    = istr_is_br&&(istr_funct3==`ISTR_BR_BLT_FUNCT3    );
+assign istr_is_br_bge    = istr_is_br&&(istr_funct3==`ISTR_BR_BGE_FUNCT3    );
+assign istr_is_br_bliu   = istr_is_br&&(istr_funct3==`ISTR_BR_BLIU_FUNCT3   );
+assign istr_is_br_bgeu   = istr_is_br&&(istr_funct3==`ISTR_BR_BGEU_FUNCT3   );
 /*sys系*/
-assign      istr_is_sys_csrrw = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRW_FUNCT3 );
-assign      istr_is_sys_csrrs = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRS_FUNCT3 );
-assign      istr_is_sys_csrrc = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRC_FUNCT3 );
-assign      istr_is_sys_csrrwi= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRWI_FUNCT3);
-assign      istr_is_sys_csrrsi= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRSI_FUNCT3);
-assign      istr_is_sys_csrrci= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRCI_FUNCT3);
+assign istr_is_sys_csrrw = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRW_FUNCT3 );
+assign istr_is_sys_csrrs = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRS_FUNCT3 );
+assign istr_is_sys_csrrc = istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRC_FUNCT3 );
+assign istr_is_sys_csrrwi= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRWI_FUNCT3);
+assign istr_is_sys_csrrsi= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRSI_FUNCT3);
+assign istr_is_sys_csrrci= istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRCI_FUNCT3);
+
 /*
 -分辨mret
 assign      istr_is_sys_mret  =
@@ -353,59 +384,174 @@ assign      br_op             = (istr_is_j||istr_is_jr||istr_is_sys_mret)?`BR_OP
                                   ({4{istr_is_br_bge }}&`BR_OP_GE) ||
                                   ({4{istr_is_br_bliu}}&`BR_OP_LIU)||
                                   ({4{istr_is_br_bgeu}}&`BR_OP_GEU);
+assign      rs1_valid         = istr_is_ra||istr_is_ia||istr_is_ld||
+                                istr_is_sd||istr_is_br||istr_is_sys_csrrw||
+                                istr_is_sys_csrrs||istr_is_sys_csrrc||istr_is_jr;
+assign      rs2_valid         = istr_is_ra||istr_is_sd||istr_is_br;
 
-always @(posedge clk) begin
-  if(ex_flush_en) begin
+/*连接reg file与csr寄存器*/
+assign reg_file_read_0_addr   =  istr_rs1;
+assign reg_file_read_1_addr   =  istr_rs2;
+assign reg_file_read_0_en     =  de_ready;
+assign reg_file_read_1_en     =  de_ready;
+assign csr_read_addr          =  istr_get_csr(fd_istr);
+assign csr_read               =  (istr_is_sys_csrrw ||
+                                  istr_is_sys_csrrs ||
+                                  istr_is_sys_csrrc ||
+                                  istr_is_sys_csrrwi||
+                                  istr_is_sys_csrrsi||
+                                  istr_is_sys_csrrci)&&de_ready;
+assign reg_file_write_en      =  wb_reg_write&wb_valid;
+assign reg_file_write_addr    =  wb_rd;
+assign reg_file_write_data    =  wb_reg_data;
+assign csr_write              =  wb_csr_write&wb_valid;
+assign csr_write_addr         =  wb_csr;
+assign csr_write_data         =  wb_csr_data; 
+assign fd_ready               =  de_ready&&!risk_detct_insert_nop;
+assign wb_ready               =  1'd1;
+
+/*连接冒险检测*/
+assign risk_detct_rs1           = istr_rs1;
+assign risk_detct_rs1_valid     = rs1_valid;
+assign risk_detct_rs2           = istr_rs2;
+assign risk_detct_rs2_valid     = rs2_valid;
+assign risk_detct_mem_write     = mem_write_en;
+assign risk_detct_de_rd         = de_rd;
+assign risk_detct_de_reg_write  = de_reg_write;
+assign risk_detct_de_mem_read   = de_mem_read;
+assign risk_detct_em_rd         = em_rd;
+assign risk_detct_em_reg_write  = em_reg_write;
+assign risk_detct_em_mem_read   = em_mem_read;
+
+/****************************************************************************************
+更新寄存器
+****************************************************************************************/
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
     de_valid<=1'd0;
     de_wait_handle<=1'd0;
+    de_alu_op     <= `ALU_OP_NOP;
+    de_br_op      <= `BR_OP_FALSE;
+    de_jump       <= 1'd0;
+    de_reg_write  <= 1'd0;
+    de_csr_write  <= 1'd0;
+    de_mem_write  <= 1'd0;
+    de_mem_read   <= 1'd0;
   end
-  else if(!de_valid||de_ready) begin
-    de_valid<=fd_valid;
-    de_wait_handle<=1'd1;
-    /*更新de寄存器组*/
-    de_alu_op     <= alu_op;
-    de_zimm       <= istr_get_zimm(fd_istr);
-    de_pc         <= fd_pc;
-    de_imm        <= istr_get_imm(fd_istr);
-    de_csr        <= istr_get_csr(fd_istr);
-    de_rd         <= istr_rd;
-    de_reg_write  <= reg_write_en;
-    de_csr_write  <= csr_write_en;
-    de_mem_write  <= mem_write_en;
-    de_mem_read   <= mem_read_en;
-    de_mem_op     <= mem_op;
-    de_istr_width <= fd_istr_width;
-    de_is_br      <= is_br;
-    de_br_op      <= br_op;
-    de_jump       <= fd_jump;
-    de_rs1        <= istr_rs1;
-    de_rs2        <= istr_rs2;
-  end begin
-    de_wait_handle<=1'd0;
+  else begin
+    if(ex_flush_en) begin
+      de_valid<=1'd0;
+      de_wait_handle<=1'd0;
+    end
+    else if(!de_valid||de_ready) begin
+      de_valid<=fd_valid;
+      de_wait_handle<=1'd1;
+      /*更新de寄存器组*/
+      de_zimm       <= istr_get_zimm(fd_istr);
+      de_pc         <= fd_pc;
+      de_imm        <= istr_get_imm(fd_istr);
+      de_csr        <= istr_get_csr(fd_istr);
+      de_rd         <= istr_rd;
+      de_mem_op     <= mem_op;
+      de_istr_width <= fd_istr_width;
+      de_is_br      <= is_br;
+      de_rs1        <= istr_rs1;
+      de_rs2        <= istr_rs2;
+      de_rs1_valid  <= rs1_valid;
+      de_rs2_valid  <= rs2_valid;
+      if(!risk_detct_insert_nop) begin
+        de_alu_op     <= alu_op;
+        de_br_op      <= br_op;
+        de_jump       <= fd_jump;
+        de_reg_write  <= reg_write_en;
+        de_csr_write  <= csr_write_en;
+        de_mem_write  <= mem_write_en;
+        de_mem_read   <= mem_read_en;
+      end
+      else begin
+        de_alu_op     <= `ALU_OP_NOP;
+        de_br_op      <= `BR_OP_FALSE;
+        de_jump       <= 1'd0;
+        de_reg_write  <= 1'd0;
+        de_csr_write  <= 1'd0;
+        de_mem_write  <= 1'd0;
+        de_mem_read   <= 1'd0;
+      end
+    end begin
+      de_wait_handle<=1'd0;
+    end
   end
 end
 assign de_rs1_value=reg_file_read_0_data;
 assign de_rs2_value=reg_file_read_1_data;
-assign de_csr_valud=csr_read_data;
+assign de_csr_value=csr_read_data;
 
 /****************************************************************************************
 module实例化
 ****************************************************************************************/
 /*寄存器文件*/
 core_id_reg_file core_id_reg_file_inst0(
-  .clk          (clk                   ),
-  .read_0_addr  (reg_file_read_0_addr  ),
-  .read_0_data  (reg_file_read_0_data  ),
-  .read_1_addr  (reg_file_read_1_addr  ),
-  .read_1_data  (reg_file_read_1_data  ),
-  .write_addr   (reg_file_write_addr   ),
-  .write_data   (reg_file_write_data   ),
-  .write_en     (reg_file_write_en     )
+  .clk          (clk                    ),
+  .read_0_addr  (reg_file_read_0_addr   ),
+  .read_0_data  (reg_file_read_0_data   ),
+  .read_0_en    (reg_file_read_0_en     ),
+  .read_1_addr  (reg_file_read_1_addr   ),
+  .read_1_data  (reg_file_read_1_data   ),
+  .read_1_en    (reg_file_read_1_en     ),
+  .write_addr   (reg_file_write_addr    ),
+  .write_data   (reg_file_write_data    ),
+  .write_en     (reg_file_write_en      )
+);
+/*冲突检测模块*/
+core_id_risk_detct core_id_risk_detct_inst0(
+  .rs1          (risk_detct_rs1         ),
+  .rs1_valid    (risk_detct_rs1_valid   ),
+  .rs2          (risk_detct_rs2         ),
+  .rs2_valid    (risk_detct_rs2_valid   ),
+  .mem_write    (risk_detct_mem_write   ),
+  .de_rd        (risk_detct_de_rd       ),
+  .de_reg_write (risk_detct_de_reg_write),
+  .de_mem_read  (risk_detct_de_mem_read ),
+  .em_rd        (risk_detct_em_rd       ),
+  .em_reg_write (risk_detct_em_reg_write),
+  .em_mem_read  (risk_detct_em_mem_read ),
+  .insert_nop   (risk_detct_insert_nop  )
 );
 
+/****************************************************************************************
+仿真时检查
+****************************************************************************************/
+always @(posedge clk) begin
+  if((fd_istr[1:0]!=2'd3)&&fd_valid) begin
+    $display("instruction ignore!");
+  end
+end
+
 endmodule
-
-/*****************************************************************************************************************
-根据指令获取其中的立即数
-*****************************************************************************************************************/
-
+/************************************************************************************************************************************************
+冲突检测
+*************************************************************************************************************************************************/
+module core_id_risk_detct (
+  input  logic[4:0] rs1,
+  input  logic      rs1_valid,
+  input  logic[4:0] rs2,
+  input  logic      rs2_valid,
+  input  logic      mem_write,
+  input  logic[4:0] de_rd,
+  input  logic      de_reg_write,
+  input  logic      de_mem_read,
+  input  logic[4:0] em_rd,
+  input  logic      em_reg_write,
+  input  logic      em_mem_read,
+  output logic      insert_nop
+);
+assign insert_nop=(
+                    (rs1==de_rd)&&rs1_valid&&de_reg_write&&de_mem_read||
+                    (rs2==de_rd)&&rs2_valid&&de_reg_write&&de_mem_read||
+                    (rs1==em_rd)&&rs1_valid&&em_reg_write&&em_mem_read||
+                    (rs2==em_rd)&&rs2_valid&&em_reg_write&&em_mem_read
+                  )&&
+                  (
+                    !(mem_write&&de_mem_read&&de_reg_write&&(de_rd==rs2))
+                  );
+endmodule
