@@ -3,7 +3,7 @@ module core_ma(
   input  logic       rest,
   /*来自ex*/
   input  logic       em_valid,
-  input  logic       em_wait_handle,
+  input  logic       em_start_handle,
   output logic       em_ready,
   input  logic[31:0] em_reg_data_mem_addr,
   input  logic[31:0] em_csr_data_mem_data,

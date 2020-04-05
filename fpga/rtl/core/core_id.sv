@@ -14,7 +14,7 @@ module core_id(
   input  logic       ex_flush_en,
   /*给到ex*/
   output logic       de_valid,
-  output logic       de_wait_handle,
+  output logic       de_start_handle,
   input  logic       de_ready,
   output logic[3:0]  de_alu_op,
   output logic[31:0] de_rs1_value,
@@ -39,8 +39,8 @@ module core_id(
   output logic[4:0]  de_rs2,
   output logic       de_rs1_valid,
   output logic       de_rs2_valid,
-  output logic[1:0]  de_alu_port_1_sel,
-  output logic[1:0]  de_alu_port_2_sel,
+  input  logic[1:0]  de_alu_in_1_sel,
+  input  logic[1:0]  de_alu_in_2_sel,
   output logic[1:0]  de_em_reg_data_addr_sel,
   output logic[1:0]  de_em_csr_data_sel,
   /*来自wb级的信号*/
