@@ -13,14 +13,37 @@ module core_wb(
   input  logic[11:0] mw_csr,
   input  logic       mw_csr_write,
   /*去往id*/
-  output logic       wd_valid,
-  input  logic       wd_ready,
-  output logic[31:0] wd_reg_data,
-  output logic[4:0]  wd_rd,
-  output logic       wd_reg_write,
-  output logic[31:0] wd_csr_data,
-  output logic[11:0] wd_csr,
-  output logic       wd_csr_write
+  output logic       wb_valid,
+  input  logic       wb_ready,
+  output logic[31:0] wb_reg_data,
+  output logic[4:0]  wb_rd,
+  output logic       wb_reg_write,
+  output logic[31:0] wb_csr_data,
+  output logic[11:0] wb_csr,
+  output logic       wb_csr_write
 );
+
+assign mw_ready=1'd1;
+
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
+    wb_valid      =1'd0;
+    wb_reg_data   =1'd0;
+    wb_rd         =1'd0;
+    wb_reg_write  =1'd0;
+    wb_csr_data   =1'd0;
+    wb_csr        =1'd0;
+    wb_csr_write  =1'd0;
+  end
+  else begin
+    wb_valid      =mw_valid;
+    wb_reg_data   =mw_reg_write_sel?mw_mem_data:mw_reg_data;
+    wb_rd         =mw_rd;
+    wb_reg_write  =mw_reg_write&&mw_valid;
+    wb_csr_data   =mw_csr_data;
+    wb_csr        =mw_csr;
+    wb_csr_write  =mw_csr_write&&mw_valid;
+  end
+end
   
 endmodule

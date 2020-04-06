@@ -41,17 +41,16 @@ module core_ex(
   output logic[31:0] em_csr_data_mem_data,
   output logic       em_mem_read,
   output logic       em_mem_write,
-  output logic       em_mem_op_type,
-  output logic       em_rd,
+  output logic[1:0]  em_mem_op_type,
+  output logic[4:0]  em_rd,
   output logic       em_reg_write,
-  output logic       em_reg_write_sel,
   output logic[11:0] em_csr,
   output logic       em_csr_write,
   /*MA/WB级寄存器数据*/
   input  logic[4:0]  mw_rd,
   input  logic       mw_reg_write,
   input  logic[31:0] mw_reg_write_data,
-  input  logic       mw_mem_read_data_valid,
+  input  logic       mw_mem_data_valid,
   input  logic[11:0] mw_csr,
   input  logic       mw_csr_write,
   input  logic[31:0] mw_csr_data,
@@ -112,8 +111,6 @@ logic[1:0]  reg_data_mem_addr_sel;
 logic[31:0] reg_data_mem_addr_in[3:0];
 
 logic       start_handle;
-logic[31:0] pc_add_2;
-logic[31:0] pc_add_4;
 logic[31:0] pc_add;
 /**************************************************************
 选择rs1,rs2,csr的数据源
@@ -134,30 +131,67 @@ assign reg_data_mem_addr_in[0]=alu_out;
 assign reg_data_mem_addr_in[1]=de_imm;
 assign reg_data_mem_addr_in[2]=csr_value;
 assign reg_data_mem_addr_in[3]=pc_add;
+assign reg_data_mem_addr_sel  =de_em_reg_data_mem_addr_sel;
 
 assign csr_data_mem_data_in[0]=alu_out;
 assign csr_data_mem_data_in[1]=rs1_value;
+assign csr_data_mem_data_sel=de_em_csr_data_mem_data_sel;
 
 assign alu_in1_in[0]=rs1_value;
 assign alu_in1_in[1]=de_zimm;
 assign alu_in1_in[2]=de_pc;
+assign alu_in1_sel=de_alu_in_1_sel;
 
 assign alu_in2_in[0]=rs2_value;
 assign alu_in2_in[1]=de_imm;
 assign alu_in2_in[2]=de_csr_value;
+assign alu_in2_sel=de_alu_in_2_sel;
 
 /**************************************************************
 连线
 **************************************************************/
-assign alu_op        = de_alu_op;
-assign alu_op_valid  = de_valid;
-assign pc_add        = de_istr_width?pc_add_4:pc_add_2;
-assign csr_data_mem_data_sel =de_em_csr_data_mem_data_sel;
-assign reg_data_mem_addr_sel =de_em_reg_data_mem_addr_sel;
+assign alu_op                = de_alu_op;
+assign alu_op_valid          = de_valid;
+assign pc_add                = de_pc+(de_istr_width?3'd4:3'd2);
+assign csr_data_mem_data_sel = de_em_csr_data_mem_data_sel;
+assign reg_data_mem_addr_sel = de_em_reg_data_mem_addr_sel;
 
 /*************************************************************
 更新em寄存器
 *************************************************************/
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
+    em_valid             <= 1'd0;
+    em_start_handle      <= 1'd0;
+    em_reg_data_mem_addr <= 1'd0;
+    em_csr_data_mem_data <= 1'd0;
+    em_mem_read          <= 1'd0;
+    em_mem_write         <= 1'd0;
+    em_mem_op_type       <= 1'd0;
+    em_rd                <= 1'd0;
+    em_reg_write         <= 1'd0;
+    em_csr               <= 1'd0;
+    em_csr_write         <= 1'd0;
+  end
+  else begin
+    if(!em_valid||em_ready) begin
+      em_valid             <= de_valid&&alu_op_ready;
+      em_start_handle      <= 1'd1;
+      em_reg_data_mem_addr <= reg_data_mem_addr;
+      em_csr_data_mem_data <= csr_data_mem_data;
+      em_mem_read          <= de_mem_read;
+      em_mem_write         <= de_mem_write;
+      em_mem_op_type       <= de_mem_op;
+      em_rd                <= de_rd;
+      em_reg_write         <= de_reg_write;
+      em_csr               <= de_csr;
+      em_csr_write         <= de_csr_write;
+    end
+    else begin
+      em_start_handle<=1'd0;
+    end
+  end
+end
 
 /**************************************************************
 模块实例化
@@ -187,7 +221,7 @@ core_ex_bypass core_ex_bypass_inst0(
   .em_csr_write           (em_csr_write           ),
   .mw_rd                  (mw_rd                  ),
   .mw_reg_write           (mw_reg_write           ),
-  .mw_mem_read_data_valid (mw_mem_read_data_valid),
+  .mw_mem_data_valid      (mw_mem_data_valid      ),
   .mw_csr                 (mw_csr                 ),
   .mw_csr_write           (mw_csr_write           ),
   .rs1_sel                (rs1_sel                ),
@@ -285,7 +319,7 @@ module core_ex_bypass(
   input  logic       em_csr_write,
   input  logic[4:0]  mw_rd,
   input  logic       mw_reg_write,
-  input  logic       mw_mem_read_data_valid,
+  input  logic       mw_mem_data_valid,
   input  logic[11:0] mw_csr,
   input  logic       mw_csr_write,
   output logic[1:0]  rs1_sel,
@@ -307,7 +341,7 @@ assign rs2_em_corl  =(de_rs2==em_rd)&&de_rs2_valid&&em_reg_write;
 assign rs2_mw_corl  =(de_rs2==mw_rd)&&de_rs2_valid&&mw_reg_write;
 assign csr_em_corl  =(de_csr==em_csr)&&de_csr_valid&&em_csr_write;
 assign csr_mw_corl  =(de_csr==mw_csr)&&de_csr_valid&&em_csr_write;
-assign start_handle =(rs1_mw_corl|rs2_mw_corl)?mw_mem_read_data_valid:de_start_handle;
+assign start_handle =(rs1_mw_corl|rs2_mw_corl)?mw_mem_data_valid:de_start_handle;
 /*rs1 sel*/
 always @(*) begin
   if(rs1_em_corl) begin

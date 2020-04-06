@@ -9,9 +9,6 @@ module core_id(
   input  logic[31:0] fd_istr,
   input  logic[31:0] fd_pc,
   input  logic       fd_jump,
-  input  logic       fd_istr_width,
-  /*来自ex级的信号*/
-  input  logic       ex_flush_en,
   /*给到ex*/
   output logic       de_valid,
   output logic       de_start_handle,
@@ -39,8 +36,8 @@ module core_id(
   output logic[4:0]  de_rs2,
   output logic       de_rs1_valid,
   output logic       de_rs2_valid,
-  input  logic[1:0]  de_alu_in_1_sel,
-  input  logic[1:0]  de_alu_in_2_sel,
+  output logic[1:0]  de_alu_in_1_sel,
+  output logic[1:0]  de_alu_in_2_sel,
   output logic[1:0]  de_em_reg_data_mem_addr_sel,
   output logic[1:0]  de_em_csr_data_mem_data_sel,
   /*来自wb级的信号*/
@@ -52,6 +49,8 @@ module core_id(
   input  logic[31:0] wb_csr_data,
   input  logic[11:0] wb_csr,
   input  logic       wb_csr_write,
+  /*来自ex级的信号*/
+  input  logic       ex_flush_en,
   /*csr接口*/
   output logic       csr_read,
   output logic[11:0] csr_read_addr,
@@ -128,6 +127,8 @@ endfunction
 变量
 ****************************************************************************************/
 /*指令字段*/
+logic[31:0]  istr;
+logic[31:0]  istr_from_c;
 logic[4:0]   istr_opcode;
 logic[2:0]   istr_funct3;
 logic[6:0]   istr_funct7;
@@ -252,16 +253,34 @@ logic[1:0]   alu_port_1_sel;
 logic[1:0]   alu_port_2_sel;
 logic[1:0]   em_reg_data_addr_sel;
 logic[1:0]   em_csr_data_sel;
+
+logic       alu_in_1_sel_is_rs1;
+logic       alu_in_1_sel_is_zimm;
+logic       alu_in_1_sel_is_pc;
+logic[1:0]  alu_in_1_sel;
+logic       alu_in_2_sel_is_rs2;              
+logic       alu_in_2_sel_is_imm;
+logic       alu_in_2_sel_is_csr;
+logic[1:0]  alu_in_2_sel;
+logic       reg_data_mem_addr_sel_is_alu;
+logic       reg_data_mem_addr_sel_is_imm;
+logic       reg_data_mem_addr_sel_is_csr;
+logic       reg_data_mem_addr_sel_is_pc_add;
+logic[1:0]  reg_data_mem_addr_sel;
+logic       csr_data_mem_data_sel_is_alu;     
+logic       csr_data_mem_data_sel_is_rs1;
+logic[1:0]  csr_data_mem_data_sel;            
 /****************************************************************************************
 译码
 ****************************************************************************************/
 /*字段分离*/
-assign istr_opcode       = fd_istr[6:2];
-assign istr_funct3       = fd_istr[14:12];
-assign istr_funct7       = fd_istr[31:25];
-assign istr_rd           = fd_istr[11: 7];
-assign istr_rs1          = fd_istr[19:15];
-assign istr_rs2          = fd_istr[24:20];
+assign istr              = (fd_istr[1:0]==2'd3)?fd_istr:istr_from_c;
+assign istr_opcode       = istr[6:2];
+assign istr_funct3       = istr[14:12];
+assign istr_funct7       = istr[31:25];
+assign istr_rd           = istr[11: 7];
+assign istr_rs1          = istr[19:15];
+assign istr_rs2          = istr[24:20];
 /*opcode decode*/
 assign istr_is_ra        = istr_opcode==`ISTR_RA;
 assign istr_is_ia        = istr_opcode==`ISTR_RA;
@@ -389,12 +408,78 @@ assign      rs1_valid         = istr_is_ra||istr_is_ia||istr_is_ld||
                                 istr_is_sys_csrrs||istr_is_sys_csrrc||istr_is_jr;
 assign      rs2_valid         = istr_is_ra||istr_is_sd||istr_is_br;
 
+assign alu_in_1_sel_is_rs1              = istr_is_ra||
+                                          istr_is_ia||
+                                          istr_is_ld||
+                                          istr_is_sd||
+                                          istr_is_sys_csrrw||
+                                          istr_is_sys_csrrs||
+                                          istr_is_sys_csrrc;
+assign alu_in_1_sel_is_zimm             = istr_is_sys_csrrwi||
+                                          istr_is_sys_csrrsi||
+                                          istr_is_sys_csrrci;
+assign alu_in_1_sel_is_pc               = istr_is_br||
+                                          istr_is_lui||
+                                          istr_is_auipc||
+                                          istr_is_j;
+assign alu_in_1_sel                     = {2{alu_in_1_sel_is_rs1 }}&2'd0||
+                                          {2{alu_in_1_sel_is_zimm}}&2'd1||
+                                          {2{alu_in_1_sel_is_pc  }}&2'd2;
+assign alu_in_2_sel_is_rs2              = istr_is_ra;
+assign alu_in_2_sel_is_imm              = istr_is_ia||
+                                          istr_is_ld||
+                                          istr_is_sd||
+                                          istr_is_br||
+                                          istr_is_lui||
+                                          istr_is_auipc||
+                                          istr_is_jr||
+                                          istr_is_j;
+assign alu_in_2_sel_is_csr              = istr_is_sys_csrrw ||
+                                          istr_is_sys_csrrs ||
+                                          istr_is_sys_csrrc ||
+                                          istr_is_sys_csrrwi||
+                                          istr_is_sys_csrrsi||
+                                          istr_is_sys_csrrci;
+assign alu_in_2_sel                     = {2{alu_in_2_sel_is_rs2 }}&2'd0||
+                                          {2{alu_in_2_sel_is_imm }}&2'd1||
+                                          {2{alu_in_2_sel_is_csr }}&2'd2;
+assign reg_data_mem_addr_sel_is_alu     = istr_is_ra||
+                                          istr_is_ia||
+                                          istr_is_ld||
+                                          istr_is_sd||
+                                          istr_is_sys_csrrs ||
+                                          istr_is_sys_csrrc ||
+                                          istr_is_sys_csrrsi||
+                                          istr_is_sys_csrrci;
+assign reg_data_mem_addr_sel_is_imm     = istr_is_lui||
+                                          istr_is_auipc;
+assign reg_data_mem_addr_sel_is_csr     = istr_is_sys_csrrw||
+                                          istr_is_sys_csrrwi;
+assign reg_data_mem_addr_sel_is_pc_add  = istr_is_jr||
+                                          istr_is_j||
+                                          istr_is_br;
+assign reg_data_mem_addr_sel            = {2{reg_data_mem_addr_sel_is_alu   }}&2'd0||
+                                          {2{reg_data_mem_addr_sel_is_imm   }}&2'd1||
+                                          {2{reg_data_mem_addr_sel_is_csr   }}&2'd2||
+                                          {2{reg_data_mem_addr_sel_is_pc_add}}&2'd3;
+
+assign csr_data_mem_data_sel_is_alu     = !csr_data_mem_data_sel_is_rs1;
+assign csr_data_mem_data_sel_is_rs1     = istr_is_sd||
+                                          istr_is_sys_csrrw ||
+                                          istr_is_sys_csrrs ||
+                                          istr_is_sys_csrrc ||
+                                          istr_is_sys_csrrwi||
+                                          istr_is_sys_csrrsi||
+                                          istr_is_sys_csrrci;
+assign csr_data_mem_data_sel            = {2{csr_data_mem_data_sel_is_alu}}&2'd0||
+                                          {2{csr_data_mem_data_sel_is_rs1}}&2'd1;
+
 /*连接reg file与csr寄存器*/
 assign reg_file_read_0_addr   =  istr_rs1;
 assign reg_file_read_1_addr   =  istr_rs2;
 assign reg_file_read_0_en     =  de_ready;
 assign reg_file_read_1_en     =  de_ready;
-assign csr_read_addr          =  istr_get_csr(fd_istr);
+assign csr_read_addr          =  istr_get_csr(istr);
 assign csr_read               =  (istr_is_sys_csrrw ||
                                   istr_is_sys_csrrs ||
                                   istr_is_sys_csrrc ||
@@ -447,18 +532,22 @@ always @(posedge clk or negedge rest) begin
       de_valid<=fd_valid;
       de_start_handle<=1'd1;
       /*更新de寄存器组*/
-      de_zimm       <= istr_get_zimm(fd_istr);
-      de_pc         <= fd_pc;
-      de_imm        <= istr_get_imm(fd_istr);
-      de_csr        <= istr_get_csr(fd_istr);
-      de_rd         <= istr_rd;
-      de_mem_op     <= mem_op;
-      de_istr_width <= fd_istr_width;
-      de_is_br      <= is_br;
-      de_rs1        <= istr_rs1;
-      de_rs2        <= istr_rs2;
-      de_rs1_valid  <= rs1_valid;
-      de_rs2_valid  <= rs2_valid;
+      de_zimm                     <= istr_get_zimm(istr);
+      de_pc                       <= fd_pc;
+      de_imm                      <= istr_get_imm(istr);
+      de_csr                      <= istr_get_csr(istr);
+      de_rd                       <= istr_rd;
+      de_mem_op                   <= mem_op;
+      de_istr_width               <= fd_istr[1:0]==2'd3;
+      de_is_br                    <= is_br;
+      de_rs1                      <= istr_rs1;
+      de_rs2                      <= istr_rs2;
+      de_rs1_valid                <= rs1_valid;
+      de_rs2_valid                <= rs2_valid;
+      de_alu_in_1_sel             <= alu_in_1_sel;
+      de_alu_in_2_sel             <= alu_in_2_sel;
+      de_em_reg_data_mem_addr_sel <= reg_data_mem_addr_sel;
+      de_em_csr_data_mem_data_sel <= csr_data_mem_data_sel;
       if(!risk_detct_insert_nop) begin
         de_alu_op     <= alu_op;
         de_br_op      <= br_op;
@@ -518,11 +607,13 @@ core_id_risk_detct core_id_risk_detct_inst0(
   .insert_nop   (risk_detct_insert_nop  )
 );
 
+istr_c2i istr_c2i_inst(.istr_c(fd_istr[15:0]),.istr_i(istr_from_c));
+
 /****************************************************************************************
 仿真时检查
 ****************************************************************************************/
 always @(posedge clk) begin
-  if((fd_istr[1:0]!=2'd3)&&fd_valid) begin
+  if((istr[1:0]!=2'd3)&&fd_valid) begin
     $display("instruction ignore!");
   end
 end
@@ -554,4 +645,13 @@ assign insert_nop=(
                   (
                     !(mem_write&&de_mem_read&&de_reg_write&&(de_rd==rs2))
                   );
+endmodule
+
+module istr_c2i (
+  input[15:0]  istr_c,
+  output[31:0] istr_i
+);
+
+
+
 endmodule
