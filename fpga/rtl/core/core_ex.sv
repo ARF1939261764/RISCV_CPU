@@ -31,8 +31,8 @@ module core_ex(
   input  logic       de_rs2_valid,
   input  logic[1:0]  de_alu_in_1_sel,
   input  logic[1:0]  de_alu_in_2_sel,
-  input  logic[1:0]  de_em_reg_data_addr_sel,
-  input  logic[1:0]  de_em_csr_data_sel,
+  input  logic[1:0]  de_em_reg_data_mem_addr_sel,
+  input  logic[1:0]  de_em_csr_data_mem_data_sel,
   /*EX/MEM级寄存器数据*/
   output logic       em_valid,
   output logic       em_start_handle,
@@ -47,9 +47,14 @@ module core_ex(
   output logic       em_reg_write_sel,
   output logic[11:0] em_csr,
   output logic       em_csr_write,
-  /*mw*/
+  /*MA/WB级寄存器数据*/
+  input  logic[4:0]  mw_rd,
+  input  logic       mw_reg_write,
   input  logic[31:0] mw_reg_write_data,
-  input  logic[31:0] mw_csr_data;
+  input  logic       mw_mem_read_data_valid,
+  input  logic[11:0] mw_csr,
+  input  logic       mw_csr_write,
+  input  logic[31:0] mw_csr_data,
   /*异常/中断接口*/
   input  logic       exception_valid,
   input  logic       exception_ready,
@@ -77,90 +82,78 @@ logic[4:0]  alu_op;
 logic       alu_op_valid;
 logic       alu_op_ready;
 logic[31:0] alu_out;
+
 logic[31:0] alu_in1;
-logic[31:0] alu_in2;
 logic[1:0]  alu_in1_sel;
+logic[31:0] alu_in1_in[2:0];
+
+logic[31:0] alu_in2;
 logic[1:0]  alu_in2_sel;
+logic[31:0] alu_in2_in[2:0];
+
 logic[31:0] rs1_value;
 logic[1:0]  rs1_sel;
+logic[31:0] rs1_in[2:0];
+
 logic[31:0] rs2_value;
 logic[1:0]  rs2_sel;
+logic[31:0] rs2_in[2:0];
+
 logic[31:0] csr_value;
 logic[1:0]  csr_sel;
+logic[31:0] csr_in[2:0];
+
 logic[31:0] csr_data_mem_data;
 logic[1:0]  csr_data_mem_data_sel;
+logic[31:0] csr_data_mem_data_in[1:0];
+
 logic[31:0] reg_data_mem_addr;
 logic[1:0]  reg_data_mem_addr_sel;
+logic[31:0] reg_data_mem_addr_in[3:0];
+
 logic       start_handle;
 logic[31:0] pc_add_2;
 logic[31:0] pc_add_4;
-logic       pc_add;
+logic[31:0] pc_add;
 /**************************************************************
 选择rs1,rs2,csr的数据源
 **************************************************************/
-always @(*) begin
-  case(rs1_sel)
-    2'd0:rs1_value=de_rs1_value;
-    2'd1:rs1_value=em_reg_data_mem_addr;
-    2'd2:rs1_value=mw_reg_write_data;
-    default:rs1_value=de_rs1_value;
-  endcase
-  case(rs2_sel)
-    2'd0:rs2_value=de_rs1_value;
-    2'd1:rs2_value=em_reg_data_mem_addr;
-    2'd2:rs2_value=mw_reg_write_data;
-    default:rs2_value=de_rs1_value;
-  endcase
-  case(csr_sel)
-    2'd0:csr_value=de_csr_value;
-    2'd1:csr_value=em_csr_data_mem_data;
-    2'd2:csr_value=mw_csr_data;
-    default:csr_value=de_csr_value;
-  endcase
-end
+assign rs1_in[0]=de_rs1_value;
+assign rs1_in[1]=em_reg_data_mem_addr;
+assign rs1_in[2]=mw_reg_write_data;
 
-always @(*) begin
-  case(reg_data_mem_addr_sel)
-    2'd0:reg_data_mem_addr=alu_out;
-    2'd1:reg_data_mem_addr=de_imm;
-    2'd2:reg_data_mem_addr=csr_value;
-    2'd3:reg_data_mem_addr=pc_add;
-    default:reg_data_mem_addr=alu_out;
-  endcase
-end
+assign rs1_in[0]=de_rs1_value;
+assign rs1_in[1]=em_reg_data_mem_addr;
+assign rs1_in[2]=mw_reg_write_data;
 
-always @(*) begin
-  case(csr_data_mem_data_sel)
-    2'd0:csr_data_mem_data=alu_out;
-    2'd1:csr_data_mem_data=rs1_value;
-    default:csr_data_mem_data=alu_out;
-    default:
-  endcase
-end
+assign csr_in[0]=de_csr_value;
+assign csr_in[1]=em_csr_data_mem_data;
+assign csr_in[2]=mw_csr_data;
 
-/**************************************************************
-选择alu_in1,alu_in2的数据源
-**************************************************************/
-always @(*) begin
-  case(de_alu_in_1_sel) begin
-    2'd0:alu_in1=rs1_value;
-    2'd1:alu_in1=de_zimm;
-    2'd2:alu_in1=de_pc;
-    default:alu_in1=rs1_value;
-  end
-  case(de_alu_in_2_sel) begin
-    2'd0:alu_in2=rs2_value;
-    2'd1:alu_in2=de_csr_value;
-    2'd2:alu_in2=de_imm;
-    default:alu_in2=rs2_value;
-  end
-end
+assign reg_data_mem_addr_in[0]=alu_out;
+assign reg_data_mem_addr_in[1]=de_imm;
+assign reg_data_mem_addr_in[2]=csr_value;
+assign reg_data_mem_addr_in[3]=pc_add;
+
+assign csr_data_mem_data_in[0]=alu_out;
+assign csr_data_mem_data_in[1]=rs1_value;
+
+assign alu_in1_in[0]=rs1_value;
+assign alu_in1_in[1]=de_zimm;
+assign alu_in1_in[2]=de_pc;
+
+assign alu_in2_in[0]=rs2_value;
+assign alu_in2_in[1]=de_imm;
+assign alu_in2_in[2]=de_csr_value;
 
 /**************************************************************
 连线
 **************************************************************/
 assign alu_op        = de_alu_op;
 assign alu_op_valid  = de_valid;
+assign pc_add        = de_istr_width?pc_add_4:pc_add_2;
+assign csr_data_mem_data_sel =de_em_csr_data_mem_data_sel;
+assign reg_data_mem_addr_sel =de_em_reg_data_mem_addr_sel;
 
 /*************************************************************
 更新em寄存器
@@ -202,6 +195,77 @@ core_ex_bypass core_ex_bypass_inst0(
   .csr_sel                (csr_sel                ),
   .de_start_handle        (de_start_handle        ),
   .start_handle           (start_handle           )
+);
+
+/*多路复用器*/
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(3)
+)
+mux_inst0_rs1_mux(
+  .sel(rs1_sel  ),
+  .in (rs1_in   ),
+  .out(rs1_value)
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(3)
+)
+mux_inst0_rs2_mux(
+  .sel(rs2_sel  ),
+  .in (rs2_in   ),
+  .out(rs2_value)
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(3)
+)
+mux_inst0_csr_mux(
+  .sel(csr_sel  ),
+  .in (csr_in   ),
+  .out(csr_value)
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(4)
+)
+mux_inst0_reg_data_mem_addr_mux(
+  .sel(reg_data_mem_addr_sel  ),
+  .in (reg_data_mem_addr_in   ),
+  .out(reg_data_mem_addr      )
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(2)
+)
+mux_inst0_csr_data_mem_data_mux(
+  .sel(csr_data_mem_data_sel  ),
+  .in (csr_data_mem_data_in   ),
+  .out(csr_data_mem_data      )
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(3)
+)
+mux_inst0_alu_in1_mux(
+  .sel(alu_in1_sel  ),
+  .in (alu_in1_in   ),
+  .out(alu_in1      )
+);
+
+mux_n21 #(
+  .WIDTH(32),
+  .NUM(3)
+)
+mux_inst0_alu_in2_mux(
+  .sel(alu_in2_sel  ),
+  .in (alu_in2_in   ),
+  .out(alu_in2      )
 );
 
 endmodule

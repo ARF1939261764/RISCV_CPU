@@ -41,8 +41,8 @@ module core_id(
   output logic       de_rs2_valid,
   input  logic[1:0]  de_alu_in_1_sel,
   input  logic[1:0]  de_alu_in_2_sel,
-  output logic[1:0]  de_em_reg_data_addr_sel,
-  output logic[1:0]  de_em_csr_data_sel,
+  output logic[1:0]  de_em_reg_data_mem_addr_sel,
+  output logic[1:0]  de_em_csr_data_mem_data_sel,
   /*来自wb级的信号*/
   input  logic       wb_valid,
   output logic       wb_ready,
@@ -429,7 +429,7 @@ assign risk_detct_em_mem_read   = em_mem_read;
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
     de_valid<=1'd0;
-    de_wait_handle<=1'd0;
+    de_start_handle<=1'd0;
     de_alu_op     <= `ALU_OP_NOP;
     de_br_op      <= `BR_OP_FALSE;
     de_jump       <= 1'd0;
@@ -441,11 +441,11 @@ always @(posedge clk or negedge rest) begin
   else begin
     if(ex_flush_en) begin
       de_valid<=1'd0;
-      de_wait_handle<=1'd0;
+      de_start_handle<=1'd0;
     end
     else if(!de_valid||de_ready) begin
       de_valid<=fd_valid;
-      de_wait_handle<=1'd1;
+      de_start_handle<=1'd1;
       /*更新de寄存器组*/
       de_zimm       <= istr_get_zimm(fd_istr);
       de_pc         <= fd_pc;
@@ -478,7 +478,7 @@ always @(posedge clk or negedge rest) begin
         de_mem_read   <= 1'd0;
       end
     end begin
-      de_wait_handle<=1'd0;
+      de_start_handle<=1'd0;
     end
   end
 end
