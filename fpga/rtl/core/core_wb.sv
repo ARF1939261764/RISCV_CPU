@@ -25,25 +25,14 @@ module core_wb(
 
 assign mw_ready=1'd1;
 
-always @(posedge clk or negedge rest) begin
-  if(!rest) begin
-    wb_valid      =1'd0;
-    wb_reg_data   =1'd0;
-    wb_rd         =1'd0;
-    wb_reg_write  =1'd0;
-    wb_csr_data   =1'd0;
-    wb_csr        =1'd0;
-    wb_csr_write  =1'd0;
-  end
-  else begin
-    wb_valid      =mw_valid;
-    wb_reg_data   =mw_reg_write_sel?mw_mem_data:mw_reg_data;
-    wb_rd         =mw_rd;
-    wb_reg_write  =mw_reg_write&&mw_valid;
-    wb_csr_data   =mw_csr_data;
-    wb_csr        =mw_csr;
-    wb_csr_write  =mw_csr_write&&mw_valid;
-  end
+always @(*) begin
+  wb_valid      =mw_valid;
+  wb_reg_data   =mw_reg_write_sel?mw_mem_data:mw_reg_data;
+  wb_rd         =mw_rd;
+  wb_reg_write  =mw_reg_write&&mw_valid;
+  wb_csr_data   =mw_csr_data;
+  wb_csr        =mw_csr;
+  wb_csr_write  =mw_csr_write&&mw_valid;
 end
   
 endmodule

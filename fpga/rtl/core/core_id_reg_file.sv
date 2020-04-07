@@ -22,11 +22,9 @@ logic[4:0]  temp_addr_0,temp_addr_1;
 always @(posedge clk) begin
   /*读取数据*/
   if(read_0_en) begin
-    temp_data_0=regs[read_0_addr];
     temp_addr_0=read_0_addr;
   end
   if(read_1_en) begin
-    temp_data_1=regs[read_1_addr];
     temp_addr_1=read_1_addr;
   end
   /*写*/
@@ -35,6 +33,8 @@ always @(posedge clk) begin
   end
 end
 /*选择*/
+assign temp_data_0=regs[temp_addr_0];
+assign temp_data_1=regs[temp_addr_1];
 assign read_0_data=(temp_addr_0==1'd0)?32'd0:temp_data_0;
 assign read_1_data=(temp_addr_1==1'd0)?32'd0:temp_data_1;
 

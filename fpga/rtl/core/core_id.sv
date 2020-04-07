@@ -254,22 +254,22 @@ logic[1:0]   alu_port_2_sel;
 logic[1:0]   em_reg_data_addr_sel;
 logic[1:0]   em_csr_data_sel;
 
-logic       alu_in_1_sel_is_rs1;
-logic       alu_in_1_sel_is_zimm;
-logic       alu_in_1_sel_is_pc;
-logic[1:0]  alu_in_1_sel;
-logic       alu_in_2_sel_is_rs2;              
-logic       alu_in_2_sel_is_imm;
-logic       alu_in_2_sel_is_csr;
-logic[1:0]  alu_in_2_sel;
-logic       reg_data_mem_addr_sel_is_alu;
-logic       reg_data_mem_addr_sel_is_imm;
-logic       reg_data_mem_addr_sel_is_csr;
-logic       reg_data_mem_addr_sel_is_pc_add;
-logic[1:0]  reg_data_mem_addr_sel;
-logic       csr_data_mem_data_sel_is_alu;     
-logic       csr_data_mem_data_sel_is_rs1;
-logic[1:0]  csr_data_mem_data_sel;            
+logic        alu_in_1_sel_is_rs1;
+logic        alu_in_1_sel_is_zimm;
+logic        alu_in_1_sel_is_pc;
+logic[1:0]   alu_in_1_sel;
+logic        alu_in_2_sel_is_rs2;              
+logic        alu_in_2_sel_is_imm;
+logic        alu_in_2_sel_is_csr;
+logic[1:0]   alu_in_2_sel;
+logic        reg_data_mem_addr_sel_is_alu;
+logic        reg_data_mem_addr_sel_is_imm;
+logic        reg_data_mem_addr_sel_is_csr;
+logic        reg_data_mem_addr_sel_is_pc_add;
+logic[1:0]   reg_data_mem_addr_sel;
+logic        csr_data_mem_data_sel_is_alu;     
+logic        csr_data_mem_data_sel_is_rs1;
+logic[1:0]   csr_data_mem_data_sel;            
 /****************************************************************************************
 译码
 ****************************************************************************************/
@@ -283,7 +283,7 @@ assign istr_rs1          = istr[19:15];
 assign istr_rs2          = istr[24:20];
 /*opcode decode*/
 assign istr_is_ra        = istr_opcode==`ISTR_RA;
-assign istr_is_ia        = istr_opcode==`ISTR_RA;
+assign istr_is_ia        = istr_opcode==`ISTR_IA;
 assign istr_is_ld        = istr_opcode==`ISTR_LD;
 assign istr_is_sd        = istr_opcode==`ISTR_SD;
 assign istr_is_br        = istr_opcode==`ISTR_BR;
@@ -305,15 +305,15 @@ assign istr_is_ra_sra    = istr_is_ra&&((istr_funct3==`ISTR_RA_SRA_FUNCT3   )&&(
 assign istr_is_ra_or     = istr_is_ra&&((istr_funct3==`ISTR_RA_OR_FUNCT3    )&&(istr_funct7==`ISTR_RA_OR_FUNCT7    ));
 assign istr_is_ra_and    = istr_is_ra&&((istr_funct3==`ISTR_RA_AND_FUNCT3   )&&(istr_funct7==`ISTR_RA_AND_FUNCT7   ));
 /*ia系*/
-assign istr_is_ia_addi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ADDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ADDI_FUNCT7  ));
-assign istr_is_ia_slti   = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SLTI_FUNCT7  ));
-assign istr_is_ia_sltiu  = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTIU_FUNCT3 )&&(istr_funct7==`ISTR_IA_SLTIU_FUNCT7 ));
-assign istr_is_ia_xori   = istr_is_ia&&((istr_funct3==`ISTR_IA_XORI_FUNCT3  )&&(istr_funct7==`ISTR_IA_XORI_FUNCT7  ));
-assign istr_is_ia_ori    = istr_is_ia&&((istr_funct3==`ISTR_IA_ORI_FUNCT3   )&&(istr_funct7==`ISTR_IA_ORI_FUNCT7   ));
-assign istr_is_ia_andi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ANDI_FUNCT3  )&&(istr_funct7==`ISTR_IA_ANDI_FUNCT7  ));
-assign istr_is_ia_slli   = istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLLI_FUNCT7  ));
-assign istr_is_ia_srli   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRLI_FUNCT7  ));
-assign istr_is_ia_srai   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRAI_FUNCT7  ));
+assign istr_is_ia_addi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ADDI_FUNCT3  ));
+assign istr_is_ia_slti   = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTI_FUNCT3  ));
+assign istr_is_ia_sltiu  = istr_is_ia&&((istr_funct3==`ISTR_IA_SLTIU_FUNCT3 ));
+assign istr_is_ia_xori   = istr_is_ia&&((istr_funct3==`ISTR_IA_XORI_FUNCT3  ));
+assign istr_is_ia_ori    = istr_is_ia&&((istr_funct3==`ISTR_IA_ORI_FUNCT3   ));
+assign istr_is_ia_andi   = istr_is_ia&&((istr_funct3==`ISTR_IA_ANDI_FUNCT3  ));
+assign istr_is_ia_slli   = istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  ));
+assign istr_is_ia_srli   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  ));
+assign istr_is_ia_srai   = istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  ));
 /*ld系*/
 assign istr_is_ld_lb     = istr_is_ld&&(istr_funct3==`ISTR_LD_LB_FUNCT3     );
 assign istr_is_ld_lh     = istr_is_ld&&(istr_funct3==`ISTR_LD_LH_FUNCT3     );
@@ -367,16 +367,16 @@ assign      alu_op_is_and     = istr_is_ra_and      ||istr_is_ia_andi;
 assign      alu_op_is_not_and = istr_is_sys_csrrc   ||istr_is_sys_csrrci;
 
 /*得出de寄存器组的值*/
-assign      alu_op            = {4{alu_op_is_add    }}&`ALU_OP_ADD  ||
-                                {4{alu_op_is_sub    }}&`ALU_OP_SUB  ||
-                                {4{alu_op_is_sll    }}&`ALU_OP_SLL  ||
-                                {4{alu_op_is_slt    }}&`ALU_OP_SLT  ||
-                                {4{alu_op_is_sltu   }}&`ALU_OP_SLTU ||
-                                {4{alu_op_is_xor    }}&`ALU_OP_XOR  ||
-                                {4{alu_op_is_srl    }}&`ALU_OP_SRL  ||
-                                {4{alu_op_is_sra    }}&`ALU_OP_SRA  ||
-                                {4{alu_op_is_or     }}&`ALU_OP_OR   ||
-                                {4{alu_op_is_and    }}&`ALU_OP_AND  ||
+assign      alu_op            = {4{alu_op_is_add    }}&`ALU_OP_ADD  |
+                                {4{alu_op_is_sub    }}&`ALU_OP_SUB  |
+                                {4{alu_op_is_sll    }}&`ALU_OP_SLL  |
+                                {4{alu_op_is_slt    }}&`ALU_OP_SLT  |
+                                {4{alu_op_is_sltu   }}&`ALU_OP_SLTU |
+                                {4{alu_op_is_xor    }}&`ALU_OP_XOR  |
+                                {4{alu_op_is_srl    }}&`ALU_OP_SRL  |
+                                {4{alu_op_is_sra    }}&`ALU_OP_SRA  |
+                                {4{alu_op_is_or     }}&`ALU_OP_OR   |
+                                {4{alu_op_is_and    }}&`ALU_OP_AND  |
                                 {4{alu_op_is_not_and}}&`ALU_OP_NOT_AND;
 assign      reg_write_en      = (istr_rd!=1'd0)&&(istr_is_ra||istr_is_ia  ||
                                                   istr_is_ld||istr_is_sys ||
@@ -422,8 +422,8 @@ assign alu_in_1_sel_is_pc               = istr_is_br||
                                           istr_is_lui||
                                           istr_is_auipc||
                                           istr_is_j;
-assign alu_in_1_sel                     = {2{alu_in_1_sel_is_rs1 }}&2'd0||
-                                          {2{alu_in_1_sel_is_zimm}}&2'd1||
+assign alu_in_1_sel                     = {2{alu_in_1_sel_is_rs1 }}&2'd0|
+                                          {2{alu_in_1_sel_is_zimm}}&2'd1|
                                           {2{alu_in_1_sel_is_pc  }}&2'd2;
 assign alu_in_2_sel_is_rs2              = istr_is_ra;
 assign alu_in_2_sel_is_imm              = istr_is_ia||
@@ -440,8 +440,8 @@ assign alu_in_2_sel_is_csr              = istr_is_sys_csrrw ||
                                           istr_is_sys_csrrwi||
                                           istr_is_sys_csrrsi||
                                           istr_is_sys_csrrci;
-assign alu_in_2_sel                     = {2{alu_in_2_sel_is_rs2 }}&2'd0||
-                                          {2{alu_in_2_sel_is_imm }}&2'd1||
+assign alu_in_2_sel                     = {2{alu_in_2_sel_is_rs2 }}&2'd0|
+                                          {2{alu_in_2_sel_is_imm }}&2'd1|
                                           {2{alu_in_2_sel_is_csr }}&2'd2;
 assign reg_data_mem_addr_sel_is_alu     = istr_is_ra||
                                           istr_is_ia||
@@ -458,9 +458,9 @@ assign reg_data_mem_addr_sel_is_csr     = istr_is_sys_csrrw||
 assign reg_data_mem_addr_sel_is_pc_add  = istr_is_jr||
                                           istr_is_j||
                                           istr_is_br;
-assign reg_data_mem_addr_sel            = {2{reg_data_mem_addr_sel_is_alu   }}&2'd0||
-                                          {2{reg_data_mem_addr_sel_is_imm   }}&2'd1||
-                                          {2{reg_data_mem_addr_sel_is_csr   }}&2'd2||
+assign reg_data_mem_addr_sel            = {2{reg_data_mem_addr_sel_is_alu   }}&2'd0|
+                                          {2{reg_data_mem_addr_sel_is_imm   }}&2'd1|
+                                          {2{reg_data_mem_addr_sel_is_csr   }}&2'd2|
                                           {2{reg_data_mem_addr_sel_is_pc_add}}&2'd3;
 
 assign csr_data_mem_data_sel_is_alu     = !csr_data_mem_data_sel_is_rs1;
@@ -471,7 +471,7 @@ assign csr_data_mem_data_sel_is_rs1     = istr_is_sd||
                                           istr_is_sys_csrrwi||
                                           istr_is_sys_csrrsi||
                                           istr_is_sys_csrrci;
-assign csr_data_mem_data_sel            = {2{csr_data_mem_data_sel_is_alu}}&2'd0||
+assign csr_data_mem_data_sel            = {2{csr_data_mem_data_sel_is_alu}}&2'd0|
                                           {2{csr_data_mem_data_sel_is_rs1}}&2'd1;
 
 /*连接reg file与csr寄存器*/
@@ -615,6 +615,12 @@ istr_c2i istr_c2i_inst(.istr_c(fd_istr[15:0]),.istr_i(istr_from_c));
 always @(posedge clk) begin
   if((istr[1:0]!=2'd3)&&fd_valid) begin
     $display("instruction ignore!");
+  end
+end
+
+always @(posedge clk) begin
+  if(fd_valid&&fd_ready) begin
+    $display("id handle istr,pc=%x,istr=%x,type=%s",fd_pc,(fd_istr[1:0]==2'd3)?fd_istr:fd_istr[15:0],(fd_istr[1:0]==2'd3)?"i":"c");
   end
 end
 

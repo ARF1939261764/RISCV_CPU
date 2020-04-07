@@ -103,7 +103,7 @@ logic[1:0]  csr_sel;
 logic[31:0] csr_in[2:0];
 
 logic[31:0] csr_data_mem_data;
-logic[1:0]  csr_data_mem_data_sel;
+logic[0:0]  csr_data_mem_data_sel;
 logic[31:0] csr_data_mem_data_in[1:0];
 
 logic[31:0] reg_data_mem_addr;
@@ -153,6 +153,7 @@ assign alu_in2_sel=de_alu_in_2_sel;
 assign alu_op                = de_alu_op;
 assign alu_op_valid          = de_valid;
 assign pc_add                = de_pc+(de_istr_width?3'd4:3'd2);
+assign de_ready              = alu_op_ready&&em_ready;
 
 /*************************************************************
 更新em寄存器
@@ -207,9 +208,9 @@ core_ex_alu core_ex_alu_inst0(
 );
 /*旁路单元*/
 core_ex_bypass core_ex_bypass_inst0(
-  .de_rs1                 (de_rs1_value           ),
+  .de_rs1                 (de_rs1                 ),
   .de_rs1_valid           (de_rs1_valid           ),
-  .de_rs2                 (de_rs2_value           ),
+  .de_rs2                 (de_rs2                 ),
   .de_rs2_valid           (de_rs2_valid           ),
   .de_csr                 (de_csr                 ),
   .de_csr_valid           (de_csr_valid           ),

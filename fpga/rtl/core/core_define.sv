@@ -78,16 +78,6 @@ define
 `define     ISTR_IA_SRLI_FUNCT3     (3'b101)
 `define     ISTR_IA_SRAI_FUNCT3     (3'b101)
 `define     ISTR_IA_ANDI_FUNCT3     (3'b111)
-/*ISTR_IA funct7字段*/  
-`define     ISTR_IA_ADDI_FUNCT7     (7'b0000000)
-`define     ISTR_IA_SLTI_FUNCT7     (7'b0000000)
-`define     ISTR_IA_SLTIU_FUNCT7    (7'b0000000)
-`define     ISTR_IA_XORI_FUNCT7     (7'b0000000)
-`define     ISTR_IA_ORI_FUNCT7      (7'b0000000)
-`define     ISTR_RA_SLLI_FUNCT7     (7'b0000000)
-`define     ISTR_IA_SRLI_FUNCT7     (7'b0000000)
-`define     ISTR_IA_SRAI_FUNCT7     (7'b0100000)
-`define     ISTR_IA_ANDI_FUNCT7     (7'b0000000)
 /*ISTR_LD funct3字段*/  
 `define     ISTR_LD_LB_FUNCT3       (3'b000)
 `define     ISTR_LD_LH_FUNCT3       (3'b001)

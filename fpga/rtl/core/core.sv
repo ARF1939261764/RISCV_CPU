@@ -10,7 +10,6 @@ logic       fd_ready;
 logic[31:0] fd_istr;
 logic[31:0] fd_pc;
 logic       fd_jump;
-logic       fd_istr_width;
 
 logic       de_valid;
 logic       de_start_handle;
@@ -77,7 +76,7 @@ logic[31:0] wb_csr_data;
 logic[11:0] wb_csr;
 logic       wb_csr_write;
 
-
+logic[31:0] mw_reg_write_data;
 
 
 core_if #(
@@ -156,9 +155,9 @@ core_id core_id_inst0(
   .csr_write                  (                             ),
   .csr_write_addr             (                             ),
   .csr_write_data             (                             ),
-  .em_rd                      (                             ),
-  .em_reg_write               (                             ),
-  .em_mem_read                (                             )
+  .em_rd                      (em_rd                        ),
+  .em_reg_write               (em_reg_write                 ),
+  .em_mem_read                (em_mem_read                  )
 );
 
 core_ex core_ex_inst0(
@@ -206,13 +205,13 @@ core_ex core_ex_inst0(
   .em_reg_write               (em_reg_write               ),
   .em_csr                     (em_csr                     ),
   .em_csr_write               (em_csr_write               ),
-  .mw_rd                      (),
-  .mw_reg_write               (),
-  .mw_reg_write_data          (),
-  .mw_mem_data_valid          (),
-  .mw_csr                     (),
-  .mw_csr_write               (),
-  .mw_csr_data                (),
+  .mw_rd                      (mw_rd                      ),
+  .mw_reg_write               (mw_reg_write               ),
+  .mw_reg_write_data          (mw_reg_write_data          ),
+  .mw_mem_data_valid          (mw_mem_data_valid          ),
+  .mw_csr                     (mw_csr                     ),
+  .mw_csr_write               (mw_csr_write               ),
+  .mw_csr_data                (mw_csr_data                ),
   .exception_valid            (1'd0                       ),
   .exception_ready            (                           ),
   .exception_cause            (1'd0                       ),
@@ -281,5 +280,7 @@ core_wb core_wb_inst0(
   .wb_csr                     (wb_csr                     ),
   .wb_csr_write               (wb_csr_write               )
 );
+
+assign mw_reg_write_data = wb_reg_data;
 
 endmodule
