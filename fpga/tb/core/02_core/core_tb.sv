@@ -21,7 +21,7 @@ core core_inst0(
 
 sdram_sim_model #(
   .SIZE(32*1024),
-  .INIT_FILE("../../../../tb/core/file/01_arit_istr_01_bin.txt")
+  .INIT_FILE("../../../tb/core/file/01_arit_istr_01_bin.txt")
 )
 sdram_sim_model_inst0_istr(
   .*,

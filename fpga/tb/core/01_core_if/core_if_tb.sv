@@ -31,7 +31,7 @@ core_if_inst0(
 /*sdram模块*/
 sdram_sim_model #(
   .SIZE     (32*1024),
-  .INIT_FILE("../../../../tb/core/file/ram_data_01.txt")
+  .INIT_FILE("../../../tb/core/file/ram_data_01.txt")
 )
 sdram_sim_model_inst0(
   .*
