@@ -119,9 +119,9 @@ assign rs1_in[0]=de_rs1_value;
 assign rs1_in[1]=em_reg_data_mem_addr;
 assign rs1_in[2]=mw_reg_write_data;
 
-assign rs1_in[0]=de_rs1_value;
-assign rs1_in[1]=em_reg_data_mem_addr;
-assign rs1_in[2]=mw_reg_write_data;
+assign rs2_in[0]=de_rs1_value;
+assign rs2_in[1]=em_reg_data_mem_addr;
+assign rs2_in[2]=mw_reg_write_data;
 
 assign csr_in[0]=de_csr_value;
 assign csr_in[1]=em_csr_data_mem_data;
@@ -153,8 +153,6 @@ assign alu_in2_sel=de_alu_in_2_sel;
 assign alu_op                = de_alu_op;
 assign alu_op_valid          = de_valid;
 assign pc_add                = de_pc+(de_istr_width?3'd4:3'd2);
-assign csr_data_mem_data_sel = de_em_csr_data_mem_data_sel;
-assign reg_data_mem_addr_sel = de_em_reg_data_mem_addr_sel;
 
 /*************************************************************
 更新em寄存器

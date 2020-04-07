@@ -1,3 +1,4 @@
+`include "core_define.sv"
 module core_ex_alu(
   input  logic       clk,
   input  logic       rest,

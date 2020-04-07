@@ -1,0 +1,13 @@
+
+main.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+   0:	123455b7          	lui	a1,0x12345
+   4:	67858593          	addi	a1,a1,1656 # 12345678 <bss_end+0x12345660>
+   8:	00158593          	addi	a1,a1,1
+   c:	52369537          	lui	a0,0x52369
+  10:	12850513          	addi	a0,a0,296 # 52369128 <bss_end+0x52369110>
+  14:	40b50633          	sub	a2,a0,a1

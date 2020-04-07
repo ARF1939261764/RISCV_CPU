@@ -2,29 +2,23 @@
 
 module core_if_tb;
 
-/*clk,rest*/
-logic             clk;
-logic             rest;
-/*主机接口,访问总线*/
-i_avl_bus         avl_m0();
-/*跳转，冲刷控制*/
-logic[31:0]       csr_mepc;
-logic[31:0]       jump_addr;
-logic             jump_en;
-logic             flush_en;
-/*分支预测接口*/
-logic[31:0]       bp_istr;
-logic[31:0]       bp_pc;
-logic[31:0]       bp_jump_addr;
-logic             bp_jump_en;
-/*指令交付给下一级*/
-logic[31:0]       dely_istr;
-logic[31:0]       dely_pc;
-logic             dely_valid;
-logic             dely_ready;
-logic             dely_jump;
-/*其它控制信号*/
-logic             ctr_stop;/*停止cpu*/
+logic         clk;
+logic         rest;
+i_avl_bus     avl_m0();
+logic[31:0]   csr_mepc;
+logic[31:0]   jump_addr;
+logic         jump_en;
+logic         flush_en;
+logic[31:0]   bp_istr;
+logic[31:0]   bp_pc;
+logic[31:0]   bp_jump_addr;
+logic         bp_jump_en;
+logic[31:0]   fd_istr;
+logic[31:0]   fd_pc;
+logic         fd_valid;
+logic         fd_jump;
+logic         fd_ready;
+logic         ctr_stop;           /*停止cpu*/
 
 /*取指模块*/
 core_if #(
@@ -51,7 +45,8 @@ initial begin
   flush_en=0;
   bp_jump_addr=0;
   bp_jump_en=0;
-  dely_ready=1;
+  fd_ready=1;
+  ctr_stop=0;
   
 end
 
@@ -79,8 +74,8 @@ initial begin
 end
 
 always @(posedge clk) begin
-  if(dely_valid) begin
-    $display("pc=%x,istr=%x,type=%s",dely_pc,(dely_istr[1:0]==2'd3)?dely_istr:dely_istr[15:0],(dely_istr[1:0]==2'd3)?"i":"c");
+  if(fd_valid) begin
+    $display("pc=%x,istr=%x,type=%s",fd_pc,(fd_istr[1:0]==2'd3)?fd_istr:fd_istr[15:0],(fd_istr[1:0]==2'd3)?"i":"c");
   end
 end
 

@@ -64,14 +64,18 @@ generate
         end
       end
       else begin
-        if(write&&(!full||read)) begin
-          array[rear[ADDR_WIDTH-2:0]]<=write_data;
-          /*是否冲刷fifo*/
-          rear=flush?1'd0:rear+1'd1;
+        if(flush) begin
+          rear  <=1'd0;
+          front <=1'd0;
         end
-        if(read&&!empty) begin
-          /*是否冲刷fifo*/
-          front=flush?1'd0:front+1'd1;
+        else begin
+          if(write&&(!full||read)) begin
+            array[rear[ADDR_WIDTH-2:0]]<=write_data;
+            rear=rear+1'd1;
+          end
+          if(read&&!empty) begin
+            front=front+1'd1;
+          end
         end
       end
     end

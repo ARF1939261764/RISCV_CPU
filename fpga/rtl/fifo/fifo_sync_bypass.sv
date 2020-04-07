@@ -73,12 +73,18 @@ generate
         end
       end
       else begin
-        if(write&&!full&&((count!=0)||!read)) begin
-          array[rear[ADDR_WIDTH-2:0]]<=writeData;
-          rear=flush?1'd0:rear+1'd1;
+        if(flush) begin
+          rear  <=1'd0;
+          front <=1'd0;
         end
-        if(read&&!empty) begin
-          front=flush?1'd0:front+1'd1;
+        else begin
+          if(write&&!full&&((count!=0)||!read)) begin
+            array[rear[ADDR_WIDTH-2:0]]<=writeData;
+            rear=rear+1'd1;
+          end
+          if(read&&!empty) begin
+            front=front+1'd1;
+          end
         end
       end
     end
