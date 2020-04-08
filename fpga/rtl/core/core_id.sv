@@ -1,6 +1,6 @@
 `include "core_define.sv"
 
-import core_define::*;
+import core_type::*;
 
 module core_id(
   /*clk,rest*/
@@ -158,7 +158,7 @@ logic[4:0]   risk_detct_em_rd;
 logic        risk_detct_em_reg_write;
 logic        risk_detct_em_mem_read;
 logic        risk_detct_insert_nop;
-
+/*解析信号*/
 istr_dc_info_t      istr_dc_info;
 istr_alu_dc_info_t  istr_alu_dc_info;
 
@@ -329,7 +329,7 @@ assign reg_file_write_data    =  wb_reg_data;
 assign csr_write              =  wb_csr_write&wb_valid;
 assign csr_write_addr         =  wb_csr;
 assign csr_write_data         =  wb_csr_data; 
-assign fd_ready               =  de_ready&&!risk_detct_insert_nop;
+assign fd_ready               =  de_ready&&!risk_detct_insert_nop;/*ex级接受了当前数据且不是插入nop指令*/
 assign wb_ready               =  1'd1;
 
 /*连接冒险检测*/

@@ -6,26 +6,20 @@ Disassembly of section .text:
 
 00000000 <_start>:
    0:	123450b7          	lui	ra,0x12345
-   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x12345618>
+   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x12345630>
    8:	00108093          	addi	ra,ra,1
    c:	52369137          	lui	sp,0x52369
-  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x523690c8>
+  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x523690e0>
   14:	402081b3          	sub	gp,ra,sp
   18:	40308233          	sub	tp,ra,gp
   1c:	403202b3          	sub	t0,tp,gp
   20:	40528333          	sub	t1,t0,t0
   24:	00130313          	addi	t1,t1,1
   28:	00130313          	addi	t1,t1,1
-  2c:	00130313          	addi	t1,t1,1
-  30:	00130313          	addi	t1,t1,1
-  34:	00130313          	addi	t1,t1,1
-  38:	00130313          	addi	t1,t1,1
-  3c:	00130313          	addi	t1,t1,1
-  40:	00130313          	addi	t1,t1,1
-  44:	00130313          	addi	t1,t1,1
-  48:	00130313          	addi	t1,t1,1
-  4c:	00130313          	addi	t1,t1,1
-  50:	00130313          	addi	t1,t1,1
-  54:	00130313          	addi	t1,t1,1
-  58:	00130313          	addi	t1,t1,1
-  5c:	00130313          	addi	t1,t1,1
+  2c:	00628333          	add	t1,t0,t1
+  30:	40110133          	sub	sp,sp,ra
+  34:	001113b3          	sll	t2,sp,ra
+  38:	0020a3b3          	slt	t2,ra,sp
+  3c:	00114433          	xor	s0,sp,ra
+  40:	008164b3          	or	s1,sp,s0
+  44:	005373b3          	and	t2,t1,t0

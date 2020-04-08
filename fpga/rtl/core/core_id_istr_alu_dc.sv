@@ -1,6 +1,6 @@
 `include "core_define.sv"
 
-import core_define::*;
+import core_type::*;
 
 module core_id_istr_alu_dc(
   input  istr_dc_info_t     istr_dc_info,

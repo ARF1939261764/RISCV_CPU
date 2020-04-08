@@ -1,6 +1,6 @@
 `include "core_define.sv"
 
-import core_define::*;
+import core_type::*;
 
 module core_id_istr_dc(
   input  logic[31:0]    istr,

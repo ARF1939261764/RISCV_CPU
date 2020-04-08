@@ -41,8 +41,8 @@ endfunction
 /**************************************************************
 连线
 **************************************************************/
-assign shift_lr         = judge_shift_lr(op);
-assign shift_la         = judge_shift_la(op);
+assign shift_lr         = op!=`ALU_OP_SLL;
+assign shift_la         = op==`ALU_OP_SRA;
 assign shift_in1        = in1;
 assign shift_shfit_bit  = in2[4:0];
 assign op_ready=1'd1;
@@ -53,11 +53,11 @@ always @(*) begin
     `ALU_OP_ADD    :out=in1+in2;
     `ALU_OP_SUB    :out=in1-in2;
     `ALU_OP_SLL    :out=shift_out;
-    `ALU_OP_SLT    :out=shift_out;
-    `ALU_OP_SLTU   :out=shift_out;
-    `ALU_OP_XOR    :out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
-    `ALU_OP_SRL    :out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
-    `ALU_OP_SRA    :out=in1^in2;
+    `ALU_OP_SLT    :out=(signed'(in1)<signed'(in2))?1'd1:1'd0;
+    `ALU_OP_SLTU   :out=(unsigned'(in1)<unsigned'(in2))?1'd1:1'd0;
+    `ALU_OP_XOR    :out=in1^in2;
+    `ALU_OP_SRL    :out=shift_out;
+    `ALU_OP_SRA    :out=shift_out;
     `ALU_OP_OR     :out=in1|in2;
     `ALU_OP_AND    :out=in1&in2;
     `ALU_OP_NOT_AND:out=~in1&in2;
