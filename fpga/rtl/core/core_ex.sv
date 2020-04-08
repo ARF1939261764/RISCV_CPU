@@ -32,7 +32,7 @@ module core_ex(
   input  logic[1:0]  de_alu_in_1_sel,
   input  logic[1:0]  de_alu_in_2_sel,
   input  logic[1:0]  de_em_reg_data_mem_addr_sel,
-  input  logic[1:0]  de_em_csr_data_mem_data_sel,
+  input  logic[0:0]  de_em_csr_data_mem_data_sel,
   /*EX/MEM级寄存器数据*/
   output logic       em_valid,
   output logic       em_start_handle,
