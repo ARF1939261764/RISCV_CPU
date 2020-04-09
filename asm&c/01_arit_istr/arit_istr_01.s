@@ -17,3 +17,4 @@ _start:
   xor   x8,x2,x1;
   or    x9,x2,x8;
   and   x7,x6,x5;
+  sw    x1,0x01,x0;

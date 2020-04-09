@@ -28,7 +28,7 @@ module core_id(
   output logic       de_csr_write,
   output logic       de_mem_write,
   output logic       de_mem_read,
-  output logic       de_mem_op,
+  output logic[2:0]  de_mem_op,
   output logic       de_istr_width,
   output logic       de_is_br,      /*是否为分支指令*/
   output logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
@@ -167,7 +167,7 @@ logic        reg_write_en;
 logic        csr_write_en;
 logic        mem_write_en;
 logic        mem_read_en;
-logic        mem_op;
+logic[2:0]   mem_op;
 logic        istr_width;
 logic        is_br;
 logic[3:0]   br_op;

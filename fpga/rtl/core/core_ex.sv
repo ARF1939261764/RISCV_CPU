@@ -18,7 +18,7 @@ module core_ex(
   input  logic       de_csr_write,
   input  logic       de_mem_write,
   input  logic       de_mem_read,
-  input  logic       de_mem_op,
+  input  logic[2:0]  de_mem_op,
   input  logic       de_istr_width,
   input  logic       de_is_br,      /*是否为分支指令*/
   input  logic[3:0]  de_br_op,      /*分支需要进行的比较操作:等于?，不等于?,或者恒为真/假*/
@@ -41,7 +41,7 @@ module core_ex(
   output logic[31:0] em_csr_data_mem_data,
   output logic       em_mem_read,
   output logic       em_mem_write,
-  output logic[1:0]  em_mem_op_type,
+  output logic[2:0]  em_mem_op_type,
   output logic[4:0]  em_rd,
   output logic       em_reg_write,
   output logic[11:0] em_csr,
