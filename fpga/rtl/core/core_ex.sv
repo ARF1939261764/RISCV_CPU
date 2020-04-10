@@ -232,70 +232,70 @@ core_ex_bypass core_ex_bypass_inst0(
 
 /*多路复用器*/
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(3)
+  .WIDTH(32 ),
+  .NUM  (3  )
 )
 mux_inst0_rs1_mux(
   .sel(rs1_sel  ),
   .in (rs1_in   ),
   .out(rs1_value)
 );
-
+/*多路复用器*/
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(3)
+  .WIDTH(32 ),
+  .NUM  (3  )
 )
-mux_inst0_rs2_mux(
+mux_inst1_rs2_mux(
   .sel(rs2_sel  ),
   .in (rs2_in   ),
   .out(rs2_value)
 );
 
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(3)
+  .WIDTH(32 ),
+  .NUM  (3  )
 )
-mux_inst0_csr_mux(
+mux_inst2_csr_mux(
   .sel(csr_sel  ),
   .in (csr_in   ),
   .out(csr_value)
 );
 
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(4)
+  .WIDTH(32 ),
+  .NUM  (4  )
 )
-mux_inst0_reg_data_mem_addr_mux(
+mux_inst3_reg_data_mem_addr_mux(
   .sel(reg_data_mem_addr_sel  ),
   .in (reg_data_mem_addr_in   ),
   .out(reg_data_mem_addr      )
 );
 
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(2)
+  .WIDTH(32 ),
+  .NUM  (2  )
 )
-mux_inst0_csr_data_mem_data_mux(
+mux_inst4_csr_data_mem_data_mux(
   .sel(csr_data_mem_data_sel  ),
   .in (csr_data_mem_data_in   ),
   .out(csr_data_mem_data      )
 );
 
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(3)
+  .WIDTH(32 ),
+  .NUM  (3  )
 )
-mux_inst0_alu_in1_mux(
+mux_inst5_alu_in1_mux(
   .sel(alu_in1_sel  ),
   .in (alu_in1_in   ),
   .out(alu_in1      )
 );
 
 mux_n21 #(
-  .WIDTH(32),
-  .NUM(3)
+  .WIDTH(32 ),
+  .NUM  (3  )
 )
-mux_inst0_alu_in2_mux(
+mux_inst6_alu_in2_mux(
   .sel(alu_in2_sel  ),
   .in (alu_in2_in   ),
   .out(alu_in2      )
