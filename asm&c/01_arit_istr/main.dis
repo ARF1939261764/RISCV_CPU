@@ -6,10 +6,10 @@ Disassembly of section .text:
 
 00000000 <_start>:
    0:	123450b7          	lui	ra,0x12345
-   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x12345608>
+   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455d4>
    8:	00108093          	addi	ra,ra,1
    c:	52369137          	lui	sp,0x52369
-  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x523690b8>
+  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x52369084>
   14:	402081b3          	sub	gp,ra,sp
   18:	40308233          	sub	tp,ra,gp
   1c:	403202b3          	sub	t0,tp,gp
@@ -24,12 +24,25 @@ Disassembly of section .text:
   40:	008164b3          	or	s1,sp,s0
   44:	005373b3          	and	t2,t1,t0
   48:	00010137          	lui	sp,0x10
-  4c:	10010113          	addi	sp,sp,256 # 10100 <bss_end+0x10090>
+  4c:	10010113          	addi	sp,sp,256 # 10100 <bss_end+0x1005c>
   50:	123450b7          	lui	ra,0x12345
-  54:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x12345608>
+  54:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455d4>
   58:	001020a3          	sw	ra,1(zero) # 1 <_start+0x1>
   5c:	001022a3          	sw	ra,5(zero) # 5 <_start+0x5>
   60:	001024a3          	sw	ra,9(zero) # 9 <_start+0x9>
-  64:	001029a3          	sw	ra,19(zero) # 13 <_start+0x13>
-  68:	00102ba3          	sw	ra,23(zero) # 17 <_start+0x17>
-  6c:	00012183          	lw	gp,0(sp)
+  64:	001026a3          	sw	ra,13(zero) # d <_start+0xd>
+  68:	06100093          	li	ra,97
+  6c:	001000a3          	sb	ra,1(zero) # 1 <_start+0x1>
+  70:	001002a3          	sb	ra,5(zero) # 5 <_start+0x5>
+  74:	001004a3          	sb	ra,9(zero) # 9 <_start+0x9>
+  78:	001006a3          	sb	ra,13(zero) # d <_start+0xd>
+  7c:	06200093          	li	ra,98
+  80:	00100123          	sb	ra,2(zero) # 2 <_start+0x2>
+  84:	00100323          	sb	ra,6(zero) # 6 <_start+0x6>
+  88:	00100523          	sb	ra,10(zero) # a <_start+0xa>
+  8c:	00100723          	sb	ra,14(zero) # e <_start+0xe>
+  90:	00102183          	lw	gp,1(zero) # 1 <_start+0x1>
+  94:	00101203          	lh	tp,1(zero) # 1 <_start+0x1>
+  98:	00100283          	lb	t0,1(zero) # 1 <_start+0x1>
+  9c:	00105303          	lhu	t1,1(zero) # 1 <_start+0x1>
+  a0:	00104383          	lbu	t2,1(zero) # 1 <_start+0x1>

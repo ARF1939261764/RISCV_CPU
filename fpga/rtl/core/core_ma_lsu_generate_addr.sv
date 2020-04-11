@@ -2,6 +2,7 @@
 module core_ma_lsu_generate_addr(
   input  logic       clk,
   input  logic       rest,
+  input  logic       mw_ready,
   input  logic[31:0] mem_addr,
   input  logic[31:0] mem_data,
   input  logic       mem_read,
@@ -24,6 +25,7 @@ logic[31:0] addr[1:0];
 logic       addr_valid[1:0];
 logic[2:0]  data_len;
 logic[3:0]  write_byte_en;
+logic       last_mem_op_cmd_send_done;
 
 logic[31:0] write_data[1:0];
 logic[3:0]  byte_en[1:0];
@@ -60,16 +62,14 @@ assign byte_en_0_mux_in[2] = {write_byte_en[1:0],2'd0};
 assign byte_en_0_mux_in[3] = {write_byte_en[0:0],3'd0};
 assign byte_en_0_mux_sel   = mem_addr[1:0];
 
-assign byte_en_1_mux_in[0] = {1'd0,mem_data[3:1]};
-assign byte_en_1_mux_in[1] = {2'd0,mem_data[3:2]};
-assign byte_en_1_mux_in[2] = {3'd0,mem_data[3:3]};
+assign byte_en_1_mux_in[0] = {1'd0,write_byte_en[3:1]};
+assign byte_en_1_mux_in[1] = {2'd0,write_byte_en[3:2]};
+assign byte_en_1_mux_in[2] = {3'd0,write_byte_en[3:3]};
 assign byte_en_1_mux_sel   = 2'd3-mem_addr[1:0];
 
 assign mem_op_cmd_send_done=  addr_valid[0]&&!addr_valid[1]&&((avl_m0_read||avl_m0_write)&&avl_m0_request_ready)||
-                              addr_valid[0]&&cmd_send_success[0]&&addr_valid[1]&&((avl_m0_read||avl_m0_write)&&avl_m0_request_ready);
-//assign mem_op_cmd_send_done=1'd1;
-//assign mem_op_cmd_send_done=  (!addr_valid[0]||((avl_m0_read||avl_m0_write)&&avl_m0_request_ready))&&!addr_valid[1]||
-//                              (!addr_valid[0]||cmd_send_success[0])&&(!addr_valid[1]||((avl_m0_read||avl_m0_write)&&avl_m0_request_ready));
+                              addr_valid[0]&&cmd_send_success[0]&&addr_valid[1]&&((avl_m0_read||avl_m0_write)&&avl_m0_request_ready)||
+                              (!addr_valid[0]||cmd_send_success[0])&&(!addr_valid[1]||cmd_send_success[1]);
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -77,7 +77,7 @@ always @(posedge clk or negedge rest) begin
     cmd_send_success[1]<=1'd0;
   end
   else begin
-    if(mem_op_cmd_send_done) begin
+    if(mem_op_cmd_send_done&&mw_ready) begin
       cmd_send_success[0]<=1'd0;
       cmd_send_success[1]<=1'd0;
     end
@@ -93,8 +93,8 @@ assign write_byte_en                = {4{(data_len==3'd1)}}&4'b0001|
                                       {4{(data_len==3'd2)}}&4'b0011|
                                       {4{(data_len==3'd4)}}&4'b1111;
 assign avl_m0_address               = addr[sel];
-assign avl_m0_read                  = mem_read &&!mem_op_cmd_send_done;
-assign avl_m0_write                 = mem_write&&!mem_op_cmd_send_done;
+assign avl_m0_read                  = mem_read&&addr_valid[sel]&&!cmd_send_success[sel];
+assign avl_m0_write                 = mem_write&&addr_valid[sel]&&!cmd_send_success[sel];
 assign avl_m0_byte_en               = byte_en[sel];
 assign avl_m0_write_data            = write_data[sel];
 assign avl_m0_begin_burst_transfer  = 1'd0;

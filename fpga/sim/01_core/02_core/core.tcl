@@ -9,7 +9,7 @@ vlog -sv -work work +incdir+../../../tb/core/02_core   {../../../tb/core/02_core
 vlog -sv -work work +incdir+../../../tb/common         {../../../tb/common/*.sv         }
 vlog -sv -work work +incdir+../../../rtl/core          {../../../rtl/core/*.sv          }
 
-vsim -t 1ps -L work -voptargs="+acc"  core_tb
+vsim -t 1ps -L work -voptargs="+acc +autofindloop"  core_tb
 
 add wave *
 add wave -position end  sim:/core_tb/core_inst0/core_id_inst0/core_id_reg_file_inst0/regs

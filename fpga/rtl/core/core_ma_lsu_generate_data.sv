@@ -23,7 +23,7 @@ logic[31:0] read_data;
 
 assign addr_valid[0]=1'd1;
 assign addr_valid[1]=(({1'd0,mem_addr[1:0]}+mem_op_data_len)>3'd4)?1'd1:1'd0;
-assign data[0]=mem_read_data;
+assign data[0]=avl_m0_read_data;
 assign data[1]=data_buff;
 
 assign read_data_mux_in[0]= data[0];
@@ -50,7 +50,7 @@ end
 
 always @(posedge clk) begin
   if(data_valid[0]) begin
-    data_buff<=mem_read_data;
+    data_buff<=data[0];
   end
 end
 

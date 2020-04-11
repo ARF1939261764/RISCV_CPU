@@ -162,17 +162,17 @@ assign de_ready              = alu_op_ready&&em_ready;
 *************************************************************/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
-    em_valid             <= 1'd0;
-    em_start_handle      <= 1'd0;
-    em_reg_data_mem_addr <= 1'd0;
-    em_csr_data_mem_data <= 1'd0;
-    em_mem_read          <= 1'd0;
-    em_mem_write         <= 1'd0;
-    em_mem_op_type       <= 1'd0;
-    em_rd                <= 1'd0;
-    em_reg_write         <= 1'd0;
-    em_csr               <= 1'd0;
-    em_csr_write         <= 1'd0;
+    em_valid             <= 'd0;
+    em_start_handle      <= 'd0;
+    em_reg_data_mem_addr <= 'd0;
+    em_csr_data_mem_data <= 'd0;
+    em_mem_read          <= 'd0;
+    em_mem_write         <= 'd0;
+    em_mem_op_type       <= 'd0;
+    em_rd                <= 'd0;
+    em_reg_write         <= 'd0;
+    em_csr               <= 'd0;
+    em_csr_write         <= 'd0;
   end
   else begin
     if(!em_valid||em_ready) begin

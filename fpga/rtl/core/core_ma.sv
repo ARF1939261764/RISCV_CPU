@@ -31,6 +31,7 @@ module core_ma(
 );
 
 logic lsu_ready;
+logic lsu_cmd_send_done;
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -57,12 +58,13 @@ always @(posedge clk or negedge rest) begin
   end
 end
 
-assign em_ready=lsu_ready;
+assign em_ready=(lsu_cmd_send_done||!(em_mem_write||em_mem_read))&&mw_ready;
 
 core_ma_lsu core_ma_lsu_inst0(
   .clk                (clk                  ),
   .rest               (rest                 ),
-  .lsu_ready          (lsu_ready            ),
+  .mw_ready           (mw_ready             ),
+  .lsu_cmd_send_done  (lsu_cmd_send_done    ),
   .mem_addr           (em_reg_data_mem_addr ),
   .mem_data           (em_csr_data_mem_data ),
   .mem_read           (em_mem_read          ),
