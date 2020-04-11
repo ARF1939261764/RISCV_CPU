@@ -45,7 +45,7 @@ always @(posedge clk or negedge rest) begin
     mw_csr_write      = 1'd0;
   end
   else begin
-    if(mw_ready) begin
+    if(mw_ready&&em_ready) begin
       mw_valid          = em_valid;
       mw_reg_data       = em_reg_data_mem_addr;
       mw_csr_data       = em_csr_data_mem_data;
@@ -54,6 +54,11 @@ always @(posedge clk or negedge rest) begin
       mw_reg_write_sel  = em_mem_read?1'd1:1'd0;
       mw_csr            = em_csr;
       mw_csr_write      = em_csr_write;
+    end
+    else if(mw_ready) begin
+      mw_reg_write      = 1'd0;
+      mw_csr_write      = 1'd0;
+      mw_reg_write_sel  = 1'd0;
     end
   end
 end

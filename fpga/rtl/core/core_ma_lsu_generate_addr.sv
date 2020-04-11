@@ -77,7 +77,7 @@ always @(posedge clk or negedge rest) begin
     cmd_send_success[1]<=1'd0;
   end
   else begin
-    if(mem_op_cmd_send_done&&mw_ready) begin
+    if(mem_op_cmd_send_done) begin
       cmd_send_success[0]<=1'd0;
       cmd_send_success[1]<=1'd0;
     end
