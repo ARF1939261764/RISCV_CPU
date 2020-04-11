@@ -24,14 +24,16 @@ localparam  MEM_OP_CMD_FIFO_DEPTH=2,
             });
 /*变量*/
 logic[2:0]  data_len;
+
 /*mem_op fifo*/
-logic       mem_op_cmd_fifofull;
-logic       mem_op_cmd_fifoempty;
-logic       mem_op_cmd_fifohalf;
-logic       mem_op_cmd_fifowrite;
-logic       mem_op_cmd_fiforead;
+logic                            mem_op_cmd_fifofull;
+logic                            mem_op_cmd_fifoempty;
+logic                            mem_op_cmd_fifohalf;
+logic                            mem_op_cmd_fifowrite;
+logic                            mem_op_cmd_fiforead;
 logic[MEM_OP_CMD_FIFO_WIDTH-1:0] mem_op_cmd_fifowriteData;
 logic[MEM_OP_CMD_FIFO_WIDTH-1:0] mem_op_cmd_fiforeadData;
+
 /*生成地址模块的端口*/
 logic[31:0] generate_addr_data_mem_addr;
 logic[31:0] generate_addr_data_mem_data;
@@ -61,6 +63,27 @@ assign data_len  =  {3{(mem_op_type==`MEM_OP_B)||(mem_op_type==`MEM_OP_BU)}}&3'd
                     {3{(mem_op_type==`MEM_OP_H)||(mem_op_type==`MEM_OP_HU)}}&3'd2|
                     {3{mem_op_type==`MEM_OP_W}}&3'd4;
 assign lsu_ready =  mem_read_data_valid;
+
+
+logic       mw_generate_addr_data_mem_read;
+logic[31:0] mw_generate_addr_data_mem_addr;
+logic[2:0]  mw_generate_addr_data_mem_op_type;
+logic[2:0]  mw_data_len;
+
+always @(posedge clk or negedge rest) begin
+  if(!rest) begin
+    mw_generate_addr_data_mem_read<=1'd0;
+  end
+  else begin
+    if(!mw_generate_addr_data_mem_read||mem_read_data_valid) begin
+      mw_generate_addr_data_mem_read<=generate_addr_data_mem_read;
+      mw_generate_addr_data_mem_addr<=generate_addr_data_mem_addr;
+      mw_generate_addr_data_mem_op_type<=generate_addr_data_mem_op_type;
+      mw_data_len<=data_len;
+    end
+  end
+end
+
 /*fifo*/
 fifo_sync_bypass #(
   .DEPTH(MEM_OP_CMD_FIFO_DEPTH),
@@ -90,27 +113,27 @@ core_ma_lsu_generate_addr core_ma_lsu_generate_addr_inst0(
   .mem_op_type                  (generate_addr_data_mem_op_type          ),
   .mem_op_data_len              (data_len                                ),
   .mem_op_cmd_send_done         (generate_addr_data_mem_op_cmd_send_done ),
-  .avl_m0_address               (avl_m0.address                       ),
-  .avl_m0_read                  (avl_m0.read                          ),
-  .avl_m0_write                 (avl_m0.write                         ),
-  .avl_m0_byte_en               (avl_m0.byte_en                       ),
-  .avl_m0_write_data            (avl_m0.write_data                    ),
-  .avl_m0_begin_burst_transfer  (avl_m0.begin_burst_transfer          ),
-  .avl_m0_burst_count           (avl_m0.burst_count                   ),
-  .avl_m0_request_ready         (avl_m0.request_ready                 )
+  .avl_m0_address               (avl_m0.address                          ),
+  .avl_m0_read                  (avl_m0.read                             ),
+  .avl_m0_write                 (avl_m0.write                            ),
+  .avl_m0_byte_en               (avl_m0.byte_en                          ),
+  .avl_m0_write_data            (avl_m0.write_data                       ),
+  .avl_m0_begin_burst_transfer  (avl_m0.begin_burst_transfer             ),
+  .avl_m0_burst_count           (avl_m0.burst_count                      ),
+  .avl_m0_request_ready         (avl_m0.request_ready                    )
 );
 
 core_ma_lsu_generate_data core_ma_lsu_generate_data_inst0(
-  .clk                          (clk                                    ),
-  .rest                         (rest                                   ),
-  .mem_read                     (generate_addr_data_mem_read            ),
-  .mem_addr                     (generate_addr_data_mem_addr            ),
-  .mem_op_type                  (generate_addr_data_mem_op_type         ),
-  .mem_op_data_len              (data_len                               ),
-  .mem_read_data                (mem_read_data                          ),
-  .mem_read_data_valid          (mem_read_data_valid                    ),
-  .avl_m0_read_data             (avl_m0.read_data                       ),
-  .avl_m0_read_data_valid       (avl_m0.read_data_valid                 )
+  .clk                          (clk                                     ),
+  .rest                         (rest                                    ),
+  .mem_read                     (mw_generate_addr_data_mem_read          ),
+  .mem_addr                     (mw_generate_addr_data_mem_addr          ),
+  .mem_op_type                  (mw_generate_addr_data_mem_op_type       ),
+  .mem_op_data_len              (mw_data_len                             ),
+  .mem_read_data                (mem_read_data                           ),
+  .mem_read_data_valid          (mem_read_data_valid                     ),
+  .avl_m0_read_data             (avl_m0.read_data                        ),
+  .avl_m0_read_data_valid       (avl_m0.read_data_valid                  )
 );
 endmodule
 

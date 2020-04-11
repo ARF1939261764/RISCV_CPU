@@ -62,6 +62,7 @@ module core_id(
   output logic[11:0] csr_write_addr,
   output logic[31:0] csr_write_data,
   /*冲突检测*/
+  input  logic       em_valid,
   input  logic[4:0]  em_rd,
   input  logic       em_reg_write,
   input  logic       em_mem_read
@@ -435,9 +436,11 @@ core_id_risk_detct core_id_risk_detct_inst0(
   .rs2          (risk_detct_rs2         ),
   .rs2_valid    (risk_detct_rs2_valid   ),
   .mem_write    (risk_detct_mem_write   ),
+  .de_valid     (de_valid               ),
   .de_rd        (risk_detct_de_rd       ),
   .de_reg_write (risk_detct_de_reg_write),
   .de_mem_read  (risk_detct_de_mem_read ),
+  .em_valid     (em_valid               ),
   .em_rd        (risk_detct_em_rd       ),
   .em_reg_write (risk_detct_em_reg_write),
   .em_mem_read  (risk_detct_em_mem_read ),

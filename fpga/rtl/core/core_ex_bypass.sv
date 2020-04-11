@@ -2,16 +2,19 @@
 旁路单元
 *************************************************************************************************************************************************/
 module core_ex_bypass(
+  input  logic       de_valid,
   input  logic[4:0]  de_rs1,
   input  logic       de_rs1_valid,
   input  logic[4:0]  de_rs2,
   input  logic       de_rs2_valid,
   input  logic[11:0] de_csr,
   input  logic       de_csr_valid,
+  input  logic       em_valid,
   input  logic[4:0]  em_rd,
   input  logic       em_reg_write,
   input  logic[11:0] em_csr,
   input  logic       em_csr_write,
+  input  logic       mw_valid,
   input  logic[4:0]  mw_rd,
   input  logic       mw_reg_write,
   input  logic       mw_mem_data_valid,
@@ -30,12 +33,12 @@ logic rs2_mw_corl;
 logic csr_em_corl;
 logic csr_mw_corl;
 /*冲突判断*/
-assign rs1_em_corl  =(de_rs1==em_rd)&&de_rs1_valid&&em_reg_write;
-assign rs1_mw_corl  =(de_rs1==mw_rd)&&de_rs1_valid&&mw_reg_write;
-assign rs2_em_corl  =(de_rs2==em_rd)&&de_rs2_valid&&em_reg_write;
-assign rs2_mw_corl  =(de_rs2==mw_rd)&&de_rs2_valid&&mw_reg_write;
-assign csr_em_corl  =(de_csr==em_csr)&&de_csr_valid&&em_csr_write;
-assign csr_mw_corl  =(de_csr==mw_csr)&&de_csr_valid&&em_csr_write;
+assign rs1_em_corl  =(de_rs1==em_rd)&&de_rs1_valid&&em_reg_write&&em_valid&&de_valid;
+assign rs1_mw_corl  =(de_rs1==mw_rd)&&de_rs1_valid&&mw_reg_write&&mw_valid&&de_valid;
+assign rs2_em_corl  =(de_rs2==em_rd)&&de_rs2_valid&&em_reg_write&&em_valid&&de_valid;
+assign rs2_mw_corl  =(de_rs2==mw_rd)&&de_rs2_valid&&mw_reg_write&&mw_valid&&de_valid;
+assign csr_em_corl  =(de_csr==em_csr)&&de_csr_valid&&em_csr_write&&em_valid&&de_valid;
+assign csr_mw_corl  =(de_csr==mw_csr)&&de_csr_valid&&em_csr_write&&mw_valid&&de_valid;
 assign start_handle =(rs1_mw_corl|rs2_mw_corl)?mw_mem_data_valid:de_start_handle;
 /*rs1 sel*/
 always @(*) begin

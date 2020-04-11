@@ -3,6 +3,6 @@ module istr_c2i (
   output[31:0] istr_i
 );
 
-
+assign istr_i=32'hFFFFFFFF;
 
 endmodule

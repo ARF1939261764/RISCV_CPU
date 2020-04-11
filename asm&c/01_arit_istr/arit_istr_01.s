@@ -17,4 +17,7 @@ _start:
   xor   x8,x2,x1;
   or    x9,x2,x8;
   and   x7,x6,x5;
-  sw    x1,0x01,x0;
+  li    x2,0x10100;
+  li    x1,'a';
+  sw    x1,0x00(x2);
+  lw    x3,0x00(x2);

@@ -6,6 +6,7 @@ module core_wb(
   output logic       mw_ready,
   input  logic[31:0] mw_reg_data,
   input  logic[31:0] mw_mem_data,
+  input  logic       mw_mem_data_valid,
   input  logic[31:0] mw_csr_data,
   input  logic[4:0]  mw_rd,
   input  logic       mw_reg_write,

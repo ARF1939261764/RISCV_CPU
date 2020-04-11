@@ -26,7 +26,7 @@ logic       de_reg_write;
 logic       de_csr_write;
 logic       de_mem_write;
 logic       de_mem_read;
-logic       de_mem_op;
+logic[2:0]  de_mem_op;
 logic       de_istr_width;
 logic       de_is_br;
 logic[3:0]  de_br_op;
@@ -40,7 +40,7 @@ logic       de_rs2_valid;
 logic[1:0]  de_alu_in_1_sel;
 logic[1:0]  de_alu_in_2_sel;
 logic[1:0]  de_em_reg_data_mem_addr_sel;
-logic[1:0]  de_em_csr_data_mem_data_sel;
+logic[0:0]  de_em_csr_data_mem_data_sel;
 
 logic       em_valid;
 logic       em_start_handle;
@@ -49,7 +49,7 @@ logic[31:0] em_reg_data_mem_addr;
 logic[31:0] em_csr_data_mem_data;
 logic       em_mem_read;
 logic       em_mem_write;
-logic[1:0]  em_mem_op_type;
+logic[2:0]  em_mem_op_type;
 logic[4:0]  em_rd;
 logic       em_reg_write;
 logic[11:0] em_csr;
@@ -155,6 +155,7 @@ core_id core_id_inst0(
   .csr_write                  (                             ),
   .csr_write_addr             (                             ),
   .csr_write_data             (                             ),
+  .em_valid                   (em_valid                     ),
   .em_rd                      (em_rd                        ),
   .em_reg_write               (em_reg_write                 ),
   .em_mem_read                (em_mem_read                  )
@@ -205,6 +206,7 @@ core_ex core_ex_inst0(
   .em_reg_write               (em_reg_write               ),
   .em_csr                     (em_csr                     ),
   .em_csr_write               (em_csr_write               ),
+  .mw_valid                   (mw_valid                   ),
   .mw_rd                      (mw_rd                      ),
   .mw_reg_write               (mw_reg_write               ),
   .mw_reg_write_data          (mw_reg_write_data          ),
@@ -265,6 +267,7 @@ core_wb core_wb_inst0(
   .mw_ready                   (mw_ready                   ),
   .mw_reg_data                (mw_reg_data                ),
   .mw_mem_data                (mw_mem_data                ),
+  .mw_mem_data_valid          (mw_mem_data_valid          ),
   .mw_csr_data                (mw_csr_data                ),
   .mw_rd                      (mw_rd                      ),
   .mw_reg_write               (mw_reg_write               ),

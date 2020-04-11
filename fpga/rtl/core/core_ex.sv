@@ -47,6 +47,7 @@ module core_ex(
   output logic[11:0] em_csr,
   output logic       em_csr_write,
   /*MA/WB级寄存器数据*/
+  input  logic       mw_valid,
   input  logic[4:0]  mw_rd,
   input  logic       mw_reg_write,
   input  logic[31:0] mw_reg_write_data,
@@ -208,16 +209,19 @@ core_ex_alu core_ex_alu_inst0(
 );
 /*旁路单元*/
 core_ex_bypass core_ex_bypass_inst0(
+  .de_valid               (de_valid               ),
   .de_rs1                 (de_rs1                 ),
   .de_rs1_valid           (de_rs1_valid           ),
   .de_rs2                 (de_rs2                 ),
   .de_rs2_valid           (de_rs2_valid           ),
   .de_csr                 (de_csr                 ),
   .de_csr_valid           (de_csr_valid           ),
+  .em_valid               (em_valid               ),
   .em_rd                  (em_rd                  ),
   .em_reg_write           (em_reg_write           ),
   .em_csr                 (em_csr                 ),
   .em_csr_write           (em_csr_write           ),
+  .mw_valid               (mw_valid               ),
   .mw_rd                  (mw_rd                  ),
   .mw_reg_write           (mw_reg_write           ),
   .mw_mem_data_valid      (mw_mem_data_valid      ),

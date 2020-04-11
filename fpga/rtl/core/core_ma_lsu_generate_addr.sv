@@ -31,9 +31,9 @@ logic[31:0] data_0_mux_in[3:0];
 logic[1:0]  data_0_mux_sel;
 logic[31:0] data_1_mux_in[2:0];
 logic[1:0]  data_1_mux_sel;
-logic[31:0] byte_en_0_mux_in[3:0];
+logic[3:0]  byte_en_0_mux_in[3:0];
 logic[1:0]  byte_en_0_mux_sel;
-logic[31:0] byte_en_1_mux_in[2:0];
+logic[3:0]  byte_en_1_mux_in[2:0];
 logic[1:0]  byte_en_1_mux_sel;
 
 assign data_len      =  mem_op_data_len;
