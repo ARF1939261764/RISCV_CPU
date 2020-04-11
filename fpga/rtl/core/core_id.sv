@@ -217,11 +217,11 @@ assign      csr_write_en      = istr_dc_info.istr_is_sys_csrrw ||
                                 istr_dc_info.istr_is_sys_csrrci;
 assign      mem_write_en      = istr_dc_info.istr_is_sd;
 assign      mem_read_en       = istr_dc_info.istr_is_ld;
-assign      mem_op            = ({4{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B ||
-                                ({4{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H ||
-                                ({4{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W ||
-                                ({4{istr_dc_info.istr_is_ld_lbu             }})&`MEM_OP_BU||
-                                ({4{istr_dc_info.istr_is_ld_lhu             }})&`MEM_OP_HU;
+assign      mem_op            = ({4{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B |
+                                ({4{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H |
+                                ({4{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W |
+                                ({4{istr_dc_info.istr_is_ld_lbu                           }})&`MEM_OP_BU|
+                                ({4{istr_dc_info.istr_is_ld_lhu                           }})&`MEM_OP_HU;
 assign      is_br             = istr_dc_info.istr_is_br ||
                                 istr_dc_info.istr_is_j  ||
                                 istr_dc_info.istr_is_jr ||
@@ -302,15 +302,16 @@ assign reg_data_mem_addr_sel            = {2{reg_data_mem_addr_sel_is_alu   }}&2
                                           {2{reg_data_mem_addr_sel_is_pc_add}}&2'd3;
 
 assign csr_data_mem_data_sel_is_alu     = !csr_data_mem_data_sel_is_rs1;
-assign csr_data_mem_data_sel_is_rs1     = istr_dc_info.istr_is_sd||
-                                          istr_dc_info.istr_is_sys_csrrw ||
+assign csr_data_mem_data_sel_is_rs1     = istr_dc_info.istr_is_sys_csrrw ||
                                           istr_dc_info.istr_is_sys_csrrs ||
                                           istr_dc_info.istr_is_sys_csrrc ||
                                           istr_dc_info.istr_is_sys_csrrwi||
                                           istr_dc_info.istr_is_sys_csrrsi||
                                           istr_dc_info.istr_is_sys_csrrci;
+assign csr_data_mem_data_sel_is_rs2     = istr_dc_info.istr_is_sd;
 assign csr_data_mem_data_sel            = {2{csr_data_mem_data_sel_is_alu}}&2'd0|
-                                          {2{csr_data_mem_data_sel_is_rs1}}&2'd1;
+                                          {2{csr_data_mem_data_sel_is_rs1}}&2'd1|
+                                          {2{csr_data_mem_data_sel_is_rs2}}&2'd2;
 
 /*连接reg file与csr寄存器*/
 assign reg_file_read_0_addr   =  istr_rs1;

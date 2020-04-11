@@ -57,7 +57,7 @@ always @(posedge clk or negedge rest) begin
   end
 end
 
-assign em_ready=1'd1;
+assign em_ready=lsu_ready;
 
 core_ma_lsu core_ma_lsu_inst0(
   .clk                (clk                  ),

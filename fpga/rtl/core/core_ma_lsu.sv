@@ -24,6 +24,11 @@ localparam  MEM_OP_CMD_FIFO_DEPTH=2,
             });
 /*变量*/
 logic[2:0]  data_len;
+logic       mw_generate_addr_data_mem_read;
+logic       mw_generate_addr_data_mem_write;
+logic[31:0] mw_generate_addr_data_mem_addr;
+logic[2:0]  mw_generate_addr_data_mem_op_type;
+logic[2:0]  mw_data_len;
 
 /*mem_op fifo*/
 logic                            mem_op_cmd_fifofull;
@@ -42,7 +47,7 @@ logic       generate_addr_data_mem_write;
 logic[2:0]  generate_addr_data_mem_op_type;
 logic       generate_addr_data_mem_op_cmd_send_done;
 /*mem fifo端口赋值*/
-assign      mem_op_cmd_fifowrite=(mem_read||mem_write)&&!mem_op_cmd_fifoempty;
+assign      mem_op_cmd_fifowrite=(mem_read||mem_write)&&(generate_addr_data_mem_op_cmd_send_done||mem_op_cmd_fifoempty);
 assign      mem_op_cmd_fiforead =generate_addr_data_mem_op_cmd_send_done;
 assign      mem_op_cmd_fifowriteData={
               mem_addr,
@@ -62,13 +67,10 @@ assign      {
 assign data_len  =  {3{(mem_op_type==`MEM_OP_B)||(mem_op_type==`MEM_OP_BU)}}&3'd1|
                     {3{(mem_op_type==`MEM_OP_H)||(mem_op_type==`MEM_OP_HU)}}&3'd2|
                     {3{mem_op_type==`MEM_OP_W}}&3'd4;
-assign lsu_ready =  mem_read_data_valid;
+assign lsu_ready =  mw_generate_addr_data_mem_read&&mem_read_data_valid||
+                    mw_generate_addr_data_mem_write&&generate_addr_data_mem_op_cmd_send_done||
+                    (!mw_generate_addr_data_mem_read&&!mw_generate_addr_data_mem_write);
 
-
-logic       mw_generate_addr_data_mem_read;
-logic[31:0] mw_generate_addr_data_mem_addr;
-logic[2:0]  mw_generate_addr_data_mem_op_type;
-logic[2:0]  mw_data_len;
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -77,6 +79,7 @@ always @(posedge clk or negedge rest) begin
   else begin
     if(!mw_generate_addr_data_mem_read||mem_read_data_valid) begin
       mw_generate_addr_data_mem_read<=generate_addr_data_mem_read;
+      mw_generate_addr_data_mem_write<=generate_addr_data_mem_write;
       mw_generate_addr_data_mem_addr<=generate_addr_data_mem_addr;
       mw_generate_addr_data_mem_op_type<=generate_addr_data_mem_op_type;
       mw_data_len<=data_len;

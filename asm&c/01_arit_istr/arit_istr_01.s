@@ -18,6 +18,10 @@ _start:
   or    x9,x2,x8;
   and   x7,x6,x5;
   li    x2,0x10100;
-  li    x1,'a';
-  sw    x1,0x00(x2);
+  li    x1,0x12345678;
+  sw    x1,0x01(x0);
+  sw    x1,0x05(x0);
+  sw    x1,0x09(x0);
+  sw    x1,0x013(x0);
+  sw    x1,0x017(x0);
   lw    x3,0x00(x2);

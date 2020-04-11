@@ -32,7 +32,7 @@ module core_ex(
   input  logic[1:0]  de_alu_in_1_sel,
   input  logic[1:0]  de_alu_in_2_sel,
   input  logic[1:0]  de_em_reg_data_mem_addr_sel,
-  input  logic[0:0]  de_em_csr_data_mem_data_sel,
+  input  logic[1:0]  de_em_csr_data_mem_data_sel,
   /*EX/MEM级寄存器数据*/
   output logic       em_valid,
   output logic       em_start_handle,
@@ -104,8 +104,8 @@ logic[1:0]  csr_sel;
 logic[31:0] csr_in[2:0];
 
 logic[31:0] csr_data_mem_data;
-logic[0:0]  csr_data_mem_data_sel;
-logic[31:0] csr_data_mem_data_in[1:0];
+logic[1:0]  csr_data_mem_data_sel;
+logic[31:0] csr_data_mem_data_in[2:0];
 
 logic[31:0] reg_data_mem_addr;
 logic[1:0]  reg_data_mem_addr_sel;
@@ -136,6 +136,7 @@ assign reg_data_mem_addr_sel  =de_em_reg_data_mem_addr_sel;
 
 assign csr_data_mem_data_in[0]=alu_out;
 assign csr_data_mem_data_in[1]=rs1_value;
+assign csr_data_mem_data_in[2]=rs2_value;
 assign csr_data_mem_data_sel=de_em_csr_data_mem_data_sel;
 
 assign alu_in1_in[0]=rs1_value;
@@ -277,7 +278,7 @@ mux_inst3_reg_data_mem_addr_mux(
 
 mux_n21 #(
   .WIDTH(32 ),
-  .NUM  (2  )
+  .NUM  (3  )
 )
 mux_inst4_csr_data_mem_data_mux(
   .sel(csr_data_mem_data_sel  ),

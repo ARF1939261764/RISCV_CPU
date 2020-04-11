@@ -65,7 +65,11 @@ assign byte_en_1_mux_in[1] = {2'd0,mem_data[3:2]};
 assign byte_en_1_mux_in[2] = {3'd0,mem_data[3:3]};
 assign byte_en_1_mux_sel   = 2'd3-mem_addr[1:0];
 
-assign mem_op_cmd_send_done= (!addr_valid[0]||cmd_send_success[0])&&(!addr_valid[1]||cmd_send_success[1]);
+assign mem_op_cmd_send_done=  addr_valid[0]&&!addr_valid[1]&&((avl_m0_read||avl_m0_write)&&avl_m0_request_ready)||
+                              addr_valid[0]&&cmd_send_success[0]&&addr_valid[1]&&((avl_m0_read||avl_m0_write)&&avl_m0_request_ready);
+//assign mem_op_cmd_send_done=1'd1;
+//assign mem_op_cmd_send_done=  (!addr_valid[0]||((avl_m0_read||avl_m0_write)&&avl_m0_request_ready))&&!addr_valid[1]||
+//                              (!addr_valid[0]||cmd_send_success[0])&&(!addr_valid[1]||((avl_m0_read||avl_m0_write)&&avl_m0_request_ready));
 
 always @(posedge clk or negedge rest) begin
   if(!rest) begin

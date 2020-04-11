@@ -24,7 +24,7 @@ module core_wb(
   output logic       wb_csr_write
 );
 
-assign mw_ready=1'd1;
+assign mw_ready=!mw_reg_write_sel||mw_mem_data_valid;
 
 always @(*) begin
   wb_valid      =mw_valid;

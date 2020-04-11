@@ -40,7 +40,7 @@ logic       de_rs2_valid;
 logic[1:0]  de_alu_in_1_sel;
 logic[1:0]  de_alu_in_2_sel;
 logic[1:0]  de_em_reg_data_mem_addr_sel;
-logic[0:0]  de_em_csr_data_mem_data_sel;
+logic[1:0]  de_em_csr_data_mem_data_sel;
 
 logic       em_valid;
 logic       em_start_handle;
