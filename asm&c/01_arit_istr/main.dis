@@ -6,10 +6,10 @@ Disassembly of section .text:
 
 00000000 <_start>:
    0:	123450b7          	lui	ra,0x12345
-   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455bc>
+   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455b4>
    8:	00108093          	addi	ra,ra,1
    c:	52369137          	lui	sp,0x52369
-  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x5236906c>
+  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x52369064>
   14:	402081b3          	sub	gp,ra,sp
   18:	40308233          	sub	tp,ra,gp
   1c:	403202b3          	sub	t0,tp,gp
@@ -24,9 +24,9 @@ Disassembly of section .text:
   40:	008164b3          	or	s1,sp,s0
   44:	005373b3          	and	t2,t1,t0
   48:	00010137          	lui	sp,0x10
-  4c:	20010113          	addi	sp,sp,512 # 10200 <bss_end+0x10144>
+  4c:	20010113          	addi	sp,sp,512 # 10200 <bss_end+0x1013c>
   50:	123450b7          	lui	ra,0x12345
-  54:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455bc>
+  54:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455b4>
   58:	001120a3          	sw	ra,1(sp)
   5c:	001122a3          	sw	ra,5(sp)
   60:	001100a3          	sb	ra,1(sp)
@@ -52,3 +52,5 @@ Disassembly of section .text:
   b0:	00415303          	lhu	t1,4(sp)
   b4:	00412183          	lw	gp,4(sp)
   b8:	00414383          	lbu	t2,4(sp)
+  bc:	007028a3          	sw	t2,17(zero) # 11 <_start+0x11>
+  c0:	00138393          	addi	t2,t2,1

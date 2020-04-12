@@ -45,3 +45,5 @@ _start:
   lhu   x6,0x04(x2);
   lw    x3,0x04(x2);
   lbu   x7,0x04(x2);
+  sw    x7,0x11(x0);
+  addi  x7,x7,0x01;
