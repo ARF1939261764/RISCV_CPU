@@ -236,12 +236,12 @@ core_ex_bypass core_ex_bypass_inst0(
   .start_handle           (start_handle           )
 );
 core_ex_br core_ex_br_inst0(
-  .de_is_br   (de_is_br     ),
-  .de_br_op   (de_br_op     ),
-  .de_br_jump (de_jump      ),
-  .rs1_data   (rs1_value    ),
-  .rs2_data   (rs2_value    ),
-  .jump       (jump_en      )
+  .de_is_br               (de_is_br               ),
+  .de_br_op               (de_br_op               ),
+  .de_br_jump             (de_jump                ),
+  .rs1_data               (rs1_value              ),
+  .rs2_data               (rs2_value              ),
+  .jump                   (jump_en                )
 );
 
 /*多路复用器*/

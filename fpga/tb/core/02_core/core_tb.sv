@@ -6,7 +6,12 @@ logic                  clk;
 logic                  rest;
 i_avl_bus avl_m0_istr  ();
 i_avl_bus avl_m1_data  ();
-
+logic                  csr_read;
+logic[11:0]            csr_read_addr;
+logic[31:0]            csr_read_data;
+logic                  csr_write;
+logic[11:0]            csr_write_addr;
+logic[31:0]            csr_write_data;
 
 initial begin
   rest=1;
@@ -16,6 +21,10 @@ end
 
 
 core core_inst0(
+  .*
+);
+
+csr_sim_model csr_sim_model_inst0(
   .*
 );
 

@@ -1,8 +1,14 @@
 module core(
-  input logic       clk,
-  input logic       rest,
-  i_avl_bus.master  avl_m0_istr,
-  i_avl_bus.master  avl_m1_data
+  input  logic       clk,
+  input  logic       rest,
+  output logic       csr_read,
+  output logic[11:0] csr_read_addr,
+  input  logic[31:0] csr_read_data,
+  output logic       csr_write,
+  output logic[11:0] csr_write_addr,
+  output logic[31:0] csr_write_data,
+  i_avl_bus.master   avl_m0_istr,
+  i_avl_bus.master   avl_m1_data
 );
 
 logic       fd_valid;
@@ -153,12 +159,12 @@ core_id core_id_inst0(
   .wb_csr                     (wb_csr                       ),
   .wb_csr_write               (wb_csr_write                 ),
   .ex_flush_en                (flush_en                     ),
-  .csr_read                   (                             ),
-  .csr_read_addr              (                             ),
-  .csr_read_data              (                             ),
-  .csr_write                  (                             ),
-  .csr_write_addr             (                             ),
-  .csr_write_data             (                             ),
+  .csr_read                   (csr_read                     ),
+  .csr_read_addr              (csr_read_addr                ),
+  .csr_read_data              (csr_read_data                ),
+  .csr_write                  (csr_write                    ),
+  .csr_write_addr             (csr_write_addr               ),
+  .csr_write_data             (csr_write_data               ),
   .em_valid                   (em_valid                     ),
   .em_rd                      (em_rd                        ),
   .em_reg_write               (em_reg_write                 ),

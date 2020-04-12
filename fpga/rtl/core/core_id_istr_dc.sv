@@ -9,6 +9,8 @@ module core_id_istr_dc(
 logic[4:0]   istr_opcode;
 logic[2:0]   istr_funct3;
 logic[6:0]   istr_funct7;
+logic[4:0]   rd_is_zero;
+logic[4:0]   zimm_is_zero;
 
 assign istr_opcode       = istr[6:2];
 assign istr_funct3       = istr[14:12];

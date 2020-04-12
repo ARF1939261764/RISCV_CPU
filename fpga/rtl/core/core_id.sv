@@ -136,6 +136,7 @@ logic[31:0]  istr_from_c;
 logic[4:0]   istr_rd;
 logic[4:0]   istr_rs1;
 logic[4:0]   istr_rs2;
+logic[4:0]   istr_zimm;
 /*寄存器文件端口*/
 logic[4:0]   reg_file_read_0_addr;
 logic[31:0]  reg_file_read_0_data;
@@ -193,9 +194,9 @@ logic        reg_data_mem_addr_sel_is_imm;
 logic        reg_data_mem_addr_sel_is_csr;
 logic        reg_data_mem_addr_sel_is_pc_add;
 logic[1:0]   reg_data_mem_addr_sel;
-logic        csr_data_mem_data_sel_is_alu;     
+logic        csr_data_mem_data_sel_is_alu;
 logic        csr_data_mem_data_sel_is_rs1;
-logic[1:0]   csr_data_mem_data_sel;            
+logic[1:0]   csr_data_mem_data_sel;
 /****************************************************************************************
 译码
 ****************************************************************************************/
@@ -204,12 +205,18 @@ assign istr              = (fd_istr[1:0]==2'd3)?fd_istr:istr_from_c;
 assign istr_rd           = istr[11: 7];
 assign istr_rs1          = istr[19:15];
 assign istr_rs2          = istr[24:20];
-
+assign istr_zimm         = istr[19:15];
 assign reg_write_en         = (istr_rd!=1'd0)&&(istr_dc_info.istr_is_ra||istr_dc_info.istr_is_ia  ||
                                                 istr_dc_info.istr_is_ld||istr_dc_info.istr_is_sys ||
                                                 istr_dc_info.istr_is_jr||istr_dc_info.istr_is_lui ||
                                                 istr_dc_info.istr_is_j ||istr_dc_info.istr_is_auipc);
-assign csr_write_en         = istr_dc_info.istr_is_sys_csrrw ||
+assign csr_write_en         = istr_dc_info.istr_is_sys_csrrw                      ||
+                              istr_dc_info.istr_is_sys_csrrs  && (istr_rs1!=5'd0) ||
+                              istr_dc_info.istr_is_sys_csrrc  && (istr_rs1!=5'd0) ||
+                              istr_dc_info.istr_is_sys_csrrwi                     ||
+                              istr_dc_info.istr_is_sys_csrrsi && (istr_zimm!=5'd0)||
+                              istr_dc_info.istr_is_sys_csrrci && (istr_zimm!=5'd0);
+assign csr_valid            = istr_dc_info.istr_is_sys_csrrw ||
                               istr_dc_info.istr_is_sys_csrrs ||
                               istr_dc_info.istr_is_sys_csrrc ||
                               istr_dc_info.istr_is_sys_csrrwi||
@@ -292,8 +299,12 @@ assign reg_data_mem_addr_sel_is_alu     = istr_dc_info.istr_is_ra||
                                           istr_dc_info.istr_is_sys_csrrci||
                                           istr_dc_info.istr_is_auipc;
 assign reg_data_mem_addr_sel_is_imm     = istr_dc_info.istr_is_lui;
-assign reg_data_mem_addr_sel_is_csr     = istr_dc_info.istr_is_sys_csrrw||
-                                          istr_dc_info.istr_is_sys_csrrwi;
+assign reg_data_mem_addr_sel_is_csr     = istr_dc_info.istr_is_sys_csrrw ||
+                                          istr_dc_info.istr_is_sys_csrrwi||
+                                          istr_dc_info.istr_is_sys_csrrs ||
+                                          istr_dc_info.istr_is_sys_csrrc ||
+                                          istr_dc_info.istr_is_sys_csrrsi||
+                                          istr_dc_info.istr_is_sys_csrrci;
 assign reg_data_mem_addr_sel_is_pc_add  = istr_dc_info.istr_is_jr||
                                           istr_dc_info.istr_is_j||
                                           istr_dc_info.istr_is_br;
@@ -325,7 +336,7 @@ assign csr_read               =  (istr_dc_info.istr_is_sys_csrrw ||
                                   istr_dc_info.istr_is_sys_csrrc ||
                                   istr_dc_info.istr_is_sys_csrrwi||
                                   istr_dc_info.istr_is_sys_csrrsi||
-                                  istr_dc_info.istr_is_sys_csrrci)&&de_ready;
+                                  istr_dc_info.istr_is_sys_csrrci)&&de_ready&&(istr_rd!=5'd0);
 assign reg_file_write_en      =  wb_reg_write&wb_valid;
 assign reg_file_write_addr    =  wb_rd;
 assign reg_file_write_data    =  wb_reg_data;
@@ -392,6 +403,7 @@ always @(posedge clk or negedge rest) begin
         de_csr_write  <= csr_write_en;
         de_mem_write  <= mem_write_en;
         de_mem_read   <= mem_read_en;
+        de_csr_valid  <= csr_valid;
       end
       else begin
         de_is_br      <= 1'd0;
@@ -402,6 +414,7 @@ always @(posedge clk or negedge rest) begin
         de_csr_write  <= 1'd0;
         de_mem_write  <= 1'd0;
         de_mem_read   <= 1'd0;
+        de_csr_valid  <= 1'd0;
       end
     end begin
       de_start_handle<=1'd0;
