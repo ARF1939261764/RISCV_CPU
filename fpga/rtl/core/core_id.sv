@@ -289,9 +289,9 @@ assign reg_data_mem_addr_sel_is_alu     = istr_dc_info.istr_is_ra||
                                           istr_dc_info.istr_is_sys_csrrs ||
                                           istr_dc_info.istr_is_sys_csrrc ||
                                           istr_dc_info.istr_is_sys_csrrsi||
-                                          istr_dc_info.istr_is_sys_csrrci;
-assign reg_data_mem_addr_sel_is_imm     = istr_dc_info.istr_is_lui||
+                                          istr_dc_info.istr_is_sys_csrrci||
                                           istr_dc_info.istr_is_auipc;
+assign reg_data_mem_addr_sel_is_imm     = istr_dc_info.istr_is_lui;
 assign reg_data_mem_addr_sel_is_csr     = istr_dc_info.istr_is_sys_csrrw||
                                           istr_dc_info.istr_is_sys_csrrwi;
 assign reg_data_mem_addr_sel_is_pc_add  = istr_dc_info.istr_is_jr||
