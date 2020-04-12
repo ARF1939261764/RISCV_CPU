@@ -205,44 +205,44 @@ assign istr_rd           = istr[11: 7];
 assign istr_rs1          = istr[19:15];
 assign istr_rs2          = istr[24:20];
 
-assign      reg_write_en      = (istr_rd!=1'd0)&&(istr_dc_info.istr_is_ra||istr_dc_info.istr_is_ia  ||
-                                                  istr_dc_info.istr_is_ld||istr_dc_info.istr_is_sys ||
-                                                  istr_dc_info.istr_is_jr||istr_dc_info.istr_is_lui ||
-                                                  istr_dc_info.istr_is_j ||istr_dc_info.istr_is_auipc);
-assign      csr_write_en      = istr_dc_info.istr_is_sys_csrrw ||
-                                istr_dc_info.istr_is_sys_csrrs ||
-                                istr_dc_info.istr_is_sys_csrrc ||
-                                istr_dc_info.istr_is_sys_csrrwi||
-                                istr_dc_info.istr_is_sys_csrrsi||
-                                istr_dc_info.istr_is_sys_csrrci;
-assign      mem_write_en      = istr_dc_info.istr_is_sd;
-assign      mem_read_en       = istr_dc_info.istr_is_ld;
-assign      mem_op            = ({4{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B |
-                                ({4{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H |
-                                ({4{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W |
-                                ({4{istr_dc_info.istr_is_ld_lbu                           }})&`MEM_OP_BU|
-                                ({4{istr_dc_info.istr_is_ld_lhu                           }})&`MEM_OP_HU;
-assign      is_br             = istr_dc_info.istr_is_br ||
-                                istr_dc_info.istr_is_j  ||
-                                istr_dc_info.istr_is_jr ||
-                                istr_dc_info.istr_is_sys_mret;
-assign      br_op             = ({4{(istr_dc_info.istr_is_j||istr_dc_info.istr_is_jr||istr_dc_info.istr_is_sys_mret)}}&`BR_OP_TRUE)|
-                                ({4{istr_dc_info.istr_is_br_beq                                                     }}&`BR_OP_EQ  )|
-                                ({4{istr_dc_info.istr_is_br_bne                                                     }}&`BR_OP_NE  )|
-                                ({4{istr_dc_info.istr_is_br_blt                                                     }}&`BR_OP_LT  )|
-                                ({4{istr_dc_info.istr_is_br_bge                                                     }}&`BR_OP_GE  )|
-                                ({4{istr_dc_info.istr_is_br_bliu                                                    }}&`BR_OP_LIU )|
-                                ({4{istr_dc_info.istr_is_br_bgeu                                                    }}&`BR_OP_GEU );
-assign      rs1_valid         = istr_dc_info.istr_is_ra       ||
-                                istr_dc_info.istr_is_ia       ||
-                                istr_dc_info.istr_is_ld       ||
-                                istr_dc_info.istr_is_sd       ||
-                                istr_dc_info.istr_is_br       ||
-                                istr_dc_info.istr_is_sys_csrrw||
-                                istr_dc_info.istr_is_sys_csrrs||
-                                istr_dc_info.istr_is_sys_csrrc||
-                                istr_dc_info.istr_is_jr;
-assign      rs2_valid         = istr_dc_info.istr_is_ra       ||
+assign reg_write_en         = (istr_rd!=1'd0)&&(istr_dc_info.istr_is_ra||istr_dc_info.istr_is_ia  ||
+                                                istr_dc_info.istr_is_ld||istr_dc_info.istr_is_sys ||
+                                                istr_dc_info.istr_is_jr||istr_dc_info.istr_is_lui ||
+                                                istr_dc_info.istr_is_j ||istr_dc_info.istr_is_auipc);
+assign csr_write_en         = istr_dc_info.istr_is_sys_csrrw ||
+                              istr_dc_info.istr_is_sys_csrrs ||
+                              istr_dc_info.istr_is_sys_csrrc ||
+                              istr_dc_info.istr_is_sys_csrrwi||
+                              istr_dc_info.istr_is_sys_csrrsi||
+                              istr_dc_info.istr_is_sys_csrrci;
+assign mem_write_en         = istr_dc_info.istr_is_sd;
+assign mem_read_en          = istr_dc_info.istr_is_ld;
+assign mem_op               = ({4{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B |
+                              ({4{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H |
+                              ({4{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W |
+                              ({4{istr_dc_info.istr_is_ld_lbu                           }})&`MEM_OP_BU|
+                              ({4{istr_dc_info.istr_is_ld_lhu                           }})&`MEM_OP_HU;
+assign is_br                = istr_dc_info.istr_is_br ||
+                              istr_dc_info.istr_is_j  ||
+                              istr_dc_info.istr_is_jr ||
+                              istr_dc_info.istr_is_sys_mret;
+assign br_op                = ({4{(istr_dc_info.istr_is_j||istr_dc_info.istr_is_jr||istr_dc_info.istr_is_sys_mret)}}&`BR_OP_TRUE)|
+                              ({4{istr_dc_info.istr_is_br_beq                                                     }}&`BR_OP_EQ  )|
+                              ({4{istr_dc_info.istr_is_br_bne                                                     }}&`BR_OP_NE  )|
+                              ({4{istr_dc_info.istr_is_br_blt                                                     }}&`BR_OP_LT  )|
+                              ({4{istr_dc_info.istr_is_br_bge                                                     }}&`BR_OP_GE  )|
+                              ({4{istr_dc_info.istr_is_br_bliu                                                    }}&`BR_OP_LIU )|
+                              ({4{istr_dc_info.istr_is_br_bgeu                                                    }}&`BR_OP_GEU );
+assign rs1_valid            = istr_dc_info.istr_is_ra       ||
+                              istr_dc_info.istr_is_ia       ||
+                              istr_dc_info.istr_is_ld       ||
+                              istr_dc_info.istr_is_sd       ||
+                              istr_dc_info.istr_is_br       ||
+                              istr_dc_info.istr_is_sys_csrrw||
+                              istr_dc_info.istr_is_sys_csrrs||
+                              istr_dc_info.istr_is_sys_csrrc||
+                              istr_dc_info.istr_is_jr;
+assign rs2_valid            = istr_dc_info.istr_is_ra       ||
                                 istr_dc_info.istr_is_sd       ||
                                 istr_dc_info.istr_is_br;
 
@@ -375,7 +375,6 @@ always @(posedge clk or negedge rest) begin
       de_rd                       <= istr_rd;
       de_mem_op                   <= mem_op;
       de_istr_width               <= fd_istr[1:0]==2'd3;
-      de_is_br                    <= is_br;
       de_rs1                      <= istr_rs1;
       de_rs2                      <= istr_rs2;
       de_rs1_valid                <= rs1_valid;
@@ -385,6 +384,7 @@ always @(posedge clk or negedge rest) begin
       de_em_reg_data_mem_addr_sel <= reg_data_mem_addr_sel;
       de_em_csr_data_mem_data_sel <= csr_data_mem_data_sel;
       if(!risk_detct_insert_nop&&!ex_flush_en&&fd_valid) begin
+        de_is_br      <= is_br;
         de_alu_op     <= istr_alu_dc_info.alu_op;
         de_br_op      <= br_op;
         de_jump       <= fd_jump;
@@ -394,6 +394,7 @@ always @(posedge clk or negedge rest) begin
         de_mem_read   <= mem_read_en;
       end
       else begin
+        de_is_br      <= 1'd0;
         de_alu_op     <= `ALU_OP_NOP;
         de_br_op      <= `BR_OP_FALSE;
         de_jump       <= 1'd0;

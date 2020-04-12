@@ -239,8 +239,8 @@ core_ex_br core_ex_br_inst0(
   .de_is_br   (de_is_br     ),
   .de_br_op   (de_br_op     ),
   .de_br_jump (de_jump      ),
-  .rs1_data   (de_rs1_value ),
-  .rs2_data   (de_rs2_value ),
+  .rs1_data   (rs1_value    ),
+  .rs2_data   (rs2_value    ),
   .jump       (jump_en      )
 );
 

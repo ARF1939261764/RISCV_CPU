@@ -35,6 +35,7 @@
 define
 ****************************************************************************************/
 /*opcode*/
+`define     ISTR_MRET               (32'h30200073)  /*mret指令*/
 `define     ISTR_RA                 (5'b01100)
 `define     ISTR_IA                 (5'b00100)
 `define     ISTR_LD                 (5'b00000)

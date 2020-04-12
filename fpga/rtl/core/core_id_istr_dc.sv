@@ -72,9 +72,10 @@ assign istr_dc_info.istr_is_sys_csrrwi= istr_dc_info.istr_is_sys&&(istr_funct3==
 assign istr_dc_info.istr_is_sys_csrrsi= istr_dc_info.istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRSI_FUNCT3);
 assign istr_dc_info.istr_is_sys_csrrci= istr_dc_info.istr_is_sys&&(istr_funct3==`ISTR_SYS_CSRRCI_FUNCT3);
 
+assign istr_dc_info.istr_is_sys_mret  = istr==`ISTR_MRET;
 /*
 -分辨mret
-assign      istr_is_sys_mret  =
+
 -分辨wfi
 assign      istr_is_sys_wfi   =
 -分辨ebrea
