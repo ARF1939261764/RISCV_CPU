@@ -180,6 +180,7 @@ logic[1:0]   alu_port_1_sel;
 logic[1:0]   alu_port_2_sel;
 logic[1:0]   em_reg_data_addr_sel;
 logic[1:0]   em_csr_data_sel;
+logic        csr_valid;
 
 logic        alu_in_1_sel_is_rs1;
 logic        alu_in_1_sel_is_zimm;
@@ -196,6 +197,7 @@ logic        reg_data_mem_addr_sel_is_pc_add;
 logic[1:0]   reg_data_mem_addr_sel;
 logic        csr_data_mem_data_sel_is_alu;
 logic        csr_data_mem_data_sel_is_rs1;
+logic        csr_data_mem_data_sel_is_rs2;
 logic[1:0]   csr_data_mem_data_sel;
 /****************************************************************************************
 译码
@@ -224,11 +226,11 @@ assign csr_valid            = istr_dc_info.istr_is_sys_csrrw ||
                               istr_dc_info.istr_is_sys_csrrci;
 assign mem_write_en         = istr_dc_info.istr_is_sd;
 assign mem_read_en          = istr_dc_info.istr_is_ld;
-assign mem_op               = ({4{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B |
-                              ({4{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H |
-                              ({4{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W |
-                              ({4{istr_dc_info.istr_is_ld_lbu                           }})&`MEM_OP_BU|
-                              ({4{istr_dc_info.istr_is_ld_lhu                           }})&`MEM_OP_HU;
+assign mem_op               = ({3{istr_dc_info.istr_is_ld_lb||istr_dc_info.istr_is_sd_sb}})&`MEM_OP_B |
+                              ({3{istr_dc_info.istr_is_ld_lh||istr_dc_info.istr_is_sd_sh}})&`MEM_OP_H |
+                              ({3{istr_dc_info.istr_is_ld_lw||istr_dc_info.istr_is_sd_sw}})&`MEM_OP_W |
+                              ({3{istr_dc_info.istr_is_ld_lbu                           }})&`MEM_OP_BU|
+                              ({3{istr_dc_info.istr_is_ld_lhu                           }})&`MEM_OP_HU;
 assign is_br                = istr_dc_info.istr_is_br ||
                               istr_dc_info.istr_is_j  ||
                               istr_dc_info.istr_is_jr ||

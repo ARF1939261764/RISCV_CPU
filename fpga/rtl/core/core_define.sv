@@ -16,11 +16,11 @@
 `define ALU_OP_NOT_AND      (4'd11)
 
 /*MEM操作码*/
-`define MEM_OP_B            (4'd1)
-`define MEM_OP_H            (4'd2)
-`define MEM_OP_W            (4'd3)
-`define MEM_OP_BU           (4'd4)
-`define MEM_OP_HU           (4'd5)
+`define MEM_OP_B            (3'd1)
+`define MEM_OP_H            (3'd2)
+`define MEM_OP_W            (3'd3)
+`define MEM_OP_BU           (3'd4)
+`define MEM_OP_HU           (3'd5)
 
 `define BR_OP_FALSE         (4'd0)
 `define BR_OP_TRUE          (4'd1)

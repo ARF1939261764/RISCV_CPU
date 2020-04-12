@@ -28,8 +28,8 @@ assign data[1]=data_buff;
 
 assign read_data_mux_in[0]= data[0];
 assign read_data_mux_in[1]= {data[0][ 7: 0],data[addr_valid[1]][31: 8]};
-assign read_data_mux_in[2]= {data[0][15: 0],data[addr_valid[1]][31:15]};
-assign read_data_mux_in[3]= {data[0][23: 0],data[addr_valid[1]][31:23]};
+assign read_data_mux_in[2]= {data[0][15: 0],data[addr_valid[1]][31:16]};
+assign read_data_mux_in[3]= {data[0][23: 0],data[addr_valid[1]][31:24]};
 
 assign read_data_mux_sel  = mem_addr[1:0];
 

@@ -18,7 +18,6 @@ module core_ma_lsu (
 /*变量*/
 logic[2:0]  data_len;
 logic       mw_generate_addr_data_mem_read;
-logic       mw_generate_addr_data_mem_write;
 logic[31:0] mw_generate_addr_data_mem_addr;
 logic[2:0]  mw_generate_addr_data_mem_op_type;
 logic[2:0]  mw_data_len;
@@ -35,7 +34,6 @@ always @(posedge clk or negedge rest) begin
   else begin
     if(!mw_generate_addr_data_mem_read||mem_read_data_valid) begin
       mw_generate_addr_data_mem_read    <=  mem_read;
-      mw_generate_addr_data_mem_write   <=  mem_write;
       mw_generate_addr_data_mem_addr    <=  mem_addr;
       mw_generate_addr_data_mem_op_type <=  mem_op_type;
       mw_data_len<=data_len;
