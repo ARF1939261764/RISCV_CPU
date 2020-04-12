@@ -76,7 +76,7 @@ function logic[31:0] istr_get_imm_i(logic[31:0] istr);
 endfunction
 /*获取I类型指令的立即数(无符号)*/
 function logic[31:0] istr_get_imm_i_u(logic[31:0] istr);
-  return {{20{istr[31]}},istr[31:20]};
+  return {{20{1'd0}},istr[31:20]};
 endfunction
 /*获取S类型指令的立即数*/
 function logic[31:0] istr_get_imm_s(logic[31:0] istr);
@@ -98,7 +98,7 @@ endfunction
 function logic[31:0] istr_get_imm (logic [31:0] istr);
   logic[31:0] imm;
   case(istr[6:2])
-    5'b00100:begin
+    `ISTR_IA:begin
         if(istr[14:12]==`ISTR_IA_SLTIU_FUNCT3) begin
           imm=istr_get_imm_i_u(istr);  /*立即数与寄存器中数据的算术操作*/
         end
@@ -106,15 +106,15 @@ function logic[31:0] istr_get_imm (logic [31:0] istr);
           imm=istr_get_imm_i(istr);   /*立即数与寄存器中数据的算术操作*/
         end
       end
-    5'b00000:imm=istr_get_imm_i(istr);  /*Load指令的地址偏移*/
-    5'b01000:imm=istr_get_imm_s(istr);  /*Store指令的地址偏移*/
-    5'b11000:imm=istr_get_imm_sb(istr); /*分支指令的地址偏移*/
-    5'b11011:imm=istr_get_imm_ui(istr); /*JAL指令的地址偏移*/
-    5'b11001:imm=istr_get_imm_i(istr);  /*JALR指令的地址偏移*/
-    5'b01101:imm=istr_get_imm_u(istr);  /*LUI指令的立即数*/
-    5'b00101:imm=istr_get_imm_u(istr);  /*AUIPC指令的立即数*/
+    `ISTR_LD:imm=istr_get_imm_i(istr);  /*Load指令的地址偏移*/
+    `ISTR_SD:imm=istr_get_imm_s(istr);  /*Store指令的地址偏移*/
+    `ISTR_BR:imm=istr_get_imm_sb(istr); /*分支指令的地址偏移*/
+    `ISTR_J:imm=istr_get_imm_ui(istr); /*JAL指令的地址偏移*/
+    `ISTR_JR:imm=istr_get_imm_i(istr);  /*JALR指令的地址偏移*/
+    `ISTR_LUI:imm=istr_get_imm_u(istr);  /*LUI指令的立即数*/
+    `ISTR_AUIPC:imm=istr_get_imm_u(istr);  /*AUIPC指令的立即数*/
     default:begin
-      imm=1'd0;
+      imm=istr_get_imm_u(istr);
     end
   endcase
   return imm;
@@ -226,13 +226,13 @@ assign      is_br             = istr_dc_info.istr_is_br ||
                                 istr_dc_info.istr_is_j  ||
                                 istr_dc_info.istr_is_jr ||
                                 istr_dc_info.istr_is_sys_mret;
-assign      br_op             = (istr_dc_info.istr_is_j||istr_dc_info.istr_is_jr||istr_dc_info.istr_is_sys_mret)?`BR_OP_TRUE:
-                                  ({4{istr_dc_info.istr_is_br_beq }}&`BR_OP_EQ) |
-                                  ({4{istr_dc_info.istr_is_br_bne }}&`BR_OP_NE) |
-                                  ({4{istr_dc_info.istr_is_br_blt }}&`BR_OP_LT) |
-                                  ({4{istr_dc_info.istr_is_br_bge }}&`BR_OP_GE) |
-                                  ({4{istr_dc_info.istr_is_br_bliu}}&`BR_OP_LIU)|
-                                  ({4{istr_dc_info.istr_is_br_bgeu}}&`BR_OP_GEU);
+assign      br_op             = ({4{(istr_dc_info.istr_is_j||istr_dc_info.istr_is_jr||istr_dc_info.istr_is_sys_mret)}}&`BR_OP_TRUE)|
+                                ({4{istr_dc_info.istr_is_br_beq                                                     }}&`BR_OP_EQ  )|
+                                ({4{istr_dc_info.istr_is_br_bne                                                     }}&`BR_OP_NE  )|
+                                ({4{istr_dc_info.istr_is_br_blt                                                     }}&`BR_OP_LT  )|
+                                ({4{istr_dc_info.istr_is_br_bge                                                     }}&`BR_OP_GE  )|
+                                ({4{istr_dc_info.istr_is_br_bliu                                                    }}&`BR_OP_LIU )|
+                                ({4{istr_dc_info.istr_is_br_bgeu                                                    }}&`BR_OP_GEU );
 assign      rs1_valid         = istr_dc_info.istr_is_ra       ||
                                 istr_dc_info.istr_is_ia       ||
                                 istr_dc_info.istr_is_ld       ||
@@ -252,7 +252,8 @@ assign alu_in_1_sel_is_rs1              = istr_dc_info.istr_is_ra       ||
                                           istr_dc_info.istr_is_sd       ||
                                           istr_dc_info.istr_is_sys_csrrw||
                                           istr_dc_info.istr_is_sys_csrrs||
-                                          istr_dc_info.istr_is_sys_csrrc;
+                                          istr_dc_info.istr_is_sys_csrrc||
+                                          istr_dc_info.istr_is_jr;
 assign alu_in_1_sel_is_zimm             = istr_dc_info.istr_is_sys_csrrwi||
                                           istr_dc_info.istr_is_sys_csrrsi||
                                           istr_dc_info.istr_is_sys_csrrci;
@@ -331,7 +332,7 @@ assign reg_file_write_data    =  wb_reg_data;
 assign csr_write              =  wb_csr_write&wb_valid;
 assign csr_write_addr         =  wb_csr;
 assign csr_write_data         =  wb_csr_data; 
-assign fd_ready               =  de_ready&&!risk_detct_insert_nop;/*ex级接受了当前数据且不是插入nop指令*/
+assign fd_ready               =  de_ready&&!risk_detct_insert_nop&&!ex_flush_en;/*ex级接受了当前数据且不是插入nop指令*/
 assign wb_ready               =  1'd1;
 
 /*连接冒险检测*/
@@ -363,11 +364,7 @@ always @(posedge clk or negedge rest) begin
     de_mem_read   <= 1'd0;
   end
   else begin
-    if(ex_flush_en) begin
-      de_valid<=1'd0;
-      de_start_handle<=1'd0;
-    end
-    else if(!de_valid||de_ready) begin
+    if(!de_valid||de_ready) begin
       de_valid<=fd_valid;
       de_start_handle<=1'd1;
       /*更新de寄存器组*/
@@ -387,7 +384,7 @@ always @(posedge clk or negedge rest) begin
       de_alu_in_2_sel             <= alu_in_2_sel;
       de_em_reg_data_mem_addr_sel <= reg_data_mem_addr_sel;
       de_em_csr_data_mem_data_sel <= csr_data_mem_data_sel;
-      if(!risk_detct_insert_nop) begin
+      if(!risk_detct_insert_nop&&!ex_flush_en&&fd_valid) begin
         de_alu_op     <= istr_alu_dc_info.alu_op;
         de_br_op      <= br_op;
         de_jump       <= fd_jump;

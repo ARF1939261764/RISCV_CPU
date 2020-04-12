@@ -88,7 +88,7 @@ logic [ISTR_FIFO_WIDTH-1:0] istr_fifo_read_data;
 /**********************************************************************************
 连线
 **********************************************************************************/
-assign pc_en                              = (!pc_valid||istr_valid||jump_en)&&!if_stop; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
+assign pc_en                              = ((!pc_valid||istr_valid||jump_en)&&!if_stop)||flush_en; /*计算下一个pc,如果EX级发过来的jump_en信号有效则立即跳转*/
 /*移位缓冲区*/
 assign shift_fifo_write                   = avl_m0.read_data_valid&&!wait_fifo_empty;
 assign shift_fifo_addr                    = wait_fifo_read_data;

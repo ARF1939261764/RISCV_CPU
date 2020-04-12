@@ -5,52 +5,64 @@ main.elf:     file format elf32-littleriscv
 Disassembly of section .text:
 
 00000000 <_start>:
-   0:	123450b7          	lui	ra,0x12345
-   4:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455b4>
-   8:	00108093          	addi	ra,ra,1
-   c:	52369137          	lui	sp,0x52369
-  10:	12810113          	addi	sp,sp,296 # 52369128 <bss_end+0x52369064>
-  14:	402081b3          	sub	gp,ra,sp
-  18:	40308233          	sub	tp,ra,gp
-  1c:	403202b3          	sub	t0,tp,gp
-  20:	40528333          	sub	t1,t0,t0
-  24:	00130313          	addi	t1,t1,1
-  28:	00130313          	addi	t1,t1,1
-  2c:	00628333          	add	t1,t0,t1
-  30:	40110133          	sub	sp,sp,ra
-  34:	001113b3          	sll	t2,sp,ra
-  38:	0020a3b3          	slt	t2,ra,sp
-  3c:	00114433          	xor	s0,sp,ra
-  40:	008164b3          	or	s1,sp,s0
-  44:	005373b3          	and	t2,t1,t0
-  48:	00010137          	lui	sp,0x10
-  4c:	20010113          	addi	sp,sp,512 # 10200 <bss_end+0x1013c>
-  50:	123450b7          	lui	ra,0x12345
-  54:	67808093          	addi	ra,ra,1656 # 12345678 <bss_end+0x123455b4>
-  58:	001120a3          	sw	ra,1(sp)
-  5c:	001122a3          	sw	ra,5(sp)
-  60:	001100a3          	sb	ra,1(sp)
-  64:	001124a3          	sw	ra,9(sp)
-  68:	06100093          	li	ra,97
-  6c:	001102a3          	sb	ra,5(sp)
-  70:	001126a3          	sw	ra,13(sp)
-  74:	001104a3          	sb	ra,9(sp)
-  78:	00111523          	sh	ra,10(sp)
-  7c:	001106a3          	sb	ra,13(sp)
-  80:	08000093          	li	ra,128
-  84:	00110123          	sb	ra,2(sp)
-  88:	00110323          	sb	ra,6(sp)
-  8c:	00111523          	sh	ra,10(sp)
-  90:	00110723          	sb	ra,14(sp)
-  94:	00111203          	lh	tp,1(sp)
-  98:	00112183          	lw	gp,1(sp)
-  9c:	00110283          	lb	t0,1(sp)
-  a0:	00115303          	lhu	t1,1(sp)
-  a4:	00114383          	lbu	t2,1(sp)
-  a8:	00411203          	lh	tp,4(sp)
-  ac:	00410283          	lb	t0,4(sp)
-  b0:	00415303          	lhu	t1,4(sp)
-  b4:	00412183          	lw	gp,4(sp)
-  b8:	00414383          	lbu	t2,4(sp)
-  bc:	007028a3          	sw	t2,17(zero) # 11 <_start+0x11>
-  c0:	00138393          	addi	t2,t2,1
+   0:	10000113          	li	sp,256
+   4:	0040006f          	j	8 <main>
+
+00000008 <main>:
+   8:	fd010113          	addi	sp,sp,-48
+   c:	02812623          	sw	s0,44(sp)
+  10:	03010413          	addi	s0,sp,48
+  14:	00100793          	li	a5,1
+  18:	fef42623          	sw	a5,-20(s0)
+  1c:	00100793          	li	a5,1
+  20:	fcf42e23          	sw	a5,-36(s0)
+  24:	123457b7          	lui	a5,0x12345
+  28:	67878793          	addi	a5,a5,1656 # 12345678 <bss_end+0x12345600>
+  2c:	fef42023          	sw	a5,-32(s0)
+  30:	234567b7          	lui	a5,0x23456
+  34:	78978793          	addi	a5,a5,1929 # 23456789 <bss_end+0x23456711>
+  38:	fef42223          	sw	a5,-28(s0)
+  3c:	fdc42703          	lw	a4,-36(s0)
+  40:	fe042783          	lw	a5,-32(s0)
+  44:	00f70733          	add	a4,a4,a5
+  48:	fe442783          	lw	a5,-28(s0)
+  4c:	00f707b3          	add	a5,a4,a5
+  50:	fef42423          	sw	a5,-24(s0)
+  54:	fe842783          	lw	a5,-24(s0)
+  58:	00078713          	mv	a4,a5
+  5c:	fec42783          	lw	a5,-20(s0)
+  60:	00e7a023          	sw	a4,0(a5)
+  64:	00000793          	li	a5,0
+  68:	00078513          	mv	a0,a5
+  6c:	02c12403          	lw	s0,44(sp)
+  70:	03010113          	addi	sp,sp,48
+  74:	00008067          	ret
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+   0:	3a434347          	fmsub.d	ft6,ft6,ft4,ft7,rmm
+   4:	2820                	fld	fs0,80(s0)
+   6:	20554e47          	fmsub.s	ft8,fa0,ft5,ft4,rmm
+   a:	434d                	li	t1,19
+   c:	2055                	jal	b0 <bss_end+0x38>
+   e:	6345                	lui	t1,0x11
+  10:	696c                	flw	fa1,84(a0)
+  12:	7370                	flw	fa2,100(a4)
+  14:	2065                	jal	bc <bss_end+0x44>
+  16:	4952                	lw	s2,20(sp)
+  18:	562d4353          	0x562d4353
+  1c:	4520                	lw	s0,72(a0)
+  1e:	626d                	lui	tp,0x1b
+  20:	6465                	lui	s0,0x19
+  22:	6564                	flw	fs1,76(a0)
+  24:	2064                	fld	fs1,192(s0)
+  26:	2c434347          	0x2c434347
+  2a:	3320                	fld	fs0,96(a4)
+  2c:	2d32                	fld	fs10,264(sp)
+  2e:	6962                	flw	fs2,24(sp)
+  30:	2974                	fld	fa3,208(a0)
+  32:	3820                	fld	fs0,112(s0)
+  34:	322e                	fld	ft4,232(sp)
+  36:	302e                	fld	ft0,232(sp)
+	...

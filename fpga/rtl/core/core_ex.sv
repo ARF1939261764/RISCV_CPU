@@ -156,7 +156,8 @@ assign alu_op                = de_alu_op;
 assign alu_op_valid          = de_valid;
 assign pc_add                = de_pc+(de_istr_width?3'd4:3'd2);
 assign de_ready              = alu_op_ready&&em_ready;
-
+assign jump_addr             = alu_out;
+assign flush_en              = jump_en;
 /*************************************************************
 更新em寄存器
 *************************************************************/
@@ -233,6 +234,14 @@ core_ex_bypass core_ex_bypass_inst0(
   .csr_sel                (csr_sel                ),
   .de_start_handle        (de_start_handle        ),
   .start_handle           (start_handle           )
+);
+core_ex_br core_ex_br_inst0(
+  .de_is_br   (de_is_br     ),
+  .de_br_op   (de_br_op     ),
+  .de_br_jump (de_jump      ),
+  .rs1_data   (de_rs1_value ),
+  .rs2_data   (de_rs2_value ),
+  .jump       (jump_en      )
 );
 
 /*多路复用器*/

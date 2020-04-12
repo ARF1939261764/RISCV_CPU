@@ -76,6 +76,10 @@ logic[31:0] wb_csr_data;
 logic[11:0] wb_csr;
 logic       wb_csr_write;
 
+logic[31:0] jump_addr;  
+logic       jump_en;    
+logic       flush_en;  
+
 logic[31:0] mw_reg_write_data;
 
 
@@ -87,9 +91,9 @@ core_if_inst0(
   .rest                       (rest                         ),
   .avl_m0                     (avl_m0_istr                  ),
   .csr_mepc                   (1'd0                         ),
-  .jump_addr                  (1'd0                         ),
-  .jump_en                    (1'd0                         ),
-  .flush_en                   (1'd0                         ),
+  .jump_addr                  (jump_addr                    ),
+  .jump_en                    (jump_en                      ),
+  .flush_en                   (flush_en                     ),
   .bp_istr                    (                             ),
   .bp_pc                      (                             ),
   .bp_jump_addr               (1'd0                         ),
@@ -148,7 +152,7 @@ core_id core_id_inst0(
   .wb_csr_data                (wb_csr_data                  ),
   .wb_csr                     (wb_csr                       ),
   .wb_csr_write               (wb_csr_write                 ),
-  .ex_flush_en                (1'd0                         ),
+  .ex_flush_en                (flush_en                     ),
   .csr_read                   (                             ),
   .csr_read_addr              (                             ),
   .csr_read_data              (                             ),
@@ -221,9 +225,9 @@ core_ex core_ex_inst0(
   .pc                         (                           ),
   .next_pc                    (                           ),
   .istr                       (                           ),
-  .jump_en                    (                           ),
-  .jump_addr                  (                           ),
-  .flush_en                   (                           ),
+  .jump_en                    (jump_en                    ),
+  .jump_addr                  (jump_addr                  ),
+  .flush_en                   (flush_en                   ),
   .bp_pc                      (                           ),
   .bp_istr                    (                           ),
   .bp_jump_pc                 (                           ),
