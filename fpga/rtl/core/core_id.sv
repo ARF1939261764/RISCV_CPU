@@ -486,9 +486,11 @@ always @(posedge clk) begin
   end
 end
 
+reg[31:0] istr_count=0;
 always @(posedge clk) begin
   if(fd_valid&&fd_ready) begin
-    $display("id handle istr,pc=%x,istr=%x,type=%s",fd_pc,(fd_istr[1:0]==2'd3)?fd_istr:fd_istr[15:0],(fd_istr[1:0]==2'd3)?"i":"c");
+    istr_count++;
+    $display("id handle istr,pc=%x,istr=%x,type=%s,istr_count=%d",fd_pc,(fd_istr[1:0]==2'd3)?fd_istr:fd_istr[15:0],(fd_istr[1:0]==2'd3)?"i":"c",istr_count);
   end
 end
 
