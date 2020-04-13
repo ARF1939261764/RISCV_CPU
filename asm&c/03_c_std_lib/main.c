@@ -2,11 +2,8 @@
 #include "time.h"
 #include "sys/times.h"
 #include "sys/stat.h"
+#include "sys/types.h"
 #include "DSP.h"
-
-typedef char *caddr_t;
-
-ComplexType *Complex=(ComplexType *)0x100000;
 
 int main(void)
 {

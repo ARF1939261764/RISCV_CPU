@@ -236,10 +236,10 @@ Disassembly of section .text:
      2f8:	fd842703          	lw	a4,-40(s0)
      2fc:	00f70733          	add	a4,a4,a5
      300:	0001a7b7          	lui	a5,0x1a
-     304:	11c7a783          	lw	a5,284(a5) # 1a11c <p.3178>
+     304:	1187a783          	lw	a5,280(a5) # 1a118 <p.3176>
      308:	00178613          	addi	a2,a5,1
      30c:	0001a6b7          	lui	a3,0x1a
-     310:	10c6ae23          	sw	a2,284(a3) # 1a11c <p.3178>
+     310:	10c6ac23          	sw	a2,280(a3) # 1a118 <p.3176>
      314:	00074703          	lbu	a4,0(a4)
      318:	00e78023          	sb	a4,0(a5)
      31c:	fec42783          	lw	a5,-20(s0)
@@ -28449,13 +28449,9 @@ Disassembly of section .rodata.__clz_tab:
 
 Disassembly of section .sdata:
 
-0001a118 <Complex>:
+0001a118 <p.3176>:
    1a118:	0000                	unimp
    1a11a:	0010                	0x10
-
-0001a11c <p.3178>:
-   1a11c:	0000                	unimp
-   1a11e:	0010                	0x10
 
 Disassembly of section .data.impure_data:
 
