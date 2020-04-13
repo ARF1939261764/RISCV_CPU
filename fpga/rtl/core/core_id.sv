@@ -338,7 +338,7 @@ assign csr_read               =  (istr_dc_info.istr_is_sys_csrrw ||
                                   istr_dc_info.istr_is_sys_csrrc ||
                                   istr_dc_info.istr_is_sys_csrrwi||
                                   istr_dc_info.istr_is_sys_csrrsi||
-                                  istr_dc_info.istr_is_sys_csrrci)&&de_ready&&(istr_rd!=5'd0);
+                                  istr_dc_info.istr_is_sys_csrrci)&&(istr_rd!=5'd0)&&fd_ready;
 assign reg_file_write_en      =  wb_reg_write&wb_valid;
 assign reg_file_write_addr    =  wb_rd;
 assign reg_file_write_data    =  wb_reg_data;
@@ -366,15 +366,16 @@ assign risk_detct_em_mem_read   = em_mem_read;
 ****************************************************************************************/
 always @(posedge clk or negedge rest) begin
   if(!rest) begin
-    de_valid<=1'd0;
+    de_is_br       <= 1'd0;
+    de_valid       <=1'd0;
     de_start_handle<=1'd0;
-    de_alu_op     <= `ALU_OP_NOP;
-    de_br_op      <= `BR_OP_FALSE;
-    de_jump       <= 1'd0;
-    de_reg_write  <= 1'd0;
-    de_csr_write  <= 1'd0;
-    de_mem_write  <= 1'd0;
-    de_mem_read   <= 1'd0;
+    de_alu_op      <= `ALU_OP_NOP;
+    de_br_op       <= `BR_OP_FALSE;
+    de_jump        <= 1'd0;
+    de_reg_write   <= 1'd0;
+    de_csr_write   <= 1'd0;
+    de_mem_write   <= 1'd0;
+    de_mem_read    <= 1'd0;
   end
   else begin
     if(!de_valid||de_ready) begin
