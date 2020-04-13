@@ -9,7 +9,7 @@ Disassembly of section .text:
    4:	07c0006f          	j	80 <main>
 
 00000008 <sequence>:
-   8:	fe010113          	addi	sp,sp,-32 # ffe0 <bss_end+0xfeec>
+   8:	fe010113          	addi	sp,sp,-32 # ffe0 <bss_end+0xfea0>
    c:	00112e23          	sw	ra,28(sp)
   10:	00812c23          	sw	s0,24(sp)
   14:	00912a23          	sw	s1,20(sp)
@@ -44,32 +44,53 @@ Disassembly of section .text:
   80:	fe010113          	addi	sp,sp,-32
   84:	00112e23          	sw	ra,28(sp)
   88:	00812c23          	sw	s0,24(sp)
-  8c:	02010413          	addi	s0,sp,32
-  90:	00100793          	li	a5,1
-  94:	fef42423          	sw	a5,-24(s0)
-  98:	fe042623          	sw	zero,-20(s0)
-  9c:	0340006f          	j	d0 <main+0x50>
-  a0:	fec42503          	lw	a0,-20(s0)
-  a4:	f65ff0ef          	jal	ra,8 <sequence>
-  a8:	00050693          	mv	a3,a0
-  ac:	fec42783          	lw	a5,-20(s0)
-  b0:	00279793          	slli	a5,a5,0x2
-  b4:	fe842703          	lw	a4,-24(s0)
-  b8:	00f707b3          	add	a5,a4,a5
-  bc:	00068713          	mv	a4,a3
-  c0:	00e7a023          	sw	a4,0(a5)
-  c4:	fec42783          	lw	a5,-20(s0)
-  c8:	00178793          	addi	a5,a5,1
-  cc:	fef42623          	sw	a5,-20(s0)
-  d0:	fec42703          	lw	a4,-20(s0)
-  d4:	00900793          	li	a5,9
-  d8:	fce7d4e3          	bge	a5,a4,a0 <main+0x20>
-  dc:	00000793          	li	a5,0
-  e0:	00078513          	mv	a0,a5
-  e4:	01c12083          	lw	ra,28(sp)
-  e8:	01812403          	lw	s0,24(sp)
-  ec:	02010113          	addi	sp,sp,32
-  f0:	00008067          	ret
+  8c:	00912a23          	sw	s1,20(sp)
+  90:	02010413          	addi	s0,sp,32
+  94:	00100793          	li	a5,1
+  98:	fef42423          	sw	a5,-24(s0)
+  9c:	fe042623          	sw	zero,-20(s0)
+  a0:	0540006f          	j	f4 <main+0x74>
+  a4:	fec42503          	lw	a0,-20(s0)
+  a8:	f61ff0ef          	jal	ra,8 <sequence>
+  ac:	00050493          	mv	s1,a0
+  b0:	fec42503          	lw	a0,-20(s0)
+  b4:	f55ff0ef          	jal	ra,8 <sequence>
+  b8:	00050793          	mv	a5,a0
+  bc:	00078593          	mv	a1,a5
+  c0:	00048513          	mv	a0,s1
+  c4:	058000ef          	jal	ra,11c <__mulsi3>
+  c8:	00050793          	mv	a5,a0
+  cc:	00078693          	mv	a3,a5
+  d0:	fec42783          	lw	a5,-20(s0)
+  d4:	00279793          	slli	a5,a5,0x2
+  d8:	fe842703          	lw	a4,-24(s0)
+  dc:	00f707b3          	add	a5,a4,a5
+  e0:	00068713          	mv	a4,a3
+  e4:	00e7a023          	sw	a4,0(a5)
+  e8:	fec42783          	lw	a5,-20(s0)
+  ec:	00178793          	addi	a5,a5,1
+  f0:	fef42623          	sw	a5,-20(s0)
+  f4:	fec42703          	lw	a4,-20(s0)
+  f8:	00900793          	li	a5,9
+  fc:	fae7d4e3          	bge	a5,a4,a4 <main+0x24>
+ 100:	00000793          	li	a5,0
+ 104:	00078513          	mv	a0,a5
+ 108:	01c12083          	lw	ra,28(sp)
+ 10c:	01812403          	lw	s0,24(sp)
+ 110:	01412483          	lw	s1,20(sp)
+ 114:	02010113          	addi	sp,sp,32
+ 118:	00008067          	ret
+
+0000011c <__mulsi3>:
+ 11c:	00050613          	mv	a2,a0
+ 120:	00000513          	li	a0,0
+ 124:	0015f693          	andi	a3,a1,1
+ 128:	00068463          	beqz	a3,130 <__mulsi3+0x14>
+ 12c:	00c50533          	add	a0,a0,a2
+ 130:	0015d593          	srli	a1,a1,0x1
+ 134:	00161613          	slli	a2,a2,0x1
+ 138:	fe0596e3          	bnez	a1,124 <__mulsi3+0x8>
+ 13c:	00008067          	ret
 
 Disassembly of section .comment:
 

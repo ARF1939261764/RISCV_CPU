@@ -1,3 +1,4 @@
+
 int sequence(int i)
 {
   if(i==0||i==1)
@@ -16,7 +17,7 @@ int main(void)
   int i;
   for(i=0;i<10;i++)
   {
-    p[i]=sequence(i);
+    p[i]=sequence(i)*sequence(i);
   }
   return 0;
 }

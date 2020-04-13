@@ -46,9 +46,9 @@ assign istr_dc_info.istr_is_ia_sltiu  = istr_dc_info.istr_is_ia&&((istr_funct3==
 assign istr_dc_info.istr_is_ia_xori   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_XORI_FUNCT3  ));
 assign istr_dc_info.istr_is_ia_ori    = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_ORI_FUNCT3   ));
 assign istr_dc_info.istr_is_ia_andi   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_ANDI_FUNCT3  ));
-assign istr_dc_info.istr_is_ia_slli   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  ));
-assign istr_dc_info.istr_is_ia_srli   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  ));
-assign istr_dc_info.istr_is_ia_srai   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  ));
+assign istr_dc_info.istr_is_ia_slli   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_RA_SLLI_FUNCT3  )&&(istr_funct7==`ISTR_RA_SLLI_FUNCT7  ));
+assign istr_dc_info.istr_is_ia_srli   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_SRLI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRLI_FUNCT7  ));
+assign istr_dc_info.istr_is_ia_srai   = istr_dc_info.istr_is_ia&&((istr_funct3==`ISTR_IA_SRAI_FUNCT3  )&&(istr_funct7==`ISTR_IA_SRAI_FUNCT7  ));
 /*ld系*/
 assign istr_dc_info.istr_is_ld_lb     = istr_dc_info.istr_is_ld&&(istr_funct3==`ISTR_LD_LB_FUNCT3     );
 assign istr_dc_info.istr_is_ld_lh     = istr_dc_info.istr_is_ld&&(istr_funct3==`ISTR_LD_LH_FUNCT3     );
