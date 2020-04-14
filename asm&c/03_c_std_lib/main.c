@@ -7,7 +7,7 @@
 
 int main(void)
 {
-	printf("hello world:%d",123456);
+	printf("hello world:%lf\r\n",3.14159265358979323846);
 	return 0;
 }
 int _system (const char *i)
@@ -80,7 +80,7 @@ int _swiopen (const char *i, int j)
 }
 int _write (int id, char *buff, int n)
 {
-	static char *p=(char *)0x100000;
+	static char *p=(char *)0x01;
 	int i;
 	for(i=0;i<n;i++)
 	{

@@ -4,15 +4,15 @@ ComplexType W[DSP_FFT_MAX_NUM / 2];
 
 void FFT(ComplexType *inputBuff, uint32_t num)
 {
-	static uint32_t lastNum = 0;/*ÉÏÒ»´Î¼ÆËãFFTÊ±£¬ÔªËØµÄÊýÁ¿*/
-	uint32_t m,i,j,k,n;/*m:m=log2(num),¼´ÓÐ¶àÉÙ²ã tempUInt:ÁÙÊ±±äÁ¿*/
+	static uint32_t lastNum = 0;/*ï¿½ï¿½Ò»ï¿½Î¼ï¿½ï¿½ï¿½FFTÊ±ï¿½ï¿½Ôªï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½*/
+	uint32_t m,i,j,k,n;/*m:m=log2(num),ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ù²ï¿½ tempUInt:ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½*/
 	uint32_t tempUInt = 0;
 	double tempDouble = 0;
 	ComplexType tempComplex,*data,u;
 	uint32_t le,wIndex,wIndexStep;
-	if ((inputBuff == NULL) || (num == 1)) { return; }/*Êý¾ÝÖ¸ÕëÎª¿Õ»òÕßµãÊýÎª1,·µ»Ø*/
+	if ((inputBuff == NULL) || (num == 1)) { return; }/*ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Îªï¿½Õ»ï¿½ï¿½ßµï¿½ï¿½ï¿½Îª1,ï¿½ï¿½ï¿½ï¿½*/
 	data = inputBuff;
-	for (i = 0; i < 32; i++)/*Çóm = log2(num)*/
+	for (i = 0; i < 32; i++)/*ï¿½ï¿½m = log2(num)*/
 	{
 		if (num&(1 << i))
 		{
@@ -20,18 +20,18 @@ void FFT(ComplexType *inputBuff, uint32_t num)
 			tempUInt++;
 		}
 	}
-	if (tempUInt != 1) { return;/*²»Îª2µÄÕûÊý´ÎÃÝ,·µ»Ø*/ }
-	if (num != lastNum)/*ºÍÉÏÒ»´Î¼ÆËãµÄµãÊý²»ÏàÍ¬£¬ÐèÒªÖØÐÂ¼ÆËãW^n*/
+	if (tempUInt != 1) { return;/*ï¿½ï¿½Îª2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½*/ }
+	if (num != lastNum)/*ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î¼ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½W^n*/
 	{
-		if (num > DSP_FFT_MAX_NUM) { return;/*ÊýÁ¿³¬¹ý×î´óÏÞÖÆ,·µ»Ø*/ }
+		if (num > DSP_FFT_MAX_NUM) { return;/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½*/ }
 		lastNum = num;
 		tempUInt = num / 2;
 		
-		tempComplex.real = cos(atan(1.0)*8.0 / num);/*atanÊÇÎªÁË»ñµÃpiµÄÖµ,math.hÖÐÎ´¶¨ÒåPI,¶øÖ±½ÓÊ¹ÓÃ³£ÊýÓ²±àÂë²»¹æ·¶,¹ÊÊ¹ÓÃatanº¯Êý¼ä½Ó»ñÈ¡piµÄÖµ*/
+		tempComplex.real = cos(atan(1.0)*8.0 / num);/*atanï¿½ï¿½Îªï¿½Ë»ï¿½ï¿½piï¿½ï¿½Öµ,math.hï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½PI,ï¿½ï¿½Ö±ï¿½ï¿½Ê¹ï¿½Ã³ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½ë²»ï¿½æ·¶,ï¿½ï¿½Ê¹ï¿½ï¿½atanï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó»ï¿½È¡piï¿½ï¿½Öµ*/
 		tempComplex.imag = -sin(atan(1.0)*8.0 / num);
-		W[0].real = 1;/*W^0ºãµÈÓÚ1*/
+		W[0].real = 1;/*W^0ï¿½ï¿½ï¿½ï¿½ï¿½1*/
 		W[0].imag = 0;
-		for (n = 1; n < tempUInt; n++)/*¼ÆËãW^n£¬ÐèÒª¼ÆËãW^1µ½W^(num/2-1),W^0ºãÎª1,ÎÞÐè¼ÆËã*/
+		for (n = 1; n < tempUInt; n++)/*ï¿½ï¿½ï¿½ï¿½W^nï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½W^1ï¿½ï¿½W^(num/2-1),W^0ï¿½ï¿½Îª1,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
 		{
 			W[n] = tempComplex;
 			tempDouble = tempComplex.real*W[1].real - tempComplex.imag*W[1].imag;
@@ -39,13 +39,13 @@ void FFT(ComplexType *inputBuff, uint32_t num)
 			tempComplex.real = tempDouble;
 		}
 	}
-	/*-----------×¼±¸¹¤×÷Íê³É£¬¿ªÊ¼FFT¼ÆËã-------------*/
+	/*-----------×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½Ê¼FFTï¿½ï¿½ï¿½ï¿½-------------*/
 	le = num;
 	wIndexStep = 1;
-	for (k = 0; k < m; k++)/*µü´ú¼ÆËã£¬Ã¿´Îµü´ú¼ÆËãÒ»²ã£¬×Ü¹²µü´úlog2(num)´Î*/
+	for (k = 0; k < m; k++)/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã£¬Ã¿ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ã£¬ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½log2(num)ï¿½ï¿½*/
 	{
 		le = le / 2;
-		for (i = 0; i < num; i+=2*le)/*Ê×ÏÈ¼ÆËã³ö¸Ã²ãÎÞÐè³Ë·¨µÄµã*/
+		for (i = 0; i < num; i+=2*le)/*ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½Äµï¿½*/
 		{
 			tempComplex.real = data[i].real + data[i + le].real;
 			tempComplex.imag = data[i].imag + data[i + le].imag;
@@ -54,10 +54,10 @@ void FFT(ComplexType *inputBuff, uint32_t num)
 			data[i] = tempComplex;
 		}
 		wIndex = wIndexStep;
-		for (i = 1; i < le; i++)/*¼ÆËã³öÊ£ÏÂµÄµã£¬Ã¿¸ö²¿·Ö»áÓÐle-1¸öµãÐèÒª¼ÆËã*/
+		for (i = 1; i < le; i++)/*ï¿½ï¿½ï¿½ï¿½ï¿½Ê£ï¿½ÂµÄµã£¬Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½le-1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½*/
 		{
-			u = W[wIndex];/*ÕâÀïÓëÊéÉÏ²»Í¬£¬Ã»ÓÐ¼õÒ»£¬ÒòÎªÊéÉÏW[0]´ú±íµÄÊÇW^1£¬¶øÕâÀïW[0]´ú±íµÄW^0£¬W[1]´ú±íµÄW^1*/
-			for (j = i; j < num; j += 2 * le)/*¼ÆËã³öµ±Ç°ËùÓÐÐèÒªW[index]µÄÏî,×Ü¹²ÓÐ2^kÏî*/
+			u = W[wIndex];/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï²ï¿½Í¬ï¿½ï¿½Ã»ï¿½Ð¼ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½W[0]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½W^1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½W[0]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½W^0ï¿½ï¿½W[1]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½W^1*/
+			for (j = i; j < num; j += 2 * le)/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÒªW[index]ï¿½ï¿½ï¿½ï¿½,ï¿½Ü¹ï¿½ï¿½ï¿½2^kï¿½ï¿½*/
 			{
 				tempComplex.real = data[j].real + data[j + le].real;
 				tempComplex.imag = data[j].imag + data[j + le].imag;
@@ -72,11 +72,11 @@ void FFT(ComplexType *inputBuff, uint32_t num)
 		}
 		wIndexStep *= 2;
 	}
-	/*----------¼ÆËãÍê³É£¬½»»»×Ö½ÚÐò-----------------------------*/
+	/*----------ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½-----------------------------*/
 	for (i = 0; i < num; i++)
 	{
 		j = 0;
-		for (k = 0; k < m; k++) { j = (j << 1) | (0x01 & (i >> k)); }/*ÂëÎ»µ¹ÖÃ*/
+		for (k = 0; k < m; k++) { j = (j << 1) | (0x01 & (i >> k)); }/*ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½*/
 		if (i < j)
 		{
 			tempComplex = data[i];

@@ -1,6 +1,6 @@
 SECTIONS {
     . = 0;
-    text_start = .;
+    __text_start = .;
     . = ALIGN(4);    
     .text               :                      {*(.text)}
     . = ALIGN(4);
@@ -8,7 +8,8 @@ SECTIONS {
     . = ALIGN(4);
     .data               :                      {*(.data)}    
     . = ALIGN(4);
-    bss_start = .;
-    .bbs                :                      {*(.bbs) *(.COMMON)}
-    bss_end = .;           
+    __bss_start = .;
+    .bss                :                      { *(.bss)  *(COMMON) }
+    . = ALIGN(4);
+    __bss_end = .;
 }
