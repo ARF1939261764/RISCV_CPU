@@ -1,6 +1,6 @@
 `timescale 1ns/100ps 
 
-module cache_tb_rand_test;
+module cache_tb;
 
 /*时钟、复位*/
 logic 				   clk;
