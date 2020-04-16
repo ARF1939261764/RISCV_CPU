@@ -1,0 +1,3 @@
+@echo ¿ªÊ¼·ÂÕæ
+vsim -do cache.tcl
+pause
