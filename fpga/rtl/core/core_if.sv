@@ -144,6 +144,7 @@ assign avl_m0.write_data                  = 32'd0;
 assign avl_m0.byte_en                     = 4'hf;
 assign avl_m0.begin_burst_transfer        = 1'd0;
 assign avl_m0.burst_count                 = 0;
+assign avl_m0.resp_ready                  = 1'd1;
 assign bp_istr                            = generate_istr_istr;
 assign bp_pc                              = pc;
 assign if_stop                            = ctr_stop||istr_fifo_full;

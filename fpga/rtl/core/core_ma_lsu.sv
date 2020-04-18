@@ -40,6 +40,7 @@ always @(posedge clk or negedge rest) begin
     end
   end
 end
+assign avl_m0.resp_ready = 1'd1;
 
 /*地址生成*/
 core_ma_lsu_generate_addr core_ma_lsu_generate_addr_inst0(
