@@ -2,6 +2,7 @@ transcript on
 
 vlib work
 vlog -sv -work work +incdir+../../../rtl/core              {../../../rtl/core/core_type.sv    }
+vlog -sv -work work +incdir+../../../rtl/bus               {../../../rtl/bus/avl_bus_type.sv  }
 vlog -sv -work work +incdir+../../../rtl/mux               {../../../rtl/mux/*.sv             }
 vlog -sv -work work +incdir+../../../rtl/fifo              {../../../rtl/fifo/*.sv            }
 vlog -sv -work work +incdir+../../../rtl/bus               {../../../rtl/bus/*.sv             }
