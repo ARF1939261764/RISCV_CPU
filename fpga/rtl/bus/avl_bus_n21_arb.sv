@@ -1,15 +1,15 @@
 `include "avl_bus_define.sv"
 import avl_bus_type::*;
 
-module avl_bus_nm21_arb #(
+module avl_bus_n21_arb #(
   parameter ARB_METHOD = 0,/*0:轮询仲裁,1:优先级仲裁*/
             MASTER_NUM = 8 /*MASTER_NUM∈[1,16]*/
 )(
   input  logic                          clk,
   input  logic                          rest,
   input  logic[MASTER_NUM-1:0]          request,
-  input  avl_cmd_t                      avl_m_cmd,
-  input  logic                          avl_m_ready,
+  input  avl_cmd_t                      avl_out_cmd,
+  input  logic                          avl_out_ready,
   output logic[$clog2(MASTER_NUM)-1:0]  sel
 );
 /************************************************
@@ -20,19 +20,19 @@ localparam SEL_WIDTH  = $clog2(MASTER_NUM);
 变量
 ************************************************/
 logic[$clog2(`ALV_BURST_MAX_COUNT):0] burst_count;
-logic[SEL_WIDTH-1:0]                 now_sel;
-logic[SEL_WIDTH-1:0]                 sel_buff;
-logic[SEL_WIDTH-1:0]                 last_sel;
-logic                                send_cmd_success;
-logic[MASTER_NUM-1:0]                encoder_in;
-logic[SEL_WIDTH-1:0]                 encoder_out;
+logic[SEL_WIDTH-1:0]                  now_sel;
+logic[SEL_WIDTH-1:0]                  sel_buff;
+logic[SEL_WIDTH-1:0]                  last_sel;
+logic                                 send_cmd_success;
+logic[MASTER_NUM-1:0]                 encoder_in;
+logic[SEL_WIDTH-1:0]                  encoder_out;
 
 /************************************************
 连线
 ************************************************/
 assign sel              = burst_count==0?now_sel:sel_buff;
 assign now_sel          = encoder_out;
-assign send_cmd_success = avl_m_ready&&(avl_m_cmd.read||avl_m_cmd.write);
+assign send_cmd_success = avl_out_ready&&(avl_out_cmd.read||avl_out_cmd.write);
 
 /************************************************
 突发传输处理
@@ -43,8 +43,8 @@ always @(posedge clk or negedge rest) begin
     sel_buff<=1'd0;
   end
   else begin
-    if(avl_m_cmd.begin_burst_transfer) begin
-      burst_count<=avl_m_cmd.burst_count;
+    if(avl_out_cmd.begin_burst_transfer) begin
+      burst_count<=avl_out_cmd.burst_count;
       sel_buff<=sel;
     end
     else if(send_cmd_success) begin
