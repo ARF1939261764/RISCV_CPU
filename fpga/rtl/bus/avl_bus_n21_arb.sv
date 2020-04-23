@@ -9,7 +9,7 @@ module avl_bus_n21_arb #(
   input  logic                          rest,
   input  logic[MASTER_NUM-1:0]          request,
   input  avl_cmd_t                      avl_out_cmd,
-  input  logic                          avl_out_ready,
+  input  logic                          avl_out_request_ready,
   output logic[$clog2(MASTER_NUM)-1:0]  sel
 );
 /************************************************
@@ -19,20 +19,20 @@ localparam SEL_WIDTH  = $clog2(MASTER_NUM);
 /************************************************
 变量
 ************************************************/
-logic[$clog2(`ALV_BURST_MAX_COUNT):0] burst_count;
-logic[SEL_WIDTH-1:0]                  now_sel;
-logic[SEL_WIDTH-1:0]                  sel_buff;
-logic[SEL_WIDTH-1:0]                  last_sel;
-logic                                 send_cmd_success;
-logic[MASTER_NUM-1:0]                 encoder_in;
-logic[SEL_WIDTH-1:0]                  encoder_out;
+logic[$clog2(`ALV_BURST_MAX_COUNT)-1:0] burst_count;
+logic[SEL_WIDTH-1:0]                    now_sel;
+logic[SEL_WIDTH-1:0]                    sel_buff;
+logic[SEL_WIDTH-1:0]                    last_sel;
+logic                                   send_cmd_success;
+logic[MASTER_NUM-1:0]                   encoder_in;
+logic[SEL_WIDTH-1:0]                    encoder_out;
 
 /************************************************
 连线
 ************************************************/
 assign sel              = burst_count==0?now_sel:sel_buff;
 assign now_sel          = encoder_out;
-assign send_cmd_success = avl_out_ready&&(avl_out_cmd.read||avl_out_cmd.write);
+assign send_cmd_success = avl_out_request_ready&&(avl_out_cmd.read||avl_out_cmd.write);
 
 /************************************************
 突发传输处理

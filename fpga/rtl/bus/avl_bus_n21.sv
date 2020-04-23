@@ -103,12 +103,12 @@ avl_bus_n21_arb #(
   .MASTER_NUM(MASTER_NUM)
 )
 avl_bus_n21_arb_inst0(
-  .clk        (clk                ),
-  .rest       (rest               ),
-  .request    (avl_s_request      ),
-  .avl_out_cmd(avl_out_cmd        ),
-  .avl_m_ready(avl_out.request_ready),
-  .sel        (sel                )
+  .clk                  (clk                  ),
+  .rest                 (rest                 ),
+  .request              (avl_s_request        ),
+  .avl_out_cmd          (avl_out_cmd          ),
+  .avl_out_request_ready(avl_out.request_ready),
+  .sel                  (sel                  )
 );
 
 fifo_sync #(
