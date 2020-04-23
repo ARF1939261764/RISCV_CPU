@@ -17,7 +17,6 @@ endpackage
 note:
   这里参数数组的下标,是从0->31
 *******************************************************/
-parameter     AVL_BUS_DEMO_ADDR_MAP_TAB_LEN              = 8;
 parameter int AVL_BUS_DEMO_ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{
               1,16,16,16,16,16,16,16,
               0, 0, 0, 0, 0, 0, 0, 0,

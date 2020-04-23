@@ -36,8 +36,8 @@ logic                sel_fifo_empty;
 logic                sel_fifo_half;
 logic                sel_fifo_write;
 logic                sel_fifo_read;
-logic[31:0]          sel_fifo_writeData;
-logic[31:0]          sel_fifo_readData;
+logic[SEL_WIDTH-1:0] sel_fifo_writeData;
+logic[SEL_WIDTH-1:0] sel_fifo_readData;
 
 /*******************************************************
 连线

@@ -18,5 +18,8 @@ interface i_avl_bus;
     input  address,byte_en,read,write,write_data,begin_burst_transfer,burst_count,resp_ready,
     output request_ready,read_data,read_data_valid
   );
+  modport monitor(
+    input  address,byte_en,read,write,write_data,begin_burst_transfer,burst_count,resp_ready,request_ready,read_data,read_data_valid
+  );
 endinterface
 
