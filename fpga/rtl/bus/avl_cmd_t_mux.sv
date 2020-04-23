@@ -1,3 +1,5 @@
+`include "avl_bus_define.sv"
+import avl_bus_type::*;
 /*mux*/
 module avl_cmd_t_mux #(
   parameter NUM = 8

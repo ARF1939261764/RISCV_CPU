@@ -119,8 +119,8 @@ endmodule
 ***********************************************************************************/
 module avl_bus_12n_addr_map #(
   parameter     SLAVE_NUM                     = 16,
-            int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
-            int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
+  parameter int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
+  parameter int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
   input  logic[31:0]                  addr,
   output logic[$clog2(SLAVE_NUM)-1:0] sel,
@@ -130,17 +130,20 @@ localparam SEL_WIDTH = $clog2(SLAVE_NUM);
 /*******************************************************
 地址映射
 *******************************************************/
-always @(*) begin:block_1
-  int i,j;
+generate
+  genvar i;
   logic[SLAVE_NUM-1:0] judge;
-  for(i=0;i<SLAVE_NUM;i++) begin
-    judge[i]=addr[31:32-ADDR_MAP_TAB_FIELD_LEN[i]]==ADDR_MAP_TAB_ADDR_BLOCK[i][31:32-ADDR_MAP_TAB_FIELD_LEN[i]];
+  for(i=0;i<SLAVE_NUM;i++) begin:block_0
+    assign judge[i]=addr[31-:ADDR_MAP_TAB_FIELD_LEN[i]]==ADDR_MAP_TAB_ADDR_BLOCK[i][31-:ADDR_MAP_TAB_FIELD_LEN[i]];
   end
+  assign invalid_addr=judge==1'd0;
+endgenerate
+
+always @(*) begin:block_1
+  int i;
   sel=0;
   for(i=0;i<SLAVE_NUM;i++) begin
     sel=sel|{SEL_WIDTH{judge[i]}}&i[SEL_WIDTH-1:0];
   end
-  invalid_addr=judge==1'd0;
 end
-
 endmodule
