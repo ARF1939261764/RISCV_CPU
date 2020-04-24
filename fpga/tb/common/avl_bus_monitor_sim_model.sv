@@ -1,3 +1,4 @@
+`timescale 1ns/100ps
 module avl_bus_monitor_sim_model #(
   parameter     MASTER_NUM                    = 8,
                 SLAVE_NUM                     = 16,
@@ -16,9 +17,10 @@ typedef struct
 {
   logic[31:0] addr;
   int master;
+  int slave;
 }read_cmd_t;
 
-int                       ram[SLAVE_NUM-1:0][];
+logic[3:0][7:0]           ram[SLAVE_NUM-1:0][];
 read_cmd_t                read_cmd_queue[$];
 logic[MASTER_NUM-1:0]     read_data_valid;
 read_cmd_t                read_cmds[MASTER_NUM-1:0];
@@ -45,7 +47,7 @@ function int addr_map(logic[31:0] addr);
     end
   end
   if(i==SLAVE_NUM) begin
-    $error("Invalid address");
+    $error("Invalid address:%h",addr);
     $stop();
   end
   return i;
@@ -61,7 +63,10 @@ always @(posedge clk or negedge rest) begin:block_0
       if(ram[i].size!=0) begin
         ram[i].delete();/*如果大小不为0,则清空后再申请*/
       end
-      ram[i]=new[2**(32-ADDR_MAP_TAB_FIELD_LEN[i])];
+      ram[i]=new[2**(32-ADDR_MAP_TAB_FIELD_LEN[i])/4];
+      for(j=0;j<2**(32-ADDR_MAP_TAB_FIELD_LEN[i])/4;j++) begin
+        ram[i][j]=0;
+      end
     end
   end
   else begin
@@ -69,10 +74,10 @@ always @(posedge clk or negedge rest) begin:block_0
       if(avl_vmon[i].write&&avl_vmon[i].request_ready) begin
         /*发送写命令成功*/
         index=addr_map(avl_vmon[i].address);
-        if(avl_vmon[i].byte_en[0]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[i])/4][0]=avl_vmon[i].write_data[ 7: 0];
-        if(avl_vmon[i].byte_en[1]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[i])/4][1]=avl_vmon[i].write_data[15: 8];
-        if(avl_vmon[i].byte_en[2]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[i])/4][2]=avl_vmon[i].write_data[23:16];
-        if(avl_vmon[i].byte_en[3]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[i])/4][3]=avl_vmon[i].write_data[31:24];
+        if(avl_vmon[i].byte_en[0]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[index])/4][0]=avl_vmon[i].write_data[ 7: 0];
+        if(avl_vmon[i].byte_en[1]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[index])/4][1]=avl_vmon[i].write_data[15: 8];
+        if(avl_vmon[i].byte_en[2]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[index])/4][2]=avl_vmon[i].write_data[23:16];
+        if(avl_vmon[i].byte_en[3]) ram[index][(avl_vmon[i].address-ADDR_MAP_TAB_ADDR_BLOCK[index])/4][3]=avl_vmon[i].write_data[31:24];
       end
     end
   end
@@ -98,7 +103,8 @@ always @(posedge clk or negedge rest) begin:block_1
         /*成功发出一条读指令,压入fifo*/
         index=addr_map(avl_vmon[i].address);
         read_cmd.addr   = avl_vmon[i].address;
-        read_cmd.master = index;
+        read_cmd.master = i;
+        read_cmd.slave  = index;
         read_cmd_queue.push_front(read_cmd);
       end
       if(avl_vmon[i].read_data_valid&&avl_vmon[i].resp_ready) begin
@@ -106,25 +112,24 @@ always @(posedge clk or negedge rest) begin:block_1
       end
     end
     if((read_cmd_queue.size()>0)&&!read_data_valid[read_cmd_queue[0].master]) begin
-      read_cmds[read_cmd_queue[0].master]=read_cmd_queue.pop_back();
-      read_data_valid[read_cmd_queue[0].master]=1;
+    
+      read_cmd=read_cmd_queue.pop_back();
+      read_cmds[read_cmd.master]=read_cmd;
+      read_data_valid[read_cmd.master]=1;
     end
   end
 end
 /*输出数据*/
 always @(*) begin:block_2
-  int i,index;
+  int i;
   if(!rest) begin
     for(i=0;i<MASTER_NUM;i++) begin
       value[i]=0;
     end
   end
   else begin
-    if(read_data_valid!=0) begin
-      for(i=0;i<MASTER_NUM;i++) begin
-        index=addr_map(read_cmds[i].addr);
-        value[i]=ram[index][(read_cmds[i].addr-ADDR_MAP_TAB_ADDR_BLOCK[i])/4];
-      end
+    for(i=0;i<MASTER_NUM;i++) begin
+      value[i]=ram[read_cmds[i].slave][(read_cmds[i].addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmds[i].slave])/4];
     end
   end
 end

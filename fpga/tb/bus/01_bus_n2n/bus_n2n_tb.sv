@@ -59,7 +59,8 @@ generate
       .SIZE(2**(32-AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN[i])/1024)
     )
     sdram_sim_model_inst(
-      .clk   (clk),
+      .clk   (clk         ),
+      .rest  (rest        ),
       .avl_m0(avl_slave[i])
     );
   end

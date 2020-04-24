@@ -62,8 +62,8 @@ generate
     assign avl_in[i].request_ready          = (i[SEL_WIDTH-1:0]==sel)&&avl_out.request_ready&&!cmd_sel_fifo_full;
     /*反馈通道*/
     assign avl_in[i].read_data              = resp_data_fifo_readData;
-    assign avl_in[i].read_data_valid        = (i[SEL_WIDTH-1:0]==cmd_sel_fifo_read_data)&&
-                                              (resp_data_fifo_write||!resp_data_fifo_empty);
+    assign avl_in[i].read_data_valid        = ((i[SEL_WIDTH-1:0]==cmd_sel_fifo_read_data)&&
+                                              (resp_data_fifo_write||!resp_data_fifo_empty));
     /*外部主机是否接受了数据*/
     assign resp_ready[i]                    = avl_in[i].resp_ready;
   end
@@ -85,7 +85,7 @@ assign cmd_sel_fifo_read                    = (!resp_data_fifo_empty||resp_data_
 assign resp_data_fifo_write                 = avl_out.read_data_valid;
 assign resp_data_fifo_writeData             = avl_out.read_data;
 assign resp_data_fifo_read                  = resp_ready[cmd_sel_fifo_read_data];
-assign avl_out.resp_ready                   = resp_data_fifo_full;
+assign avl_out.resp_ready                   = !resp_data_fifo_full;
 /************************************************
 module实例化
 ************************************************/
@@ -106,7 +106,8 @@ avl_bus_n21_arb_inst0(
   .clk                  (clk                  ),
   .rest                 (rest                 ),
   .request              (avl_s_request        ),
-  .avl_out              (avl_out              ),
+  .avl_out_cmd          (avl_out_cmd          ),
+  .avl_out_request_ready(avl_out.request_ready),
   .sel                  (sel                  )
 );
 

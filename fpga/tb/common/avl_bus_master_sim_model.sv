@@ -1,3 +1,4 @@
+`timescale 1ns/100ps
 module avl_bus_master_sim_model #(
   parameter     SLAVE_NUM                     = 16,
             int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
@@ -39,15 +40,16 @@ function void send_cmd();
   avl_m.burst_count=0;
 endfunction
 /***接收并验证数据是否正确***********/
+logic[31:0] receive_success_count=0;
 function void receive_cmd();
-  logic[31:0] temp;
-  if(avl_m.resp_ready) begin
-    if(avl_m.read_data!=value) begin
-      $error("read data fail,read_data=%d,value=%d",avl_m.read_data,value);
-    end
+  if(avl_m.read_data==value) begin
+    receive_success_count++;
+    $display("receive data success:data=%h,value=%h,count=%d",avl_m.read_data,value,receive_success_count);
   end
-  temp=$random();
-  avl_m.resp_ready=temp[0];
+  else begin
+    $error("read data fail,read_data=%h,value=%h",avl_m.read_data,value);
+    $stop();
+  end
 endfunction
 /***初始化************************/
 initial begin
@@ -70,9 +72,16 @@ always @(posedge clk or negedge rest) begin:block_01
   end
 end
 /***接收并验证数据是否正确***********/
-always @(posedge clk) begin
-  if(avl_m.resp_ready) begin
-    receive_cmd();
+always @(posedge clk or negedge rest) begin:block_02
+  logic[31:0] temp;
+  if(!rest) begin
+  end
+  else begin
+    if(avl_m.resp_ready&&avl_m.read_data_valid) begin
+      receive_cmd();
+    end
+    temp=$random();
+    avl_m.resp_ready=temp[0];
   end
 end
 

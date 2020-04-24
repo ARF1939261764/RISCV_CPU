@@ -8,7 +8,8 @@ module avl_bus_n21_arb #(
   input  logic                          clk,
   input  logic                          rest,
   input  logic[MASTER_NUM-1:0]          request,
-  i_avl_bus.monitor                     avl_out,
+  input  avl_cmd_t                      avl_out_cmd,
+  input  logic                          avl_out_request_ready,
   output logic[$clog2(MASTER_NUM)-1:0]  sel
 );
 /************************************************
@@ -31,7 +32,7 @@ logic[SEL_WIDTH-1:0]                    encoder_out;
 ************************************************/
 assign sel              = burst_count==0?now_sel:sel_buff;
 assign now_sel          = encoder_out;
-assign send_cmd_success = avl_out.request_ready&&(avl_out.read||avl_out.write);
+assign send_cmd_success = avl_out_request_ready&&(avl_out_cmd.read||avl_out_cmd.write);
 
 /************************************************
 突发传输处理
@@ -42,8 +43,8 @@ always @(posedge clk or negedge rest) begin
     sel_buff<=1'd0;
   end
   else begin
-    if(avl_out.begin_burst_transfer) begin
-      burst_count<=avl_out.burst_count;
+    if(avl_out_cmd.begin_burst_transfer) begin
+      burst_count<=avl_out_cmd.burst_count;
       sel_buff<=sel;
     end
     else if(send_cmd_success) begin
@@ -59,7 +60,7 @@ always @(posedge clk or negedge rest) begin
     last_sel<={SEL_WIDTH{1'd1}};
   end
   else begin
-    if(send_cmd_success&&(burst_count==1'd0)&&((avl_out.burst_count==1'd0)||!avl_out.begin_burst_transfer)) begin
+    if(send_cmd_success&&(burst_count==1'd0)&&((avl_out_cmd.burst_count==1'd0)||!avl_out_cmd.begin_burst_transfer)) begin
       last_sel=sel+last_sel+1'd1;
     end
   end
@@ -68,7 +69,7 @@ end
 轮询/优先级仲裁
 ************************************************/
 generate
-  genvar i;
+genvar i;
   if(ARB_METHOD==0) begin
     logic[MASTER_NUM-1:0] w[MASTER_NUM-1:0];
     for(i=0;i<MASTER_NUM-1;i++) begin:block_0
