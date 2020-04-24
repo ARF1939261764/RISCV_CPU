@@ -40,6 +40,7 @@ function void send_cmd();
   avl_m.burst_count=0;
 endfunction
 /***接收并验证数据是否正确***********/
+logic stop;
 logic[31:0] receive_success_count=0;
 function void receive_cmd();
   if(avl_m.read_data==value) begin
@@ -48,12 +49,18 @@ function void receive_cmd();
   end
   else begin
     $error("read data fail,read_data=%h,value=%h",avl_m.read_data,value);
-    $stop();
+    stop=1;
   end
 endfunction
+always @(posedge clk) begin
+  if(stop) begin
+    $stop();
+  end
+end
 /***初始化************************/
 initial begin
   logic[31:0] temp;
+  stop=0;
   send_cmd();
   temp=$random();
   avl_m.resp_ready=temp[0];

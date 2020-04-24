@@ -18,12 +18,12 @@ typedef struct
   logic[31:0] addr;
   int master;
   int slave;
+  logic[31:0] value;
 }read_cmd_t;
 
 logic[3:0][7:0]           ram[SLAVE_NUM-1:0][];
 read_cmd_t                read_cmd_queue[$];
 logic[MASTER_NUM-1:0]     read_data_valid;
-read_cmd_t                read_cmds[MASTER_NUM-1:0];
 virtual i_avl_bus.monitor avl_vmon[MASTER_NUM-1:0];
 
 generate
@@ -105,6 +105,7 @@ always @(posedge clk or negedge rest) begin:block_1
         read_cmd.addr   = avl_vmon[i].address;
         read_cmd.master = i;
         read_cmd.slave  = index;
+        read_cmd.value  = ram[read_cmd.slave][(read_cmd.addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmd.slave])/4];
         read_cmd_queue.push_front(read_cmd);
       end
       if(avl_vmon[i].read_data_valid&&avl_vmon[i].resp_ready) begin
@@ -112,27 +113,13 @@ always @(posedge clk or negedge rest) begin:block_1
       end
     end
     if((read_cmd_queue.size()>0)&&!read_data_valid[read_cmd_queue[0].master]) begin
-    
       read_cmd=read_cmd_queue.pop_back();
-      read_cmds[read_cmd.master]=read_cmd;
       read_data_valid[read_cmd.master]=1;
+      value[read_cmd.master]=read_cmd.value;
     end
   end
 end
-/*输出数据*/
-always @(*) begin:block_2
-  int i;
-  if(!rest) begin
-    for(i=0;i<MASTER_NUM;i++) begin
-      value[i]=0;
-    end
-  end
-  else begin
-    for(i=0;i<MASTER_NUM;i++) begin
-      value[i]=ram[read_cmds[i].slave][(read_cmds[i].addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmds[i].slave])/4];
-    end
-  end
-end
+
 /********************************************************
 监控MASTER_NUM个主机接口一次发出了多少个命令
 ********************************************************/

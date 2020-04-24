@@ -82,6 +82,10 @@ avl_bus_monitor_sim_model(
 avl_bus_n2n #(
   .MASTER_NUM                 (MASTER_NUM                           ),
   .SLAVE_NUM                  (SLAVE_NUM                            ),
+  .ARB_METHOD                 (0                                    ),
+  .BUS_N21_SEL_FIFO_DEPTH     (8                                    ),
+  .BUS_N21_RES_DATA_FIFO_DEPTH(8                                    ),
+  .BUS_12N_SEL_FIFO_DEPTH     (8                                    ),
   .ADDR_MAP_TAB_FIELD_LEN     (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN  ),
   .ADDR_MAP_TAB_ADDR_BLOCK    (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK )
 )
