@@ -8,6 +8,7 @@ module avl_bus_master_sim_model #(
   input logic[31:0] value,
   i_avl_bus.master  avl_m
 );
+logic cmd_valid;
 /***清除命令***********************/
 function void clear_cmd();
   avl_m.address=0;
@@ -24,7 +25,7 @@ function void send_cmd();
   logic[31:0] temp,offset,index;
   temp=$random();
   index=temp[$clog2(SLAVE_NUM)-1:0];                                /*随机选择一个从机*/
-  offset=$random()%(2**(32-ADDR_MAP_TAB_FIELD_LEN[index]));         /*计算从机内地址偏移*/
+  offset={$random()}%(2**(32-ADDR_MAP_TAB_FIELD_LEN[index]));         /*计算从机内地址偏移*/
   avl_m.address=ADDR_MAP_TAB_ADDR_BLOCK[index]+{offset[31:2],2'd0}; /*基址+offset*/
   temp=$random();
   avl_m.byte_en=(temp[1:0]==2'd0)?4'b0001:
@@ -59,9 +60,11 @@ end
 always @(posedge clk or negedge rest) begin:block_01
   if(!rest) begin
     clear_cmd();
+    cmd_valid=0;
   end
   else begin
-    if(avl_m.request_ready) begin
+    if(avl_m.request_ready||!cmd_valid) begin
+      cmd_valid=1;
       send_cmd();
     end
   end

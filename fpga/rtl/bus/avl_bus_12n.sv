@@ -47,7 +47,7 @@ generate
   logic[31:0] read_data[SLAVE_NUM-1:0];
   logic[SLAVE_NUM-1:0] read_data_valid,request_ready;
   for(i=0;i<SLAVE_NUM;i++) begin:block_0
-    assign avl_out[i].address              = avl_in.address;
+    assign avl_out[i].address              = avl_in.address[31-ADDR_MAP_TAB_FIELD_LEN[i]:0];
     assign avl_out[i].byte_en              = avl_in.byte_en;
     assign avl_out[i].read                 = avl_in.read &&(i[SEL_WIDTH-1:0]==sel)&&!invalid_addr&&!sel_fifo_full;
     assign avl_out[i].write                = avl_in.write&&(i[SEL_WIDTH-1:0]==sel)&&!invalid_addr&&!sel_fifo_full;

@@ -106,8 +106,7 @@ avl_bus_n21_arb_inst0(
   .clk                  (clk                  ),
   .rest                 (rest                 ),
   .request              (avl_s_request        ),
-  .avl_out_cmd          (avl_out_cmd          ),
-  .avl_out_request_ready(avl_out.request_ready),
+  .avl_out              (avl_out              ),
   .sel                  (sel                  )
 );
 

@@ -46,7 +46,7 @@ function int addr_map(logic[31:0] addr);
   end
   if(i==SLAVE_NUM) begin
     $error("Invalid address");
-    //$stop();
+    $stop();
   end
   return i;
 endfunction
