@@ -1,6 +1,6 @@
 `timescale 1ns/100ps
 module bus_n2n_tb;
-
+import avl_bus_type::*;
 localparam  MASTER_NUM  = 8,
             SLAVE_NUM   = 16;
 
@@ -20,9 +20,9 @@ parameter int AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{
 i_avl_bus avl_master[MASTER_NUM-1:0]();
 i_avl_bus avl_slave[SLAVE_NUM-1:0]();
 
-logic       clk;
-logic       rest;
-logic[31:0] value[MASTER_NUM-1:0];
+logic          clk;
+logic          rest;
+read_cmd_res_t read_res[MASTER_NUM-1:0];
 
 initial begin
   clk=0;
@@ -41,14 +41,15 @@ generate
   for(i=0;i<MASTER_NUM;i++) begin:block_0
     avl_bus_master_sim_model #(
       .SLAVE_NUM              (SLAVE_NUM                           ),
+      .MASTER_ID              (i                                   ),
       .ADDR_MAP_TAB_FIELD_LEN (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN ),
       .ADDR_MAP_TAB_ADDR_BLOCK(AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK)
     )
     avl_bus_master_sim_model_inst(
-      .clk  (clk          ),
-      .rest (rest         ),
-      .value(value[i]     ),
-      .avl_m(avl_master[i])
+      .clk     (clk          ),
+      .rest    (rest         ),
+      .read_res(read_res[i]  ),
+      .avl_m   (avl_master[i])
     );
   end
 endgenerate
@@ -76,7 +77,7 @@ avl_bus_monitor_sim_model(
   .clk          (clk        ),
   .rest         (rest       ),
   .avl_mon      (avl_master ),
-  .value        (value      )
+  .read_res     (read_res   )
 );
 /***总线控制器***/
 avl_bus_n2n #(

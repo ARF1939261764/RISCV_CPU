@@ -41,6 +41,7 @@ logic[31:0]           resp_data_fifo_writeData;
 logic[31:0]           resp_data_fifo_readData;
 
 logic[MASTER_NUM-1:0] resp_ready;
+logic[MASTER_NUM-1:0] read_data_valid;
 
 /************************************************
 连线
@@ -66,6 +67,7 @@ generate
                                               (resp_data_fifo_write||!resp_data_fifo_empty));
     /*外部主机是否接受了数据*/
     assign resp_ready[i]                    = avl_in[i].resp_ready;
+    assign read_data_valid[i]               = avl_in[i].read_data_valid;
   end
 endgenerate
 /*将对应的通道的命令连接到主机接口*/
@@ -74,13 +76,13 @@ assign avl_out.byte_en                        = avl_out_cmd.byte_en;
 assign avl_out.read                           = avl_out_cmd.read&&!cmd_sel_fifo_full;
 assign avl_out.write                          = avl_out_cmd.write&&!cmd_sel_fifo_full;
 assign avl_out.write_data                     = avl_out_cmd.write_data;
-assign avl_out.begin_burst_transfer           = avl_out_cmd.begin_burst_transfer;
+assign avl_out.begin_burst_transfer           = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;
 assign avl_out.burst_count                    = avl_out_cmd.burst_count;
 /*命令发送完成后,将sel信号压入fifo*/
 assign cmd_sel_fifo_write_data              = sel;
 assign cmd_sel_fifo_write                   = avl_out.request_ready&&avl_out.read;
 /*读出cmd_sel*/
-assign cmd_sel_fifo_read                    = (!resp_data_fifo_empty||resp_data_fifo_write)&&resp_data_fifo_read;
+assign cmd_sel_fifo_read                    = read_data_valid[cmd_sel_fifo_read_data]&&resp_ready[cmd_sel_fifo_read_data];
 /*反馈数据压入fifo*/
 assign resp_data_fifo_write                 = avl_out.read_data_valid;
 assign resp_data_fifo_writeData             = avl_out.read_data;

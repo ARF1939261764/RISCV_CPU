@@ -11,6 +11,15 @@ typedef struct
   logic[7:0]  burst_count;
 }avl_cmd_t;
 
+typedef struct
+{
+  logic[31:0] addr;
+  int master;
+  int slave;
+  logic[31:0] value;
+  int fifo_size;
+}read_cmd_res_t;
+
 endpackage
 /*******************************************************
 这里定义一组地址映射表Demo,供仿真和后续自定义地址映射表时参考使用

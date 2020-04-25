@@ -1,4 +1,5 @@
 `timescale 1ns/100ps
+import avl_bus_type::*;
 module avl_bus_monitor_sim_model #(
   parameter     MASTER_NUM                    = 8,
                 SLAVE_NUM                     = 16,
@@ -8,23 +9,16 @@ module avl_bus_monitor_sim_model #(
   input                       clk,
   input                       rest,
   i_avl_bus.monitor           avl_mon[MASTER_NUM-1:0],
-  output logic[31:0]          value[MASTER_NUM-1:0]
+  output read_cmd_res_t       read_res[MASTER_NUM-1:0]
 );
 /********************************************************
 变量
 ********************************************************/
-typedef struct
-{
-  logic[31:0] addr;
-  int master;
-  int slave;
-  logic[31:0] value;
-}read_cmd_t;
-
 logic[3:0][7:0]           ram[SLAVE_NUM-1:0][];
-read_cmd_t                read_cmd_queue[$];
+read_cmd_res_t            read_cmd_res_queue[$];
 logic[MASTER_NUM-1:0]     read_data_valid;
 virtual i_avl_bus.monitor avl_vmon[MASTER_NUM-1:0];
+int master;
 
 generate
   genvar i;
@@ -88,13 +82,11 @@ end
 /*监视总线*/
 always @(posedge clk or negedge rest) begin:block_1
   int i,index;
-  read_cmd_t read_cmd;
+  read_cmd_res_t read_cmd_res;
   if(!rest) begin
     i=0;
-    read_cmd_queue = {};
-    for(i=0;i<MASTER_NUM;i++) begin
-      value[i]=0;
-    end
+    master=0;
+    read_cmd_res_queue = {};
     read_data_valid=0;
   end
   else begin
@@ -102,20 +94,25 @@ always @(posedge clk or negedge rest) begin:block_1
       if(avl_vmon[i].read&&avl_vmon[i].request_ready) begin
         /*成功发出一条读指令,压入fifo*/
         index=addr_map(avl_vmon[i].address);
-        read_cmd.addr   = avl_vmon[i].address;
-        read_cmd.master = i;
-        read_cmd.slave  = index;
-        read_cmd.value  = ram[read_cmd.slave][(read_cmd.addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmd.slave])/4];
-        read_cmd_queue.push_front(read_cmd);
+        read_cmd_res.addr   = avl_vmon[i].address;
+        read_cmd_res.master = i;
+        read_cmd_res.slave  = index;
+        read_cmd_res.value  = ram[read_cmd_res.slave][(read_cmd_res.addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmd_res.slave])/4];
+        read_cmd_res_queue.push_front(read_cmd_res);
       end
       if(avl_vmon[i].read_data_valid&&avl_vmon[i].resp_ready) begin
         read_data_valid[i]=0;
       end
     end
-    if((read_cmd_queue.size()>0)&&!read_data_valid[read_cmd_queue[0].master]) begin
-      read_cmd=read_cmd_queue.pop_back();
-      read_data_valid[read_cmd.master]=1;
-      value[read_cmd.master]=read_cmd.value;
+    if(read_data_valid[master]&&avl_vmon[master].read_data_valid&&avl_vmon[master].resp_ready) begin
+      read_data_valid[master]=0;
+    end
+    if((read_cmd_res_queue.size()>0)&&!read_data_valid[master]) begin
+      read_cmd_res=read_cmd_res_queue.pop_back();
+      read_cmd_res.fifo_size=read_cmd_res_queue.size();
+      read_data_valid[read_cmd_res.master]=1;
+      master=read_cmd_res.master;
+      read_res[read_cmd_res.master]=read_cmd_res;
     end
   end
 end

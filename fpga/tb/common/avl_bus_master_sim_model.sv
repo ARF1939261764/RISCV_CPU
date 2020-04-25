@@ -1,13 +1,19 @@
 `timescale 1ns/100ps
+import avl_bus_type::*;
+
+/*这里定义一个全局变量,用来记录所有该module实例成功读出数据的总次数*/
+logic[31:0] read_success_count=0;
+
 module avl_bus_master_sim_model #(
   parameter     SLAVE_NUM                     = 16,
+                MASTER_ID                     = 0,
             int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
-  input logic       clk,
-  input logic       rest,
-  input logic[31:0] value,
-  i_avl_bus.master  avl_m
+  input logic          clk,
+  input logic          rest,
+  input read_cmd_res_t read_res,
+  i_avl_bus.master     avl_m
 );
 logic cmd_valid;
 /***清除命令***********************/
@@ -41,18 +47,22 @@ function void send_cmd();
 endfunction
 /***接收并验证数据是否正确***********/
 logic stop;
-logic[31:0] receive_success_count=0;
+
 function void receive_cmd();
-  if(avl_m.read_data==value) begin
-    receive_success_count++;
-    $display("receive data success:data=%h,value=%h,count=%d",avl_m.read_data,value,receive_success_count);
-  end
-  else begin
-    $error("read data fail,read_data=%h,value=%h",avl_m.read_data,value);
-    stop=1;
+  if(avl_m.resp_ready&&avl_m.read_data_valid) begin
+    if((avl_m.read_data==read_res.value)&&(read_res.master==MASTER_ID)) begin
+      read_success_count++;
+      $display("read data success:master=%2d,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
+    end
+    else begin
+      $error("read data fail,master=%2d,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
+      stop=1;
+    end
   end
 endfunction
+/***stop************************/
 always @(posedge clk) begin
+  /*延迟一个时钟周期再停止,以观察发生错误时的状况*/
   if(stop) begin
     $stop();
   end
@@ -84,9 +94,7 @@ always @(posedge clk or negedge rest) begin:block_02
   if(!rest) begin
   end
   else begin
-    if(avl_m.resp_ready&&avl_m.read_data_valid) begin
-      receive_cmd();
-    end
+    receive_cmd();
     temp=$random();
     avl_m.resp_ready=temp[0];
   end

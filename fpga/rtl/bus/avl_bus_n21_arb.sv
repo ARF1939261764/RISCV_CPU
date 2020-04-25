@@ -30,7 +30,7 @@ logic[SEL_WIDTH-1:0]                    encoder_out;
 /************************************************
 连线
 ************************************************/
-assign sel              = burst_count==0?now_sel:sel_buff;
+assign sel              = burst_count==0?(now_sel+last_sel+1'd1):sel_buff;
 assign now_sel          = encoder_out;
 assign send_cmd_success = avl_out_request_ready&&(avl_out_cmd.read||avl_out_cmd.write);
 
@@ -61,7 +61,7 @@ always @(posedge clk or negedge rest) begin
   end
   else begin
     if(send_cmd_success&&(burst_count==1'd0)&&((avl_out_cmd.burst_count==1'd0)||!avl_out_cmd.begin_burst_transfer)) begin
-      last_sel=sel+last_sel+1'd1;
+      last_sel=sel;
     end
   end
 end

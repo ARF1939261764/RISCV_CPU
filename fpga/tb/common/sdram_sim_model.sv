@@ -7,7 +7,7 @@ module sdram_sim_model #(
   i_avl_bus.slave     avl_m0
 );
 localparam ADD_WIDTH=($clog2(SIZE)+10)-2;
-logic[3:0][7:0] ram[SIZE*1024-1:0];
+logic[3:0][7:0] ram[2**ADD_WIDTH-1:0];
 
 always@(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -20,13 +20,11 @@ always@(posedge clk or negedge rest) begin
       if(avl_m0.byte_en[2]) ram[avl_m0.address[ADD_WIDTH+1:2]][2] <= avl_m0.write_data[23:16];
       if(avl_m0.byte_en[3]) ram[avl_m0.address[ADD_WIDTH+1:2]][3] <= avl_m0.write_data[31:24];
     end 
-    if(avl_m0.read&&avl_m0.request_ready) begin
-      avl_m0.read_data<=ram[avl_m0.address[ADD_WIDTH+1:2]];
-    end
     if(avl_m0.resp_ready==1) begin
       avl_m0.read_data_valid<=0;
     end
-    if(avl_m0.read && avl_m0.request_ready) begin
+    if(avl_m0.read&&avl_m0.request_ready) begin
+      avl_m0.read_data<=ram[avl_m0.address[ADD_WIDTH+1:2]];
       avl_m0.read_data_valid<=1;
     end
   end
