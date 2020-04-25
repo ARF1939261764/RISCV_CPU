@@ -1,4 +1,5 @@
 `timescale 1ns/100ps
+`include "../../rtl/bus/avl_bus_define.sv"
 import avl_bus_type::*;
 
 /*这里定义一个全局变量,用来记录所有该module实例成功读出数据的总次数*/
@@ -28,6 +29,7 @@ function void clear_cmd();
 endfunction
 
 /***发送命令***********************/
+/*常规*/
 function void send_cmd();
   logic[31:0] temp,offset,index;
   temp=$random();
@@ -40,15 +42,32 @@ function void send_cmd();
                 (temp[1:0]==2'd2)?4'b1111:
                 4'b1111;
   temp=$random();
-  avl_m.read=temp[0]&&temp[31];
-  avl_m.write=!avl_m.read&&temp[31];
+  avl_m.read=temp[0]&&temp[1];
+  avl_m.write=!avl_m.read&&temp[1];
+  avl_m.write_data=$random();
+  avl_m.begin_burst_transfer=(temp[6:2]==0)&&temp[1];
+  avl_m.burst_count=avl_m.begin_burst_transfer?$random()%`ALV_BURST_MAX_COUNT:1'd0;
+  if( avl_m.begin_burst_transfer&&
+      ((avl_m.burst_count*4+offset)>(2**(32-ADDR_MAP_TAB_FIELD_LEN[index])))) begin
+    /*如果突发访问越界,则需要修改地址*/
+    avl_m.address=ADDR_MAP_TAB_ADDR_BLOCK[index]+(2**(32-ADDR_MAP_TAB_FIELD_LEN[index]))-(avl_m.burst_count+1)*4;
+  end
+endfunction
+/*突发*/
+function void send_burst_cmd();
+  logic[31:0] temp,index;                              /*随机选择一个从机*/
+  avl_m.address+=4;
+  temp=$random();
+  avl_m.byte_en=(temp[1:0]==2'd0)?4'b0001:
+                (temp[1:0]==2'd1)?4'b0011:
+                (temp[1:0]==2'd2)?4'b1111:
+                4'b1111;
   avl_m.write_data=$random();
   avl_m.begin_burst_transfer=0;
-  avl_m.burst_count=0;
+  avl_m.burst_count--;
 endfunction
 /***接收并验证数据是否正确***********/
 logic stop;
-
 function void receive_cmd();
   if(avl_m.resp_ready&&avl_m.read_data_valid) begin
     if((avl_m.read_data==read_res.value)&&(read_res.master==MASTER_ID)) begin
@@ -77,16 +96,38 @@ initial begin
   avl_m.resp_ready=temp[0];
 end
 /***发送命令***********************/
+localparam  send_cmd_state_normal=1'd0,
+            send_cmd_state_burst =1'd1;
+logic send_cmd_state;
 always @(posedge clk or negedge rest) begin:block_01
   if(!rest) begin
     clear_cmd();
     cmd_valid=0;
+    send_cmd_state=send_cmd_state_normal;
   end
   else begin
-    if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
-      cmd_valid=1;
-      send_cmd();
-    end
+    case(send_cmd_state)
+      send_cmd_state_normal:begin
+          if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
+            cmd_valid=1;
+            send_cmd();
+            if(avl_m.begin_burst_transfer&&(avl_m.burst_count!=0)) begin
+              send_cmd_state=send_cmd_state_burst;
+            end
+          end
+        end
+      send_cmd_state_burst:begin
+          if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
+            cmd_valid=1;
+            send_burst_cmd();
+          end
+          if(avl_m.burst_count==0) begin
+            send_cmd_state=send_cmd_state_normal;
+          end
+        end
+      default:begin
+        end
+    endcase
   end
 end
 /***接收并验证数据是否正确***********/

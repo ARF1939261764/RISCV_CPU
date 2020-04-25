@@ -20,7 +20,7 @@ localparam SEL_WIDTH  = $clog2(MASTER_NUM);
 变量
 ************************************************/
 avl_cmd_t             avl_s_cmd[MASTER_NUM-1:0];
-avl_cmd_t             avl_out_cmd;
+avl_cmd_t             avl_out_cmd,avl_out_cmd_r;
 logic[MASTER_NUM-1:0] avl_s_request;
 logic[SEL_WIDTH-1:0]  sel;
 
@@ -78,6 +78,15 @@ assign avl_out.write                          = avl_out_cmd.write&&!cmd_sel_fifo
 assign avl_out.write_data                     = avl_out_cmd.write_data;
 assign avl_out.begin_burst_transfer           = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;
 assign avl_out.burst_count                    = avl_out_cmd.burst_count;
+
+assign avl_out_cmd_r.address                  = avl_out_cmd.address;  
+assign avl_out_cmd_r.byte_en                  = avl_out_cmd.byte_en;  
+assign avl_out_cmd_r.read                     = avl_out_cmd.read&&!cmd_sel_fifo_full;  
+assign avl_out_cmd_r.write                    = avl_out_cmd.write&&!cmd_sel_fifo_full;  
+assign avl_out_cmd_r.write_data               = avl_out_cmd.write_data;  
+assign avl_out_cmd_r.begin_burst_transfer     = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;  
+assign avl_out_cmd_r.burst_count              = avl_out_cmd.burst_count;  
+
 /*命令发送完成后,将sel信号压入fifo*/
 assign cmd_sel_fifo_write_data              = sel;
 assign cmd_sel_fifo_write                   = avl_out.request_ready&&avl_out.read;
@@ -108,7 +117,7 @@ avl_bus_n21_arb_inst0(
   .clk                  (clk                  ),
   .rest                 (rest                 ),
   .request              (avl_s_request        ),
-  .avl_out_cmd          (avl_out_cmd          ),
+  .avl_out_cmd          (avl_out_cmd_r        ),
   .avl_out_request_ready(avl_out.request_ready),
   .sel                  (sel                  )
 );

@@ -1,8 +1,21 @@
 `timescale 1ns/100ps
-module bus_n2n_tb;
 import avl_bus_type::*;
-localparam  MASTER_NUM  = 8,
-            SLAVE_NUM   = 16;
+module bus_n2n_tb;
+/*****************************************************************************
+测试配置
+*****************************************************************************/
+localparam TEST_CONFIG_MASTER_NUM                   = 4;  /*主机数量(2,4,8,16)*/
+localparam TEST_CONFIG_SLAVE_NUM                    = 16; /*从机数量(2,4,8,16)*/
+localparam TEST_CONFIG_ARB_METHOD                   = 0;  /*仲裁方法: 0:轮询仲裁,1:固定优先级仲裁*/
+localparam TEST_CONFIG_BUS_N21_SEL_FIFO_DEPTH       = 8;  /*n21模块内部sel信号fifo深度(>2)*/
+localparam TEST_CONFIG_BUS_12N_SEL_FIFO_DEPTH       = 8;  /*12n模块内部sel信号fifo深度(>2)*/
+localparam TEST_CONFIG_BUS_N21_RES_DATA_FIFO_DEPTH  = 0;  /*n21模块内部反馈数据fifo深度(≥0)*/
+
+/*****************************************************************************
+测试正文
+*****************************************************************************/
+localparam  MASTER_NUM  = TEST_CONFIG_MASTER_NUM,
+            SLAVE_NUM   = TEST_CONFIG_SLAVE_NUM;
 
 parameter int AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{
               16,16,16,16,16,16,16,16,
@@ -81,14 +94,14 @@ avl_bus_monitor_sim_model(
 );
 /***总线控制器***/
 avl_bus_n2n #(
-  .MASTER_NUM                 (MASTER_NUM                           ),
-  .SLAVE_NUM                  (SLAVE_NUM                            ),
-  .ARB_METHOD                 (0                                    ),
-  .BUS_N21_SEL_FIFO_DEPTH     (8                                    ),
-  .BUS_N21_RES_DATA_FIFO_DEPTH(8                                    ),
-  .BUS_12N_SEL_FIFO_DEPTH     (8                                    ),
-  .ADDR_MAP_TAB_FIELD_LEN     (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN  ),
-  .ADDR_MAP_TAB_ADDR_BLOCK    (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK )
+  .MASTER_NUM                 (MASTER_NUM                              ),
+  .SLAVE_NUM                  (SLAVE_NUM                               ),
+  .ARB_METHOD                 (TEST_CONFIG_ARB_METHOD                  ),
+  .BUS_N21_SEL_FIFO_DEPTH     (TEST_CONFIG_BUS_N21_SEL_FIFO_DEPTH      ),
+  .BUS_N21_RES_DATA_FIFO_DEPTH(TEST_CONFIG_BUS_N21_RES_DATA_FIFO_DEPTH ),
+  .BUS_12N_SEL_FIFO_DEPTH     (TEST_CONFIG_BUS_12N_SEL_FIFO_DEPTH      ),
+  .ADDR_MAP_TAB_FIELD_LEN     (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN     ),
+  .ADDR_MAP_TAB_ADDR_BLOCK    (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK    )
 )
 avl_bus_n2n_inst0(
   .clk       (clk       ),
