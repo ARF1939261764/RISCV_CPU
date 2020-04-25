@@ -39,8 +39,9 @@ function void send_cmd();
                 (temp[1:0]==2'd1)?4'b0011:
                 (temp[1:0]==2'd2)?4'b1111:
                 4'b1111;
-  avl_m.read=temp[2];
-  avl_m.write=!avl_m.read;
+  temp=$random();
+  avl_m.read=temp[0]&&temp[31];
+  avl_m.write=!avl_m.read&&temp[31];
   avl_m.write_data=$random();
   avl_m.begin_burst_transfer=0;
   avl_m.burst_count=0;
@@ -52,10 +53,10 @@ function void receive_cmd();
   if(avl_m.resp_ready&&avl_m.read_data_valid) begin
     if((avl_m.read_data==read_res.value)&&(read_res.master==MASTER_ID)) begin
       read_success_count++;
-      $display("read data success:master=%2d,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
+      $display("read data success:master=%2d,addr=%d,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
     end
     else begin
-      $error("read data fail,master=%2d,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
+      $error("read data fail,master=%2d,addr=%d,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
       stop=1;
     end
   end
@@ -82,7 +83,7 @@ always @(posedge clk or negedge rest) begin:block_01
     cmd_valid=0;
   end
   else begin
-    if(avl_m.request_ready||!cmd_valid) begin
+    if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
       cmd_valid=1;
       send_cmd();
     end

@@ -30,7 +30,7 @@ logic[SEL_WIDTH-1:0]                    encoder_out;
 /************************************************
 连线
 ************************************************/
-assign sel              = burst_count==0?(now_sel+last_sel+1'd1):sel_buff;
+
 assign now_sel          = encoder_out;
 assign send_cmd_success = avl_out_request_ready&&(avl_out_cmd.read||avl_out_cmd.write);
 
@@ -71,6 +71,7 @@ end
 generate
 genvar i;
   if(ARB_METHOD==0) begin
+    assign sel              = burst_count==0?(now_sel+last_sel+1'd1):sel_buff;
     logic[MASTER_NUM-1:0] w[MASTER_NUM-1:0];
     for(i=0;i<MASTER_NUM-1;i++) begin:block_0
       assign w[i]={request[i:0],request[MASTER_NUM-1:i+1]};
@@ -86,6 +87,7 @@ genvar i;
     );
   end
   else if(ARB_METHOD==1) begin
+    assign sel              = burst_count==0?now_sel:sel_buff;
     assign encoder_in = request;
   end
   else begin
