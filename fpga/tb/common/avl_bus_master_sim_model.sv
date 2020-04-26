@@ -33,7 +33,12 @@ endfunction
 function void send_cmd();
   logic[31:0] temp,offset,index;
   temp=$random();
-  index=temp[$clog2(SLAVE_NUM)-1:0];                                /*随机选择一个从机*/
+  if(SLAVE_NUM==1) begin
+    index=0;  
+  end
+  else begin
+    index=temp[($clog2(SLAVE_NUM)?$clog2(SLAVE_NUM):1)-1:0];/*随机选择一个从机*/
+  end
   offset={$random()}%(2**(32-ADDR_MAP_TAB_FIELD_LEN[index]));         /*计算从机内地址偏移*/
   avl_m.address=ADDR_MAP_TAB_ADDR_BLOCK[index]+{offset[31:2],2'd0}; /*基址+offset*/
   temp=$random();
@@ -55,7 +60,7 @@ function void send_cmd();
 endfunction
 /*突发*/
 function void send_burst_cmd();
-  logic[31:0] temp,index;                              /*随机选择一个从机*/
+  logic[31:0] temp;                              /*随机选择一个从机*/
   avl_m.address+=4;
   temp=$random();
   avl_m.byte_en=(temp[1:0]==2'd0)?4'b0001:
@@ -72,10 +77,10 @@ function void receive_cmd();
   if(avl_m.resp_ready&&avl_m.read_data_valid) begin
     if((avl_m.read_data==read_res.value)&&(read_res.master==MASTER_ID)) begin
       read_success_count++;
-      $display("read data success:master=%2d,addr=%d,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
+      $display("read data success:master=%2d,slave=%2d,addr=%h,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
     end
     else begin
-      $error("read data fail,master=%2d,addr=%d,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
+      $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
       stop=1;
     end
   end

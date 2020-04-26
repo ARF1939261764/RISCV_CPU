@@ -4,8 +4,8 @@ module bus_n2n_tb;
 /*****************************************************************************
 测试配置
 *****************************************************************************/
-localparam TEST_CONFIG_MASTER_NUM                   = 4;  /*主机数量(2,4,8,16)*/
-localparam TEST_CONFIG_SLAVE_NUM                    = 16; /*从机数量(2,4,8,16)*/
+localparam TEST_CONFIG_MASTER_NUM                   =16;  /*主机数量(1,2,4,8,16)*/
+localparam TEST_CONFIG_SLAVE_NUM                    = 1;  /*从机数量(1,2,4,8,16)*/
 localparam TEST_CONFIG_ARB_METHOD                   = 0;  /*仲裁方法: 0:轮询仲裁,1:固定优先级仲裁*/
 localparam TEST_CONFIG_BUS_N21_SEL_FIFO_DEPTH       = 8;  /*n21模块内部sel信号fifo深度(>2)*/
 localparam TEST_CONFIG_BUS_12N_SEL_FIFO_DEPTH       = 8;  /*12n模块内部sel信号fifo深度(>2)*/

@@ -14,8 +14,6 @@ vsim -t 1ps -L work -voptargs="+acc"  bus_n2n_tb
 
 add wave *
 
-add wave -position 2  sim:/bus_n2n_tb/avl_bus_n2n_inst0/avl_bus_n21_inst0/sel
-
 view structure
 view signals
 
