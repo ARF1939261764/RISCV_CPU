@@ -14,17 +14,7 @@ module avl_bus_n21 #(
 );
 generate
   if(MASTER_NUM==1) begin
-    assign avl_out.address                = avl_in[0].address;
-    assign avl_out.byte_en                = avl_in[0].byte_en;
-    assign avl_out.read                   = avl_in[0].read;
-    assign avl_out.write                  = avl_in[0].write;
-    assign avl_out.write_data             = avl_in[0].write_data;
-    assign avl_out.begin_burst_transfer   = avl_in[0].begin_burst_transfer;
-    assign avl_out.burst_count            = avl_in[0].burst_count;
-    assign avl_out.resp_ready             = avl_in[0].resp_ready;
-    assign avl_in[0].read_data            = avl_out.read_data;
-    assign avl_in[0].read_data_valid      = avl_out.read_data_valid;
-    assign avl_in[0].request_ready        = avl_out.request_ready;
+    avl_bus_adapter avl_bus_adapter_inst0(.avl_in(avl_in[0]),.avl_out(avl_out));
   end
   else begin
     /************************************************

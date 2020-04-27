@@ -109,8 +109,8 @@ avl_bus_n2n #(
 avl_bus_n2n_inst0(
   .clk       (clk       ),
   .rest      (rest      ),
-  .avl_master(avl_master),
-  .avl_slave (avl_slave )
+  .avl_in    (avl_master),
+  .avl_out   (avl_slave )
 );
 
 endmodule

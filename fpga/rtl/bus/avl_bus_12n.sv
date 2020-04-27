@@ -4,7 +4,7 @@ import avl_bus_type::*;
 module avl_bus_12n #(
   parameter     SLAVE_NUM                     = 4,
                 SEL_FIFO_DEPTH                = 4,
-            int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
+            int ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{
                             {22'd01,10'd0},{22'd02,10'd0},{22'd03,10'd0},{22'd04,10'd0},
                             {22'd05,10'd0},{22'd06,10'd0},{22'd07,10'd0},{22'd08,10'd0},
@@ -23,17 +23,7 @@ module avl_bus_12n #(
 );
 generate
   if(SLAVE_NUM==1) begin
-    assign avl_out[0].address              = avl_in.address;
-    assign avl_out[0].byte_en              = avl_in.byte_en;
-    assign avl_out[0].read                 = avl_in.read;
-    assign avl_out[0].write                = avl_in.write;
-    assign avl_out[0].write_data           = avl_in.write_data;
-    assign avl_out[0].begin_burst_transfer = avl_in.begin_burst_transfer;
-    assign avl_out[0].burst_count          = avl_in.burst_count;
-    assign avl_out[0].resp_ready           = avl_in.resp_ready;
-    assign avl_in.read_data                = avl_out[0].read_data;
-    assign avl_in.read_data_valid          = avl_out[0].read_data_valid;
-    assign avl_in.request_ready            = avl_out[0].request_ready;
+    avl_bus_adapter avl_bus_adapter_inst0(.avl_in(avl_in),.avl_out(avl_out[0]));
   end
   else begin
     /*******************************************************
@@ -134,7 +124,7 @@ endmodule
 ***********************************************************************************/
 module avl_bus_12n_addr_map #(
   parameter     SLAVE_NUM                     = 16,
-  parameter int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
+  parameter int ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{32{32'd22}},
   parameter int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
   input  logic[31:0]                  addr,
@@ -160,4 +150,5 @@ always @(*) begin:block_1
     sel=sel|{SEL_WIDTH{judge[i]}}&i[SEL_WIDTH-1:0];
   end
 end
+
 endmodule
