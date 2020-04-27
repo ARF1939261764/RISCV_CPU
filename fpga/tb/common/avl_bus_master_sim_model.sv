@@ -4,11 +4,12 @@ import avl_bus_type::*;
 
 /*这里定义一个全局变量,用来记录所有该module实例成功读出数据的总次数*/
 logic[31:0] read_success_count=0;
-int master_write_record=$fopen("master_write_record.txt","w");
+int master_read_write_record=$fopen("master_read_write_record.txt","w");
 
 module avl_bus_master_sim_model #(
   parameter     SLAVE_NUM                     = 16,
                 MASTER_ID                     = 0,
+                RECORD_SEND_CMD_EN            = 1,
             int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
@@ -86,9 +87,10 @@ function void receive_cmd();
     end
   end
 endfunction
+/***记录成功发出过的命令***********/
 function void record_read_write_info();
   if(avl_m.write||avl_m.read) begin
-    $fdisplay(master_write_record,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h,begin_burst=%1d,burst_count=%d",
+    $fdisplay(master_read_write_record,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h,begin_burst=%1d,burst_count=%d",
       avl_m.write?"write":"read ",MASTER_ID,avl_m.address,avl_m.byte_en,avl_m.write_data,avl_m.begin_burst_transfer,avl_m.burst_count);
   end
 endfunction
@@ -122,8 +124,7 @@ always @(posedge clk or negedge rest) begin:block_01
       send_cmd_state_normal:begin
           if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
             cmd_valid=1;
-            //record_read_write_info();
-            send_cmd();
+            #1 send_cmd();/*加个延迟*/
             if(avl_m.begin_burst_transfer&&(avl_m.burst_count!=0)) begin
               send_cmd_state=send_cmd_state_burst;
             end
@@ -132,8 +133,7 @@ always @(posedge clk or negedge rest) begin:block_01
       send_cmd_state_burst:begin
           if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
             cmd_valid=1;
-            //record_read_write_info();
-            send_burst_cmd();
+            #1 send_burst_cmd();
           end
           if(avl_m.burst_count==0) begin
             send_cmd_state=send_cmd_state_normal;
@@ -142,6 +142,12 @@ always @(posedge clk or negedge rest) begin:block_01
       default:begin
         end
     endcase
+  end
+end
+/***记录发出的命令*****************/
+always @(posedge clk) begin
+  if(RECORD_SEND_CMD_EN&&(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write))) begin
+    record_read_write_info();
   end
 end
 /***接收并验证数据是否正确***********/

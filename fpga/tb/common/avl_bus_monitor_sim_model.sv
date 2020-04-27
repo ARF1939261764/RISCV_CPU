@@ -3,6 +3,7 @@ import avl_bus_type::*;
 module avl_bus_monitor_sim_model #(
   parameter     MASTER_NUM                    = 8,
                 SLAVE_NUM                     = 16,
+                RECORD_SEND_CMD               = 1,
             int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
@@ -19,7 +20,7 @@ read_cmd_res_t            read_cmd_res_queue[$];
 logic[MASTER_NUM-1:0]     read_data_valid;
 virtual i_avl_bus.monitor avl_vmon[MASTER_NUM-1:0];
 int master;
-int monitor_write_info;
+int monitor_read_write_info;
 
 generate
   genvar i;
@@ -29,7 +30,7 @@ generate
 endgenerate
 
 initial begin
-  monitor_write_info=$fopen("monitor_write_info.txt","w");
+  monitor_read_write_info=$fopen("monitor_read_write_info.txt","w");
 end
 
 /********************************************************
@@ -52,10 +53,10 @@ function int addr_map(logic[31:0] addr);
   return i;
 endfunction
 /********************************************************
-记录写操作
+记录成功发出的命令
 ********************************************************/
 function void record_read_write_info(int read,int write,int master,int addr,int byte_en,int data);
-  $fdisplay(monitor_write_info,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h",read?"read ":"write",master,addr,byte_en,data);
+  $fdisplay(monitor_read_write_info,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h",read?"read ":"write",master,addr,byte_en,data);
 endfunction
 
 /********************************************************
@@ -132,8 +133,8 @@ end
 always @(posedge clk) begin:block_4
   int i;
   for(i=0;i<MASTER_NUM;i++) begin
-    if(avl_vmon[i].request_ready&&(avl_vmon[i].write||avl_vmon[i].read)) begin
-      //record_read_write_info(avl_vmon[i].read,avl_vmon[i].write,i,avl_vmon[i].address,avl_vmon[i].byte_en,avl_vmon[i].write_data);
+    if(RECORD_SEND_CMD&&(avl_vmon[i].request_ready&&(avl_vmon[i].write||avl_vmon[i].read))) begin
+      record_read_write_info(avl_vmon[i].read,avl_vmon[i].write,i,avl_vmon[i].address,avl_vmon[i].byte_en,avl_vmon[i].write_data);
     end
   end
 end

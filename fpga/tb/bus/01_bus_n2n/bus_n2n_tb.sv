@@ -4,13 +4,14 @@ module bus_n2n_tb;
 /*****************************************************************************
 测试配置
 *****************************************************************************/
-localparam TEST_CONFIG_MASTER_NUM                   =16;  /*主机数量(1,2,4,8,16)*/
-localparam TEST_CONFIG_SLAVE_NUM                    = 1;  /*从机数量(1,2,4,8,16)*/
-localparam TEST_CONFIG_ARB_METHOD                   = 0;  /*仲裁方法: 0:轮询仲裁,1:固定优先级仲裁*/
-localparam TEST_CONFIG_BUS_N21_SEL_FIFO_DEPTH       = 8;  /*n21模块内部sel信号fifo深度(>2)*/
-localparam TEST_CONFIG_BUS_12N_SEL_FIFO_DEPTH       = 8;  /*12n模块内部sel信号fifo深度(>2)*/
-localparam TEST_CONFIG_BUS_N21_RES_DATA_FIFO_DEPTH  = 0;  /*n21模块内部反馈数据fifo深度(≥0)*/
-
+localparam TEST_CONFIG_MASTER_NUM                             =16;  /*主机数量(1,2,4,8,16)*/
+localparam TEST_CONFIG_SLAVE_NUM                              = 1;  /*从机数量(1,2,4,8,16)*/
+localparam TEST_CONFIG_ARB_METHOD                             = 0;  /*仲裁方法: 0:轮询仲裁,1:固定优先级仲裁*/
+localparam TEST_CONFIG_BUS_N21_SEL_FIFO_DEPTH                 = 8;  /*n21模块内部sel信号fifo深度(>2)*/
+localparam TEST_CONFIG_BUS_12N_SEL_FIFO_DEPTH                 = 8;  /*12n模块内部sel信号fifo深度(>2)*/
+localparam TEST_CONFIG_BUS_N21_RES_DATA_FIFO_DEPTH            = 0;  /*n21模块内部反馈数据fifo深度(≥0)*/
+localparam TEST_CONFIG_MASTER_SIM_MODEL_RECORD_SEND_CMD_EN    = 0;  /*记录主机发送的所用命令 0:失能 1:使能*/
+localparam TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN   = 0;  /*记录监视器监视到的所有命令 0:失能 1:使能*/
 /*****************************************************************************
 测试正文
 *****************************************************************************/
@@ -53,10 +54,11 @@ genvar i;
 generate
   for(i=0;i<MASTER_NUM;i++) begin:block_0
     avl_bus_master_sim_model #(
-      .SLAVE_NUM              (SLAVE_NUM                           ),
-      .MASTER_ID              (i                                   ),
-      .ADDR_MAP_TAB_FIELD_LEN (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN ),
-      .ADDR_MAP_TAB_ADDR_BLOCK(AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK)
+      .SLAVE_NUM              (SLAVE_NUM                                      ),
+      .MASTER_ID              (i                                              ),
+      .RECORD_SEND_CMD_EN     (TEST_CONFIG_MASTER_SIM_MODEL_RECORD_SEND_CMD_EN),
+      .ADDR_MAP_TAB_FIELD_LEN (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN            ),
+      .ADDR_MAP_TAB_ADDR_BLOCK(AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK           )
     )
     avl_bus_master_sim_model_inst(
       .clk     (clk          ),
@@ -81,10 +83,11 @@ generate
 endgenerate
 /***总线监视器***/
 avl_bus_monitor_sim_model #(
-  .MASTER_NUM              (MASTER_NUM                          ),
-  .SLAVE_NUM               (SLAVE_NUM                           ),
-  .ADDR_MAP_TAB_FIELD_LEN  (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN ),
-  .ADDR_MAP_TAB_ADDR_BLOCK (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK)
+  .MASTER_NUM              (MASTER_NUM                                      ),
+  .SLAVE_NUM               (SLAVE_NUM                                       ),
+  .RECORD_SEND_CMD         (TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN),
+  .ADDR_MAP_TAB_FIELD_LEN  (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN             ),
+  .ADDR_MAP_TAB_ADDR_BLOCK (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK            )
 )
 avl_bus_monitor_sim_model(
   .clk          (clk        ),
