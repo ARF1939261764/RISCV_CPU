@@ -12,8 +12,6 @@ vlog -sv -work work +incdir+../../../tb/bus/01_bus_n2n {../../../tb/bus/01_bus_n
 
 vsim -t 1ps -L work -voptargs="+acc"  bus_n2n_tb
 
-add wave *
-
 view structure
 view signals
 

@@ -19,6 +19,7 @@ read_cmd_res_t            read_cmd_res_queue[$];
 logic[MASTER_NUM-1:0]     read_data_valid;
 virtual i_avl_bus.monitor avl_vmon[MASTER_NUM-1:0];
 int master;
+int monitor_write_info;
 
 generate
   genvar i;
@@ -26,6 +27,10 @@ generate
     assign avl_vmon[i]=avl_mon[i];
   end
 endgenerate
+
+initial begin
+  monitor_write_info=$fopen("monitor_write_info.txt","w");
+end
 
 /********************************************************
 地址映射函数
@@ -46,6 +51,13 @@ function int addr_map(logic[31:0] addr);
   end
   return i;
 endfunction
+/********************************************************
+记录写操作
+********************************************************/
+function void record_read_write_info(int read,int write,int master,int addr,int byte_en,int data);
+  $fdisplay(monitor_write_info,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h",read?"read ":"write",master,addr,byte_en,data);
+endfunction
+
 /********************************************************
 监控写操作
 ********************************************************/
@@ -113,6 +125,15 @@ always @(posedge clk or negedge rest) begin:block_1
       read_data_valid[read_cmd_res.master]=1;
       master=read_cmd_res.master;
       read_res[read_cmd_res.master]=read_cmd_res;
+    end
+  end
+end
+/*成功发送的命令*/
+always @(posedge clk) begin:block_4
+  int i;
+  for(i=0;i<MASTER_NUM;i++) begin
+    if(avl_vmon[i].request_ready&&(avl_vmon[i].write||avl_vmon[i].read)) begin
+      //record_read_write_info(avl_vmon[i].read,avl_vmon[i].write,i,avl_vmon[i].address,avl_vmon[i].byte_en,avl_vmon[i].write_data);
     end
   end
 end

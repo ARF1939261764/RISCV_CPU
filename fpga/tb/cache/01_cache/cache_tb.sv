@@ -35,6 +35,39 @@ logic 				   m0_readDataValid;
 logic            m0_beginBurstTransfer;
 logic [8-1:0]  	 m0_burstCount;
 
+i_avl_bus        avl_s0();
+i_avl_bus        avl_s1();
+i_avl_bus        avl_m0();
+
+assign avl_s0.address   			=   s0_address;
+assign avl_s0.byte_en   			=   s0_byteEnable;
+assign avl_s0.read						=		s0_read;
+assign avl_s0.write     			=   s0_write;
+assign avl_s0.write_data			=		s0_writeData;
+assign s0_waitRequest   			=   !avl_s0.request_ready;
+assign s0_readDataValid 			=   avl_s0.read_data_valid;
+assign s0_readData			 			=		avl_s0.read_data;
+
+assign avl_s1.address   			=		s1_address;
+assign avl_s1.byte_en   			=		s1_byteEnable;
+assign avl_s1.read						=		s1_read;
+assign avl_s1.write     			=		s1_write;
+assign avl_s1.write_data			=		s1_writeData;
+assign s1_waitRequest					=		!avl_s1.request_ready;
+assign s1_readDataValid				=		avl_s1.read_data_valid;
+assign s1_readData 						=		avl_s1.read_data;
+
+assign m0_address							=		avl_m0.address;
+assign m0_byteEnable					=		avl_m0.byte_en;
+assign m0_write								=		avl_m0.write;
+assign m0_writeData						=		avl_m0.write_data;
+assign m0_read								=		avl_m0.read;
+assign m0_beginBurstTransfer	=		avl_m0.begin_burst_transfer;
+assign m0_burstCount					=		avl_m0.burst_count;
+assign avl_m0.read_data				=		m0_readData;
+assign avl_m0.request_ready		=		!m0_waitRequest;
+assign avl_m0.read_data_valid	=		m0_readDataValid;
+
 /*******************************************************************
 cache模块实例化
 *******************************************************************/
@@ -69,7 +102,7 @@ initial begin
 	reg[31:0] data,temp,addr;
 	reg[3:0] byteEnable;
 	#10 system_rest();
-	$random(12021961);
+	temp=$random(12021961);
 	wait(s0_waitRequest==0);
 	forever begin
     temp=$random();

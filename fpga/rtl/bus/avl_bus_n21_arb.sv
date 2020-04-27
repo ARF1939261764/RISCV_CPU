@@ -60,7 +60,7 @@ always @(posedge clk or negedge rest) begin
     last_sel<={SEL_WIDTH{1'd1}};
   end
   else begin
-    if(send_cmd_success&&(burst_count==1'd0)&&((avl_out_cmd.burst_count==1'd0)||!avl_out_cmd.begin_burst_transfer)) begin
+    if(send_cmd_success) begin
       last_sel=sel;
     end
   end

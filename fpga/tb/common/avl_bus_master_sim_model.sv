@@ -4,6 +4,7 @@ import avl_bus_type::*;
 
 /*这里定义一个全局变量,用来记录所有该module实例成功读出数据的总次数*/
 logic[31:0] read_success_count=0;
+int master_write_record=$fopen("master_write_record.txt","w");
 
 module avl_bus_master_sim_model #(
   parameter     SLAVE_NUM                     = 16,
@@ -51,16 +52,16 @@ function void send_cmd();
   avl_m.write=!avl_m.read&&temp[1];
   avl_m.write_data=$random();
   avl_m.begin_burst_transfer=(temp[6:2]==0)&&temp[1];
-  avl_m.burst_count=avl_m.begin_burst_transfer?$random()%`ALV_BURST_MAX_COUNT:1'd0;
+  avl_m.burst_count=avl_m.begin_burst_transfer?($random()%`ALV_BURST_MAX_COUNT):1'd0;
   if( avl_m.begin_burst_transfer&&
-      ((avl_m.burst_count*4+offset)>(2**(32-ADDR_MAP_TAB_FIELD_LEN[index])))) begin
+      ((avl_m.burst_count*4+offset)>=(2**(32-ADDR_MAP_TAB_FIELD_LEN[index])))) begin
     /*如果突发访问越界,则需要修改地址*/
     avl_m.address=ADDR_MAP_TAB_ADDR_BLOCK[index]+(2**(32-ADDR_MAP_TAB_FIELD_LEN[index]))-(avl_m.burst_count+1)*4;
   end
 endfunction
 /*突发*/
 function void send_burst_cmd();
-  logic[31:0] temp;                              /*随机选择一个从机*/
+  logic[31:0] temp;
   avl_m.address+=4;
   temp=$random();
   avl_m.byte_en=(temp[1:0]==2'd0)?4'b0001:
@@ -83,6 +84,12 @@ function void receive_cmd();
       $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
       stop=1;
     end
+  end
+endfunction
+function void record_read_write_info();
+  if(avl_m.write||avl_m.read) begin
+    $fdisplay(master_write_record,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h,begin_burst=%1d,burst_count=%d",
+      avl_m.write?"write":"read ",MASTER_ID,avl_m.address,avl_m.byte_en,avl_m.write_data,avl_m.begin_burst_transfer,avl_m.burst_count);
   end
 endfunction
 /***stop************************/
@@ -115,6 +122,7 @@ always @(posedge clk or negedge rest) begin:block_01
       send_cmd_state_normal:begin
           if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
             cmd_valid=1;
+            //record_read_write_info();
             send_cmd();
             if(avl_m.begin_burst_transfer&&(avl_m.burst_count!=0)) begin
               send_cmd_state=send_cmd_state_burst;
@@ -124,6 +132,7 @@ always @(posedge clk or negedge rest) begin:block_01
       send_cmd_state_burst:begin
           if(avl_m.request_ready||!cmd_valid||!(avl_m.read||avl_m.write)) begin
             cmd_valid=1;
+            //record_read_write_info();
             send_burst_cmd();
           end
           if(avl_m.burst_count==0) begin

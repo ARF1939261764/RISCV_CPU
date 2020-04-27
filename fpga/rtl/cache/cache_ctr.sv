@@ -164,7 +164,7 @@ end
 always @(posedge clk) begin
   s0_readDataValid<=s0_read;
 end
-assign s0_waitRequest=1'b0;
+assign s0_waitRequest=1'b1;
 assign isEnableCache=regArray[0][16];
 
 endmodule

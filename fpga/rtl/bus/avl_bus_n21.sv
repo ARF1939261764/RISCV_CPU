@@ -84,32 +84,32 @@ generate
       assign read_data_valid[i]               = avl_in[i].read_data_valid;
     end
     /*将对应的通道的命令连接到主机接口*/
-    assign avl_out.address                        = avl_out_cmd.address;
-    assign avl_out.byte_en                        = avl_out_cmd.byte_en;
-    assign avl_out.read                           = avl_out_cmd.read&&!cmd_sel_fifo_full;
-    assign avl_out.write                          = avl_out_cmd.write&&!cmd_sel_fifo_full;
-    assign avl_out.write_data                     = avl_out_cmd.write_data;
-    assign avl_out.begin_burst_transfer           = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;
-    assign avl_out.burst_count                    = avl_out_cmd.burst_count;
+    assign avl_out.address                    = avl_out_cmd.address;
+    assign avl_out.byte_en                    = avl_out_cmd.byte_en;
+    assign avl_out.read                       = avl_out_cmd.read&&!cmd_sel_fifo_full;
+    assign avl_out.write                      = avl_out_cmd.write&&!cmd_sel_fifo_full;
+    assign avl_out.write_data                 = avl_out_cmd.write_data;
+    assign avl_out.begin_burst_transfer       = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;
+    assign avl_out.burst_count                = avl_out_cmd.burst_count;
 
-    assign avl_out_cmd_r.address                  = avl_out_cmd.address;  
-    assign avl_out_cmd_r.byte_en                  = avl_out_cmd.byte_en;  
-    assign avl_out_cmd_r.read                     = avl_out_cmd.read&&!cmd_sel_fifo_full;  
-    assign avl_out_cmd_r.write                    = avl_out_cmd.write&&!cmd_sel_fifo_full;  
-    assign avl_out_cmd_r.write_data               = avl_out_cmd.write_data;  
-    assign avl_out_cmd_r.begin_burst_transfer     = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;  
-    assign avl_out_cmd_r.burst_count              = avl_out_cmd.burst_count;  
+    assign avl_out_cmd_r.address              = avl_out_cmd.address;  
+    assign avl_out_cmd_r.byte_en              = avl_out_cmd.byte_en;  
+    assign avl_out_cmd_r.read                 = avl_out_cmd.read&&!cmd_sel_fifo_full;  
+    assign avl_out_cmd_r.write                = avl_out_cmd.write&&!cmd_sel_fifo_full;  
+    assign avl_out_cmd_r.write_data           = avl_out_cmd.write_data;  
+    assign avl_out_cmd_r.begin_burst_transfer = avl_out_cmd.begin_burst_transfer&&!cmd_sel_fifo_full;  
+    assign avl_out_cmd_r.burst_count          = avl_out_cmd.burst_count;  
 
     /*命令发送完成后,将sel信号压入fifo*/
-    assign cmd_sel_fifo_write_data              = sel;
-    assign cmd_sel_fifo_write                   = avl_out.request_ready&&avl_out.read;
+    assign cmd_sel_fifo_write_data            = sel;
+    assign cmd_sel_fifo_write                 = avl_out.request_ready&&avl_out.read;
     /*读出cmd_sel*/
-    assign cmd_sel_fifo_read                    = read_data_valid[cmd_sel_fifo_read_data]&&resp_ready[cmd_sel_fifo_read_data];
+    assign cmd_sel_fifo_read                  = read_data_valid[cmd_sel_fifo_read_data]&&resp_ready[cmd_sel_fifo_read_data];
     /*反馈数据压入fifo*/
-    assign resp_data_fifo_write                 = avl_out.read_data_valid;
-    assign resp_data_fifo_writeData             = avl_out.read_data;
-    assign resp_data_fifo_read                  = resp_ready[cmd_sel_fifo_read_data];
-    assign avl_out.resp_ready                   = !resp_data_fifo_full;
+    assign resp_data_fifo_write               = avl_out.read_data_valid;
+    assign resp_data_fifo_writeData           = avl_out.read_data;
+    assign resp_data_fifo_read                = resp_ready[cmd_sel_fifo_read_data];
+    assign avl_out.resp_ready                 = !resp_data_fifo_full;
     /************************************************
     module实例化
     ************************************************/

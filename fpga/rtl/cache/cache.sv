@@ -7,35 +7,10 @@ module cache #(
 	/*时钟、复位*/
 	input 				                               clk,
 	input                                        rest,
-	/*s0从机接口*/
-	input	[31:0] 	                               s0_address,
-	input	[3:0] 	                               s0_byteEnable,
-	input					                               s0_read,
-	output[31:0]	                               s0_readData,
-	input					                               s0_write,
-	input	[31:0]	                               s0_writeData,
-	output				                               s0_waitRequest,
-	output				                               s0_readDataValid,
-  /*s1从机接口*/
-	input	[31:0] 	                               s1_address,
-	input	[3:0] 	                               s1_byteEnable,
-	input					                               s1_read,
-	output[31:0]	                               s1_readData,
-	input					                               s1_write,
-	input	[31:0]	                               s1_writeData,
-	output				                               s1_waitRequest,
-	output				                               s1_readDataValid,
-	/*m0主机接口*/
-	output[31:0]	                               m0_address,
-	output[3:0] 	                               m0_byteEnable,
-	output				                               m0_read,
-	input	[31:0]	                               m0_readData,
-	output				                               m0_write,
-	output[31:0]	                               m0_writeData,
-	input					                               m0_waitRequest,
-	input					                               m0_readDataValid,
-  output                                       m0_beginBurstTransfer,
-  output[`CACHE_AVALON_BURST_COUNT_WIDTH-1:0]  m0_burstCount
+  /*avl接口*/
+  i_avl_bus.slave                              avl_s0,  /*供cpu访问数据*/
+  i_avl_bus.slave                              avl_s1,  /*供cpu访问cache控制寄存器*/
+  i_avl_bus.master                             avl_m0   /*供cache访问总线*/
 );
 /*******************************************************************************
 位宽
@@ -123,18 +98,20 @@ wire [1:0]                      dre_ri_writeChannel;
 wire                            dre_ri_writeEnable;
 wire [7:0]                      dre_ri_writeData;
 
+assign avl_m0.resp_ready        = 1'd1;
+
 cache_arb cache_arb_inst0(
   .clk										  (clk														),
   .rest										  (rest														),
   /*s0从机接口:接到cache顶层模块的从机接口,供cpu访问*/
-  .s0_address							  (s0_address											),
-  .s0_byteEnable					  (s0_byteEnable									),
-  .s0_read								  (s0_read												),
-  .s0_write								  (s0_write												),
-  .s0_writeData						  (s0_writeData										),
-  .s0_waitRequest					  (s0_waitRequest									),
-  .s0_readData						  (s0_readData										),
-  .s0_readDataValid				  (s0_readDataValid								),
+  .s0_address							  (avl_s0.address									),
+  .s0_byteEnable					  (avl_s0.byte_en									),
+  .s0_read								  (avl_s0.read										),
+  .s0_write								  (avl_s0.write										),
+  .s0_writeData						  (avl_s0.write_data							),
+  .s0_waitRequest					  (avl_s0.request_ready						),
+  .s0_readData						  (avl_s0.read_data								),
+  .s0_readDataValid				  (avl_s0.read_data_valid					),
   /*s1从机接口:接到cache_ri模块,供替换模块(rw module)访问总线使用*/
   .s1_address							  (av_arb_1_address               ),
   .s1_byteEnable					  (av_arb_1_byteEnable            ),
@@ -159,16 +136,16 @@ cache_arb cache_arb_inst0(
   .rw_bus_idle						  (arb_bus_idle                   ),
 	.rw_cache_is_enable			  (rw_cache_is_enable							),
   /*m1主机接口:接到总线*/
-  .m1_address							  (m0_address											),
-  .m1_byteEnable					  (m0_byteEnable									),
-  .m1_read								  (m0_read												),
-  .m1_write								  (m0_write												),
-  .m1_writeData						  (m0_writeData										),
-  .m1_waitRequest					  (m0_waitRequest									),
-  .m1_beginBurstTransfer	  (m0_beginBurstTransfer					),
-  .m1_burstCount					  (m0_burstCount									),
-  .m1_readData						  (m0_readData										),
-  .m1_readDataValid				  (m0_readDataValid								)
+  .m1_address							  (avl_m0.address									),
+  .m1_byteEnable					  (avl_m0.byte_en									),
+  .m1_read								  (avl_m0.read										),
+  .m1_write								  (avl_m0.write										),
+  .m1_writeData						  (avl_m0.write_data							),
+  .m1_waitRequest					  (!avl_m0.request_ready					),
+  .m1_beginBurstTransfer	  (avl_m0.begin_burst_transfer 		),
+  .m1_burstCount					  (avl_m0.burst_count 						),
+  .m1_readData						  (avl_m0.read_data 							),
+  .m1_readDataValid				  (avl_m0.read_data_valid      		)
 );
 
 cache_rw #(
@@ -308,14 +285,14 @@ cache_ctr_inst0(
   .clk                      (clk                            ),
   .rest                     (rest                           ),
   /*s0从机接口*/
-  .s0_address               (s1_address                     ),
-  .s0_byteEnable            (s1_byteEnable                  ),
-  .s0_read                  (s1_read                        ),
-  .s0_readData              (s1_readData                    ),
-  .s0_write                 (s1_write                       ),
-  .s0_writeData             (s1_writeData                   ),
-  .s0_waitRequest           (s1_waitRequest                 ),
-  .s0_readDataValid         (s1_readDataValid               ),
+  .s0_address               (avl_s1.address									),
+  .s0_byteEnable            (avl_s1.byte_en									),
+  .s0_read                  (avl_s1.read										),
+  .s0_readData              (avl_s1.read_data								),
+  .s0_write                 (avl_s1.write							      ),
+  .s0_writeData             (avl_s1.write_data						  ),
+  .s0_waitRequest           (avl_s1.request_ready						),
+  .s0_readDataValid         (avl_s1.read_data_valid					),
   /*其它*/
   .address                  (rw_to_ctr_addr                 ),
   .isIOAddrBlock            (ctr_is_io_addr                 ),

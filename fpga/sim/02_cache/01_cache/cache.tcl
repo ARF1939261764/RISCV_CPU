@@ -15,8 +15,6 @@ vlog -sv -work work +incdir+../../../tb/cache/01_cache {../../../tb/cache/01_cac
 
 vsim -t 1ps -L work -voptargs="+acc"  cache_tb
 
-add wave *
-
 view structure
 view signals
 
