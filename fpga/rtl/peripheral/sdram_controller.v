@@ -1,35 +1,35 @@
 module sdram_controller #(
-	/*clk=100MHZ*/
-	parameter T_PowerUp=32'd20000,/*上电时间*/
-						T_RP=32'd2,					/*预充电时间*/
-						T_RFC=32'd7,				/*自动刷新时间*/
-						T_MRD=32'd2,				/*设置模式寄存器时间*/
-						T_CL=32'd3,					/*潜伏期*/
-						T_RCD=32'd2,				/*行激活到列读写延迟*/
-						T_ReadNum=32'd2,		/*读出数据的数量*/
-						T_WR=32'd2,					/*写完后等待的时间*/
-						T_REFPERIOD=750			/*刷新周期*/
-	)(
-	clk,
-	rest,
-	avalon_address,
-	avalon_writeEn,
-	avalon_writeData,
-	avalon_readEn,
-	avalon_readData,
-	avalon_byteEnable,
-	avalon_writeQuest,
-	/*SDRAM 芯片接口*/
-	sdram_clk,
-	sdram_cke,
-	sdram_cs_n,
-	sdram_ras_n,
-	sdram_cas_n,
-	sdram_we_n,
-	sdram_bank,
-	sdram_addr,
-	sdram_data,
-	sdram_dqm
+  /*clk=100MHZ*/
+  parameter T_PowerUp=32'd20000,/*上电时间*/
+            T_RP=32'd2,					/*预充电时间*/
+            T_RFC=32'd7,				/*自动刷新时间*/
+            T_MRD=32'd2,				/*设置模式寄存器时间*/
+            T_CL=32'd3,					/*潜伏期*/
+            T_RCD=32'd2,				/*行激活到列读写延迟*/
+            T_ReadNum=32'd2,		/*读出数据的数量*/
+            T_WR=32'd2,					/*写完后等待的时间*/
+            T_REFPERIOD=750			/*刷新周期*/
+  )(
+  clk,
+  rest,
+  avalon_address,
+  avalon_writeEn,
+  avalon_writeData,
+  avalon_readEn,
+  avalon_readData,
+  avalon_byteEnable,
+  avalon_writeQuest,
+  /*SDRAM 芯片接口*/
+  sdram_clk,
+  sdram_cke,
+  sdram_cs_n,
+  sdram_ras_n,
+  sdram_cas_n,
+  sdram_we_n,
+  sdram_bank,
+  sdram_addr,
+  sdram_data,
+  sdram_dqm
 );
 /********************************************************************************************************
 端口申明
@@ -111,17 +111,17 @@ assign {sdram_cke,sdram_cs_n,sdram_ras_n,sdram_cas_n,sdram_we_n}=sdram_cmd;
 /********************************************************************************************************
 状态机
 ********************************************************************************************************/
-localparam i_powerUp										=8'd0,/*等待上电稳定*/
-					 i_prechargeAllBanks					=8'd1,/*给所有的Bank预充电*/
-					 i_autoRef                    =8'd2,/*自动刷新2次*/
-					 i_setModeReg                 =8'd3,/*设置模式寄存器*/
-					 w_idle												=8'd4,/*空闲状态*/
-					 w_autoRef										=8'd5,/*定时自动刷新*/
-					 w_activeRow									=8'd6,/*激活行*/
-					 w_readCmd										=8'd7,/*发出读命令,同时给出数据的列地址*/
-					 w_readData										=8'd8,/*读出数据*/
-					 w_writeData									=8'd9,/*写入数据并等待数据写完*/
-					 w_percharge									=8'd10;/*预充电(不使用自动预充电)*/
+localparam 	i_powerUp										=8'd0,/*等待上电稳定*/
+						i_prechargeAllBanks					=8'd1,/*给所有的Bank预充电*/
+						i_autoRef                   =8'd2,/*自动刷新2次*/
+						i_setModeReg                =8'd3,/*设置模式寄存器*/
+						w_idle											=8'd4,/*空闲状态*/
+						w_autoRef										=8'd5,/*定时自动刷新*/
+						w_activeRow									=8'd6,/*激活行*/
+						w_readCmd										=8'd7,/*发出读命令,同时给出数据的列地址*/
+						w_readData									=8'd8,/*读出数据*/
+						w_writeData									=8'd9,/*写入数据并等待数据写完*/
+						w_percharge									=8'd10;/*预充电(不使用自动预充电)*/
 
 reg[7:0] state=i_powerUp;
 /*第一段:计算下一个clock的状态*/

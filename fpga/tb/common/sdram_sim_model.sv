@@ -8,6 +8,7 @@ module sdram_sim_model #(
 );
 localparam ADD_WIDTH=($clog2(SIZE)+10)-2;
 logic[3:0][7:0] ram[2**ADD_WIDTH-1:0];
+logic request_ready_mask;
 
 always@(posedge clk or negedge rest) begin
   if(!rest) begin
@@ -30,9 +31,16 @@ always@(posedge clk or negedge rest) begin
   end
 end
 
-assign avl_m0.request_ready=!avl_m0.read_data_valid||avl_m0.resp_ready;
+assign avl_m0.request_ready=request_ready_mask&&(!avl_m0.read_data_valid||avl_m0.resp_ready);
+
+always @(posedge clk) begin:block_0
+  logic[31:0] temp;
+  temp=$random();
+  request_ready_mask=temp[2:0]==0;
+end
 
 initial begin
+  request_ready_mask=0;
   if(INIT_FILE.len>0) begin
     $readmemh(INIT_FILE,ram);
   end

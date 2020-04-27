@@ -58,18 +58,18 @@ initial begin
   #100  rest=1;
   #1000;
   @(posedge clk);
-  $display("jump to 32'h8b0");
+  $display("jump to 32'h10");
   flush_en=1;
   jump_en=1;
-  jump_addr=32'h8b0;
+  jump_addr=32'h10;
   @(posedge clk);
   jump_en=0;
   flush_en=0;
   #1000;
   @(posedge clk);
-  $display("jump to 32'h948");
+  $display("jump to 32'h64");
   bp_jump_en=1;
-  bp_jump_addr=32'h948;
+  bp_jump_addr=32'h64;
   @(posedge clk);
   bp_jump_en=0;
 end
