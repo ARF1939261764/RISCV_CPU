@@ -3,8 +3,8 @@ import avl_bus_type::*;
 module avl_bus_monitor_sim_model #(
   parameter     MASTER_NUM                    = 8,
                 SLAVE_NUM                     = 16,
-                RECORD_SEND_CMD               = 1,
-            int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
+                RECORD_SEND_CMD_EN            = 1,
+            int ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
   input                       clk,
@@ -110,6 +110,7 @@ always @(posedge clk or negedge rest) begin:block_1
         read_cmd_res.addr   = avl_vmon[i].address;
         read_cmd_res.master = i;
         read_cmd_res.slave  = index;
+        read_cmd_res.byte_en= avl_vmon[i].byte_en;
         read_cmd_res.value  = ram[read_cmd_res.slave][(read_cmd_res.addr-ADDR_MAP_TAB_ADDR_BLOCK[read_cmd_res.slave])/4];
         read_cmd_res_queue.push_front(read_cmd_res);
       end
@@ -133,7 +134,7 @@ end
 always @(posedge clk) begin:block_4
   int i;
   for(i=0;i<MASTER_NUM;i++) begin
-    if(RECORD_SEND_CMD&&(avl_vmon[i].request_ready&&(avl_vmon[i].write||avl_vmon[i].read))) begin
+    if(RECORD_SEND_CMD_EN&&(avl_vmon[i].request_ready&&(avl_vmon[i].write||avl_vmon[i].read))) begin
       record_read_write_info(avl_vmon[i].read,avl_vmon[i].write,i,avl_vmon[i].address,avl_vmon[i].byte_en,avl_vmon[i].write_data);
     end
   end

@@ -194,7 +194,7 @@ assign isWriteFault            =  isW             &&
 assign isFault                 =  isReadFault||isWriteFault;
 
 assign rw_waitRequest          =  (isFault||(state!=state_idle))&&
-                                  (~((state==state_idle)&&(last_state==state_waitDone)));
+                                  (!((state==state_idle)&&(last_state==state_waitDone)));
 assign ri_waitRequest          =  ri_isRequest;
 assign isNeedSendCmdToRi       =  rw_waitRequest||ri_waitRequest;
 assign arb_waitRequest         =  isNeedSendCmdToRi;

@@ -85,7 +85,7 @@ endgenerate
 avl_bus_monitor_sim_model #(
   .MASTER_NUM              (MASTER_NUM                                      ),
   .SLAVE_NUM               (SLAVE_NUM                                       ),
-  .RECORD_SEND_CMD         (TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN),
+  .RECORD_SEND_CMD_EN      (TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN),
   .ADDR_MAP_TAB_FIELD_LEN  (AVL_BUS_TEST_ADDR_MAP_TAB_FIELD_LEN             ),
   .ADDR_MAP_TAB_ADDR_BLOCK (AVL_BUS_TEST_ADDR_MAP_TAB_ADDR_BLOCK            )
 )

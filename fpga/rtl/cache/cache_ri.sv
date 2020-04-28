@@ -177,7 +177,7 @@ endtask
 从dre ram中读出的可读信息的fifo
 **************************************************************************/
 localparam READ_BYTE_EN_FIFO_WIDTH = 4;
-localparam READ_BYTE_EN_FIFO_DEPTH = 4;
+localparam READ_BYTE_EN_FIFO_DEPTH = 8;
 wire                               read_byte_en_fifo_full;
 wire                               read_byte_en_fifo_empty;
 wire                               read_byte_en_fifo_half;
@@ -284,7 +284,7 @@ wire end_state_wait_count_to_zero;
 assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest||!av_m0_read)&&av_m0_readDataValid;
 assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
 assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=BLOCK_DEPTH-1);
-assign end_state_readIn              =av_m0_cmd_fifo_empty&&(count_c>=BLOCK_DEPTH);
+assign end_state_readIn              =count_c>=BLOCK_DEPTH;
 assign end_state_clearRe             =(count_a>=BLOCK_DEPTH/2);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
 assign end_state_wait_count_to_zero  =(delay_count==8'd0);
@@ -552,20 +552,9 @@ task state_writeBack_handle();
   else begin
     is_read_addr_change<=1'd0;
   end
-  /*将内部SRAM中读出的数据压到fifo中*/
-  if(is_read_data_valid&&!end_state_writeBack) begin
-    av_cmd_fifo_push_write(
-      .fifo_port          (av_m0_cmd_fifo_port  ),
-      .address            (block_addr+count_b*4 ),
-      .byteEnable         (dre_ri_readRe        ),
-      .writeData          (data_ri_readData     ),
-      .beginBurstTransfer (count_b==8'd0        ),
-      .burstCount         (BLOCK_DEPTH          )
-    );
-  end
   /*当fifo满，并且av_m0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
     所以is_read_data_valid需要保持，反之则需要更新*/
-  if(!(av_m0_cmd_fifo_full&&av_m0_waitRequest)) begin
+  if(!av_m0_cmd_fifo_full||is_read_addr_change) begin
     is_read_data_valid<=is_read_addr_change;
   end
   /*-----------------计数器控制--------------------------------------*/
@@ -575,7 +564,7 @@ task state_writeBack_handle();
       count_a++;
     end
     /*没向FIFO中压入一条写数据指令,count_b加一*/
-    if(is_read_data_valid) begin
+    if(av_m0_cmd_fifo_write&&!av_m0_cmd_fifo_full&&(count_b<BLOCK_DEPTH)) begin
       count_b++;
     end
     /*每写一个数据count_c加一*/
@@ -589,6 +578,22 @@ task state_writeBack_handle();
     count_a<=8'd0;
     count_b<=8'd0;
     count_c<=8'd0;
+  end
+  /*将内部SRAM中读出的数据压到fifo中*/
+  if(!av_m0_cmd_fifo_full) begin
+    if(is_read_data_valid&&!end_state_writeBack&&(count_b<BLOCK_DEPTH)) begin
+      av_cmd_fifo_push_write(
+        .fifo_port          (av_m0_cmd_fifo_port  ),
+        .address            (block_addr+count_b*4 ),
+        .byteEnable         (dre_ri_readRe        ),
+        .writeData          (data_ri_readData     ),
+        .beginBurstTransfer (count_b==8'd0        ),
+        .burstCount         (BLOCK_DEPTH          )
+      );
+    end
+    else begin
+      av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
+    end
   end
 endtask
 
@@ -619,19 +624,6 @@ task state_readIn_handle();
     /*地址没有改变,置0*/
     is_read_addr_change<=1'd0;
   end
-  if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<BLOCK_DEPTH)) begin
-    /*总线指令fifo还能装,向fifo写读数据入指令*/
-    av_cmd_fifo_push_read(
-      .fifo_port          (av_m0_cmd_fifo_port  ),
-      .address            (block_addr+count_b*4 ),
-      .byteEnable         (4'hf                 ),
-      .beginBurstTransfer (count_b==8'd0        ),
-      .burstCount         (BLOCK_DEPTH          )
-    );
-  end
-  else begin
-    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
-  end
   if(av_m0_readDataValid) begin
     /*数据从总线读出来了，写入到cache块*/
     writeAddress<=block_addr+count_c*4;
@@ -656,7 +648,7 @@ task state_readIn_handle();
     if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<BLOCK_DEPTH)) begin
       count_a++;
     end
-    if((!av_m0_cmd_fifo_full||av_m0_waitRequest)&&(count_b<BLOCK_DEPTH)) begin
+    if(!av_m0_cmd_fifo_full&&av_m0_cmd_fifo_write&&(count_b<BLOCK_DEPTH)) begin
       count_b++;
     end
     if(av_m0_readDataValid) begin
@@ -669,6 +661,21 @@ task state_readIn_handle();
     count_a<=8'd0;
     count_b<=8'd0;
     count_c<=8'd0;
+  end
+  if(!av_m0_cmd_fifo_full) begin
+    if(count_b<BLOCK_DEPTH) begin
+      /*总线指令fifo还能装,向fifo写读数据入指令*/
+      av_cmd_fifo_push_read(
+        .fifo_port          (av_m0_cmd_fifo_port  ),
+        .address            (block_addr+count_b*4 ),
+        .byteEnable         (4'hf                 ),
+        .beginBurstTransfer (count_b==8'd0        ),
+        .burstCount         (BLOCK_DEPTH          )
+      );
+    end
+    else begin
+      av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
+    end
   end
   delay_count<=1'd1;/*这里置1,因为下一个状态会进入到state_wait_count_to_zero状态,等一个时钟周期*/
 endtask
@@ -748,7 +755,8 @@ fifo_sync_bypass_inst0_av_m0_cmd_fifo(
   .write     (av_m0_cmd_fifo_write     ),
   .read      (av_m0_cmd_fifo_read      ),
   .writeData (av_m0_cmd_fifo_writeData ),
-  .readData  (av_m0_cmd_fifo_readData  )
+  .readData  (av_m0_cmd_fifo_readData  ),
+  .allData   ()
 );
 /*-----可读mask fifo------------------------*/
 fifo_sync_bypass #(
@@ -765,7 +773,8 @@ fifo_sync_bypass_inst1_read_byten_en_fifo(
   .write     (read_byte_en_fifo_write     ),
   .read      (read_byte_en_fifo_read      ),
   .writeData (read_byte_en_fifo_writeData ),
-  .readData  (read_byte_en_fifo_readData  )
+  .readData  (read_byte_en_fifo_readData  ),
+  .allData   ()
 );
 
 endmodule

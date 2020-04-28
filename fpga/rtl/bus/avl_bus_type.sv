@@ -17,6 +17,7 @@ typedef struct
   int master;
   int slave;
   logic[31:0] value;
+  logic[3:0] byte_en;
   int fifo_size;
 }read_cmd_res_t;
 

@@ -108,7 +108,7 @@ assign {
   {`CACHE_AVALON_BURST_COUNT_WIDTH{1'd0}}
 };
 assign s1_waitRequest=m1_waitRequest;
-assign s0_waitRequest=!(m0_waitRequest||m1_waitRequest);
+assign s0_waitRequest=!m0_waitRequest;
 /*****************************************************************************************************************
 响应
 *****************************************************************************************************************/

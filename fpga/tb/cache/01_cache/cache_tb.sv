@@ -1,264 +1,116 @@
-`timescale 1ns/100ps 
-
+`timescale 1ns/100ps
+import avl_bus_type::*;
 module cache_tb;
 
-/*时钟、复位*/
-logic 				   clk;
-logic            rest;
-/*s0从机接口*/ 
-logic [31:0] 	   s0_address;
-logic [3:0] 	   s0_byteEnable;
-logic 				   s0_read;
-logic [31:0]	   s0_readData;
-logic 				   s0_write;
-logic [31:0]	   s0_writeData;
-logic 				   s0_waitRequest;
-logic 				   s0_readDataValid;
-/*s1从机接口*/ 
-logic [31:0] 	   s1_address;
-logic [3:0] 	   s1_byteEnable;
-logic 				   s1_read;
-logic [31:0]	   s1_readData;
-logic 				   s1_write;
-logic [31:0]	   s1_writeData;
-logic 				   s1_waitRequest;
-logic 				   s1_readDataValid;
-/*m0主机接口*/ 
-logic [31:0]	   m0_address;
-logic [3:0] 	   m0_byteEnable;
-logic 				   m0_read;
-logic [31:0]	   m0_readData;
-logic 				   m0_write;
-logic [31:0]	   m0_writeData;
-logic 				   m0_waitRequest;
-logic 				   m0_readDataValid;
-logic            m0_beginBurstTransfer;
-logic [8-1:0]  	 m0_burstCount;
+/**********************************************************
+config
+**********************************************************/
+localparam TEST_CONFIG_MEM_SIZE																=	32*1024*1024;
+localparam TEST_CONFIG_CACHE_SIZE															=	8*1024;
+localparam TEST_CONFIG_CACHE_BLOCK_SIZE												=	64;
+localparam TEST_CONFIG_MASTER_SIM_MODEL_RECORD_SEND_CMD_EN    = 0;  /*记录主机发送的所用命令 0:失能 1:使能*/
+localparam TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN   = 0;  /*记录监视器监视到的所有命令 0:失能 1:使能*/
 
-i_avl_bus        avl_s0();
-i_avl_bus        avl_s1();
-i_avl_bus        avl_m0();
+/**********************************************************
+总线地址映射表
+**********************************************************/
+parameter int AVL_BUS_CACHE_ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{
+              7,16,16,16,16,16,16,16,
+              0, 0, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0, 0
+            };
+parameter int AVL_BUS_CACHE_ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{
+              32'h00000000,32'h80000000,32'h80010000,32'h80020000,32'h80030000,32'h80040000,32'h80050000,32'h80060000,
+              32'h00000000,32'h80000000,32'h80010000,32'h80020000,32'h80030000,32'h80040000,32'h80050000,32'h80060000,
+              32'h00000000,32'h80000000,32'h80010000,32'h80020000,32'h80030000,32'h80040000,32'h80050000,32'h80060000,
+              32'h00000000,32'h80000000,32'h80010000,32'h80020000,32'h80030000,32'h80040000,32'h80050000,32'h80060000
+            };
+/**********************************************************
+其它
+**********************************************************/
+logic clk,rest;
+i_avl_bus alv_bus_cpu[0:0]();
+i_avl_bus alv_bus_mem[0:0]();
+i_avl_bus avl_bus_default[1:0]();
 
-assign avl_s0.address   			=   s0_address;
-assign avl_s0.byte_en   			=   s0_byteEnable;
-assign avl_s0.read						=		s0_read;
-assign avl_s0.write     			=   s0_write;
-assign avl_s0.write_data			=		s0_writeData;
-assign s0_waitRequest   			=   !avl_s0.request_ready;
-assign s0_readDataValid 			=   avl_s0.read_data_valid;
-assign s0_readData			 			=		avl_s0.read_data;
+read_cmd_res_t read_cmd_res[0:0];
+/**********************************************************
+时钟、复位、初始化
+**********************************************************/
+initial begin
+	clk=0;
+	rest=0;
+	#100;
+	rest=1;
+end
 
-assign avl_s1.address   			=		s1_address;
-assign avl_s1.byte_en   			=		s1_byteEnable;
-assign avl_s1.read						=		s1_read;
-assign avl_s1.write     			=		s1_write;
-assign avl_s1.write_data			=		s1_writeData;
-assign s1_waitRequest					=		!avl_s1.request_ready;
-assign s1_readDataValid				=		avl_s1.read_data_valid;
-assign s1_readData 						=		avl_s1.read_data;
+always #10 clk=~clk;
 
-/*******************************************************************
-cache模块实例化
-*******************************************************************/
+/**********************************************************
+主机
+**********************************************************/
+avl_bus_master_sim_model #(
+  .SLAVE_NUM              (1),
+  .MASTER_ID              (0),
+  .RECORD_SEND_CMD_EN     (TEST_CONFIG_MASTER_SIM_MODEL_RECORD_SEND_CMD_EN),
+	.ALWAYS_RECEIVE_DATA		(1),
+  .ADDR_MAP_TAB_FIELD_LEN (AVL_BUS_CACHE_ADDR_MAP_TAB_FIELD_LEN),
+  .ADDR_MAP_TAB_ADDR_BLOCK(AVL_BUS_CACHE_ADDR_MAP_TAB_ADDR_BLOCK)
+)
+avl_bus_master_sim_model_inst0(
+  .clk		 (clk 					 ),
+  .rest		 (rest 					 ),
+  .read_res(read_cmd_res[0]),
+  .avl_m	 (alv_bus_cpu[0] )
+);
+/**********************************************************
+监视器
+**********************************************************/
+avl_bus_monitor_sim_model #(
+  .MASTER_NUM             (1),
+  .SLAVE_NUM              (1),
+  .RECORD_SEND_CMD_EN     (TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN),
+  .ADDR_MAP_TAB_FIELD_LEN (AVL_BUS_CACHE_ADDR_MAP_TAB_FIELD_LEN),
+  .ADDR_MAP_TAB_ADDR_BLOCK(AVL_BUS_CACHE_ADDR_MAP_TAB_ADDR_BLOCK)
+)
+avl_bus_monitor_sim_model_inst0(
+  .clk		 (clk   			),
+  .rest		 (rest 				),
+  .avl_mon (alv_bus_cpu	),
+  .read_res(read_cmd_res)
+);
+/**********************************************************
+cache
+**********************************************************/
 cache #(
-	.SIZE(8*1024),
-	.BLOCK_SIZE(256)
+	.SIZE			 (TEST_CONFIG_CACHE_SIZE 			),
+  .BLOCK_SIZE(TEST_CONFIG_CACHE_BLOCK_SIZE)
 )
 cache_inst0(
-	.*
+  .clk 	 (clk 							),
+  .rest	 (rest 							),
+  .avl_s0(alv_bus_cpu[0]	  ),
+  .avl_s1(avl_bus_default[1]),
+  .avl_m0(alv_bus_mem[0]		)
+);
+/**********************************************************
+默认主机
+**********************************************************/
+avl_bus_default_master avl_bus_default_master_inst0(
+  .avl_m(avl_bus_default[0])
 );
 
-/*******************************************************************
-sdram模拟
-*******************************************************************/
+/**********************************************************
+sdram sim model
+**********************************************************/
 sdram_sim_model #(
-	.SIZE(32*1024)
-)sdram_sim_model_inst0(
-  .clk              (clk   ),
-	.rest							(rest	 ),
-  .avl_m0						(avl_m0)
+  .SIZE(TEST_CONFIG_MEM_SIZE/1024)
+)
+sdram_sim_model_inst0(
+  .clk 	 (clk 				  ),
+  .rest  (rest 					),
+  .avl_m0(alv_bus_mem[0])
 );
-
-/*******************************************************************
-测试过程
-*******************************************************************/
-initial begin
-	int i;
-	reg[31:0] data,temp,addr;
-	reg[3:0] byteEnable;
-	#10 system_rest();
-	temp=$random(12021961);
-	wait(s0_waitRequest==0);
-	forever begin
-    temp=$random();
-		addr=get_rand_addr();
-		byteEnable={$random()}%16;
-		data=$random();
-		if(temp[0]) begin
-			writeData(addr[24:0],byteEnable,data);
-			$display("i=%d,write:address:%x,data=%x,byte=%1x",i,addr[24:0],data,byteEnable);
-		end
-		addr=get_rand_addr();
-		byteEnable={$random()}%16;
-		if(temp[1]) begin
-			readData(addr[24:0],byteEnable,data);
-			$display("i=%d,read :address:%x,data=%x,byte=%1x",i,addr[24:0],data,byteEnable);
-		end
-		i++;
-  end
-end
-
-/*******************************************************************
-获取一次随机地址
-*******************************************************************/
-reg signed[31:0] temp_addr_a=0,temp_addr_b=0,temp_addr=0;
-reg[4:0] div_count=0;
-function[31:0] get_rand_addr();
-	temp_addr+=$random()%64+(div_count==0?1:0);
-	if(temp_addr<0)  begin
-		temp_addr=0;
-	end
-	div_count++;
-	return temp_addr[31:2]<<2;
-endfunction
-
-/*******************************************************************
-系统复位任务
-*******************************************************************/
-task system_rest();
-	#0   rest=0;
-	#100 rest=1;
-endtask
-
-/*******************************************************************
-赋初值
-*******************************************************************/
-initial begin
-	rest=0;
-	clk=0;
-
-	s0_address=0;
-	s0_byteEnable=0;
-	s0_read=0;
-	s0_write=0;
-	s0_writeData=0;
-
-	s1_address=0;
-	s1_byteEnable=0;
-	s1_read=0;
-	s1_write=0;
-	s1_writeData=0;
-
-end
-
-/*******************************************************************
-产生时钟
-*******************************************************************/
-always begin
-	#5 clk=~clk;
-end
-
-/*******************************************************************
-ram，和模拟的sdram读出的数据对比
-*******************************************************************/
-logic [3:0][7:0] ram[32*1024*1024-1:0];
-initial begin
-  int i;
-  for(i=0;i<32*1024*1024;i++) begin
-    ram[i]=0;
-  end
-end
-
-/*******************************************************************
-读cache
-*******************************************************************/
-task readData(
-	input[31:0] addr,
-	input[3:0]  byteEnable,
-	output[31:0] data
-);
-  logic[31:0] rd;
-  task_s0_readData(addr,byteEnable,rd);
-	data=rd;
-	if(
-		((rd[31:24]!=ram[addr/4][3])&&byteEnable[3])||
-		((rd[23:16]!=ram[addr/4][2])&&byteEnable[2])||
-		((rd[15:8] !=ram[addr/4][1])&&byteEnable[1])||
-		((rd[7:0]  !=ram[addr/4][0])&&byteEnable[0])
-	) begin
-    $error("error:addr:%x,sdram=%x,ram=%x",addr,data,ram[addr/4]);
-    $stop();
-  end
-endtask
-
-/*******************************************************************
-写cache
-*******************************************************************/
-localparam ADD_WIDTH=($clog2(32*1024)+10)-2;
-task writeData(
-	input[31:0] addr,
-	input[3:0]  byteEnable,
-	input[31:0] data
-);
-  task_s0_writeData(addr,byteEnable,data);
-  if(byteEnable[0]) ram[addr[ADD_WIDTH+1:2]][0] <= data[7:0];
-  if(byteEnable[1]) ram[addr[ADD_WIDTH+1:2]][1] <= data[15:8];
-  if(byteEnable[2]) ram[addr[ADD_WIDTH+1:2]][2] <= data[23:16];
-  if(byteEnable[3]) ram[addr[ADD_WIDTH+1:2]][3] <= data[31:24];
-endtask
-
-/*******************************************************************
-读cache
-*******************************************************************/
-task task_s0_readData(
-	input[31:0] addr,
-	input[3:0]  byteEnable,
-	output[31:0] data
-);
-	@(posedge clk);
-	s0_address			=  addr;
-	s0_byteEnable		=  byteEnable;
-	s0_read					=	 1;
-	s0_write				=  0;
-	forever begin
-		@(posedge clk);
-		if(!s0_waitRequest) begin
-			s0_read=0;
-			break;
-		end
-	end
-	forever begin
-		@(posedge clk);
-		if(s0_readDataValid) begin
-			break;
-		end
-	end
-	data=s0_readData;
-endtask
-
-/*******************************************************************
-写cache
-*******************************************************************/
-task task_s0_writeData(
-	input[31:0] addr,
-	input[3:0]  byteEnable,
-	input[31:0] data
-);
-	s0_address			=  addr;
-	s0_byteEnable		=  byteEnable;
-	s0_read					=	 0;
-	s0_write				=  1;
-	s0_writeData		=data;
-	while (1) begin
-		@(posedge clk);
-		if(!s0_waitRequest) begin
-			s0_write=0;
-			break;
-		end
-	end
-endtask
-
 
 endmodule
-
-

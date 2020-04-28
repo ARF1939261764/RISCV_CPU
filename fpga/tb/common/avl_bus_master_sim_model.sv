@@ -10,7 +10,8 @@ module avl_bus_master_sim_model #(
   parameter     SLAVE_NUM                     = 16,
                 MASTER_ID                     = 0,
                 RECORD_SEND_CMD_EN            = 1,
-            int ADDR_MAP_TAB_FIELD_LEN[31:0]  = '{32{32'd22}},
+                ALWAYS_RECEIVE_DATA           = 0,
+            int ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{32{32'd22}},
             int ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{32{1'd0}}
 )(
   input logic          clk,
@@ -77,12 +78,17 @@ endfunction
 logic stop;
 function void receive_cmd();
   if(avl_m.resp_ready&&avl_m.read_data_valid) begin
-    if((avl_m.read_data==read_res.value)&&(read_res.master==MASTER_ID)) begin
+    if((
+        ((avl_m.read_data[ 7: 0]==read_res.value[ 7: 0])||!read_res.byte_en[0])&&
+        ((avl_m.read_data[15: 8]==read_res.value[15: 8])||!read_res.byte_en[1])&&
+        ((avl_m.read_data[23:16]==read_res.value[23:16])||!read_res.byte_en[2])&&
+        ((avl_m.read_data[31:24]==read_res.value[31:24])||!read_res.byte_en[3])
+      )&&(read_res.master==MASTER_ID)) begin
       read_success_count++;
-      $display("read data success:master=%2d,slave=%2d,addr=%h,data=%h,value=%h,count=%d,fifo_size=%2d",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.fifo_size);
+      $display("read data success:master=%2d,slave=%2d,addr=%h,data=%h,value=%h,count=%d,byte_en=%1h",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.byte_en);
     end
     else begin
-      $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,fifo_size=%2d",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.fifo_size);
+      $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,byte_en=%1h",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.byte_en);
       stop=1;
     end
   end
@@ -104,10 +110,14 @@ end
 /***初始化************************/
 initial begin
   logic[31:0] temp;
+  int i;
   stop=0;
   send_cmd();
   temp=$random();
-  avl_m.resp_ready=temp[0];
+  avl_m.resp_ready=ALWAYS_RECEIVE_DATA?1:temp[0];
+  for(i=0;i<32;i++) begin
+    $display("%d,%d",ADDR_MAP_TAB_FIELD_LEN[i],ADDR_MAP_TAB_ADDR_BLOCK[i]);
+  end;
 end
 /***发送命令***********************/
 localparam  send_cmd_state_normal=1'd0,
@@ -158,7 +168,7 @@ always @(posedge clk or negedge rest) begin:block_02
   else begin
     receive_cmd();
     temp=$random();
-    avl_m.resp_ready=temp[0];
+    avl_m.resp_ready=ALWAYS_RECEIVE_DATA?1:temp[0];
   end
 end
 

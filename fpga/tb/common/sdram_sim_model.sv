@@ -15,7 +15,7 @@ always@(posedge clk or negedge rest) begin
     avl_m0.read_data_valid<=0;
   end
   else begin
-    if(avl_m0.write) begin
+    if(avl_m0.write&&avl_m0.request_ready) begin
       if(avl_m0.byte_en[0]) ram[avl_m0.address[ADD_WIDTH+1:2]][0] <= avl_m0.write_data[7:0];
       if(avl_m0.byte_en[1]) ram[avl_m0.address[ADD_WIDTH+1:2]][1] <= avl_m0.write_data[15:8];
       if(avl_m0.byte_en[2]) ram[avl_m0.address[ADD_WIDTH+1:2]][2] <= avl_m0.write_data[23:16];
@@ -36,7 +36,7 @@ assign avl_m0.request_ready=request_ready_mask&&(!avl_m0.read_data_valid||avl_m0
 always @(posedge clk) begin:block_0
   logic[31:0] temp;
   temp=$random();
-  request_ready_mask=temp[2:0]==0;
+  request_ready_mask=temp[3:0]==0;
 end
 
 initial begin
