@@ -283,7 +283,7 @@ wire end_state_wait_count_to_zero;
 
 assign end_state_waitReadIODone      =av_m0_cmd_fifo_empty&&(!av_m0_waitRequest||!av_m0_read)&&av_m0_readDataValid;
 assign end_state_waitWriteIODone     =av_m0_cmd_fifo_empty&&!av_m0_waitRequest;
-assign end_state_writeBack           =av_m0_cmd_fifo_empty&&(count_c>=BLOCK_DEPTH-1);
+assign end_state_writeBack           =count_c>=BLOCK_DEPTH;
 assign end_state_readIn              =count_c>=BLOCK_DEPTH;
 assign end_state_clearRe             =(count_a>=BLOCK_DEPTH/2);
 assign end_state_init                =(count_a>=(2**TAG_RAM_ADDR_WIDTH*4-1));
@@ -527,11 +527,11 @@ task state_read_write_miss_handle();
   is_read_addr_change<=1'd0;
   address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
   address_b<={rw_last_av_s0_address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
-  $display("address=%d\nstate=%s\nisHit=%d\nisHaveFreeBlock=%d\nrwChannel=%d\n",rw_last_av_s0_address,
-                                                                              rw_last_av_s0_read?"readMiss":"writeMiss",
-                                                                              rw_isHit,
-                                                                              rw_isHaveFreeBlock,
-                                                                              rwChannel);
+  //$display("address=%d\nstate=%s\nisHit=%d\nisHaveFreeBlock=%d\nrwChannel=%d\n",rw_last_av_s0_address,
+  //                                                                            rw_last_av_s0_read?"readMiss":"writeMiss",
+  //                                                                            rw_isHit,
+  //                                                                            rw_isHaveFreeBlock,
+  //                                                                            rwChannel);
 endtask
 
 /******************************************************************************************

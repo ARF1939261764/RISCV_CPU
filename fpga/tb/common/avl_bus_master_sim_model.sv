@@ -85,7 +85,7 @@ function void receive_cmd();
         ((avl_m.read_data[31:24]==read_res.value[31:24])||!read_res.byte_en[3])
       )&&(read_res.master==MASTER_ID)) begin
       read_success_count++;
-      $display("read data success:master=%2d,slave=%2d,addr=%h,data=%h,value=%h,count=%d,byte_en=%1h",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_success_count,read_res.byte_en);
+      $display("r:%d",read_success_count);
     end
     else begin
       $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,byte_en=%1h",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.byte_en);
@@ -96,8 +96,8 @@ endfunction
 /***记录成功发出过的命令***********/
 function void record_read_write_info();
   if(avl_m.write||avl_m.read) begin
-    $fdisplay(master_read_write_record,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h,begin_burst=%1d,burst_count=%d",
-      avl_m.write?"write":"read ",MASTER_ID,avl_m.address,avl_m.byte_en,avl_m.write_data,avl_m.begin_burst_transfer,avl_m.burst_count);
+    $fdisplay(master_read_write_record,"%s,%2d,%h,%1h,%h,%1d,%d,%t",
+      avl_m.write?"w":"r",MASTER_ID,avl_m.address,avl_m.byte_en,avl_m.write_data,avl_m.begin_burst_transfer,avl_m.burst_count,$realtime);
   end
 endfunction
 /***stop************************/

@@ -10,6 +10,7 @@ localparam TEST_CONFIG_CACHE_SIZE															=	8*1024;
 localparam TEST_CONFIG_CACHE_BLOCK_SIZE												=	64;
 localparam TEST_CONFIG_MASTER_SIM_MODEL_RECORD_SEND_CMD_EN    = 0;  /*记录主机发送的所用命令 0:失能 1:使能*/
 localparam TEST_CONFIG_MONITOR_SIM_MODEL_RECORD_SEND_CMD_EN   = 0;  /*记录监视器监视到的所有命令 0:失能 1:使能*/
+localparam TEST_CONFIG_SDRAM_SIM_MODEL_RECORD_SEND_CMD_EN     = 0;
 
 /**********************************************************
 总线地址映射表
@@ -105,7 +106,8 @@ avl_bus_default_master avl_bus_default_master_inst0(
 sdram sim model
 **********************************************************/
 sdram_sim_model #(
-  .SIZE(TEST_CONFIG_MEM_SIZE/1024)
+  .SIZE(TEST_CONFIG_MEM_SIZE/1024),
+  .RECORD_SEND_CMD_EN(TEST_CONFIG_SDRAM_SIM_MODEL_RECORD_SEND_CMD_EN)
 )
 sdram_sim_model_inst0(
   .clk 	 (clk 				  ),

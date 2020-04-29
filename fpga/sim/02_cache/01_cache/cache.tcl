@@ -18,5 +18,7 @@ vsim -t 1ps -L work -voptargs="+acc"  cache_tb
 view structure
 view signals
 
+#log -r /*
+
 run -all
 

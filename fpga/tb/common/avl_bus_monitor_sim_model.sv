@@ -56,7 +56,7 @@ endfunction
 记录成功发出的命令
 ********************************************************/
 function void record_read_write_info(int read,int write,int master,int addr,int byte_en,int data);
-  $fdisplay(monitor_read_write_info,"%s,master=%2d,addr=%h,byte_en=%1h,data=%h",read?"read ":"write",master,addr,byte_en,data);
+  $fdisplay(monitor_read_write_info,"%s,%2d,%h,%1h,%h,%t",read?"r":"w",master,addr,byte_en,data,$realtime);
 endfunction
 
 /********************************************************
