@@ -16,6 +16,8 @@ vsim -t 1ps -L work -voptargs="+acc"  core_tb
 add wave *
 add wave -position end  sim:/core_tb/core_inst0/core_id_inst0/core_id_reg_file_inst0/regs
 
+log -r /*
+
 view structure
 view signals
 

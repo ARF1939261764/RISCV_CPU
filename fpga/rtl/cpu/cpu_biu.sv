@@ -8,7 +8,7 @@ module cpu_biu(
   /*istr*/
   i_avl_bus.master avl_m_istr_i_cache,
   i_avl_bus.master avl_m_istr_perip,
-  i_avl_bus.master avl_m_istr_fast_program_raom,
+  i_avl_bus.master avl_m_istr_fast_mem,
   i_avl_bus.master avl_m_istr_debug_rom,
   /*data*/
   i_avl_bus.master avl_m_data_d_cache,
@@ -39,7 +39,7 @@ i_avl_bus avl_istr_out[3:0]();
 avl_bus_adapter avl_bus_adapter_inst0_istr(.avl_in(avl_s_istr     ),.avl_out(avl_istr_in[0]              ));
 avl_bus_adapter avl_bus_adapter_inst1_istr(.avl_in(avl_istr_out[0]),.avl_out(avl_m_istr_i_cache          ));
 avl_bus_adapter avl_bus_adapter_inst2_istr(.avl_in(avl_istr_out[1]),.avl_out(avl_m_istr_perip            ));
-avl_bus_adapter avl_bus_adapter_inst3_istr(.avl_in(avl_istr_out[2]),.avl_out(avl_m_istr_fast_program_raom));
+avl_bus_adapter avl_bus_adapter_inst3_istr(.avl_in(avl_istr_out[2]),.avl_out(avl_m_istr_fast_mem         ));
 avl_bus_adapter avl_bus_adapter_inst4_istr(.avl_in(avl_istr_out[3]),.avl_out(avl_m_istr_debug_rom        ));
 /*总线控制器*/
 avl_bus_n2n #(

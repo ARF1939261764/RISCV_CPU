@@ -544,8 +544,9 @@ endtask
 ******************************************************************************************/
 task state_writeBack_handle();
   logic[31:0] block_addr;
+  /*获取基地址*/
   block_addr=get_cache_block_addr(address_a);
-  /*改变内部SRAM读地址*/
+  /*如果av_m0_write信号为0,或者av_m0_waitRequest为0,并且count_a小于BLOCK_DEPTH,则改变内部SRAM读地址*/
   if(!(av_m0_write&&av_m0_waitRequest)&&(count_a!=BLOCK_DEPTH)) begin
     readAddress<=block_addr+count_a*4;
     is_read_addr_change<=1'd1;
@@ -553,7 +554,7 @@ task state_writeBack_handle();
   else begin
     is_read_addr_change<=1'd0;
   end
-  /*当fifo满，并且av_m0_waitRequest为高的时候，表示上一次的数据没写入到fifo中，
+  /*当fifo满，表示上一次的数据没写入到fifo中，
     所以is_read_data_valid需要保持，反之则需要更新*/
   if(!av_m0_cmd_fifo_full||is_read_addr_change) begin
     is_read_data_valid<=is_read_addr_change;

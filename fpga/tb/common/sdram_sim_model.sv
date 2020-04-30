@@ -3,7 +3,9 @@ int sdram_read_write_record=$fopen("sdram_read_write_record.txt","w");
 module sdram_sim_model #(
   parameter         SIZE               = 32*1024,
                     RECORD_SEND_CMD_EN = 0,
-            string  INIT_FILE          =""
+                    REQUEST_RANDOM     = 1,
+                    DATA_VALID_RANDOM  = 1,
+            string  INIT_FILE          = ""
 )(
   input  logic        clk,
   input  logic        rest,
@@ -56,8 +58,8 @@ assign avl_m0.read_data_valid=read_data_valid&&read_data_valid_mask;
 always @(posedge clk) begin:block_0
   logic[31:0] temp;
   temp=$random();
-  request_ready_mask=temp[3:0]==0;
-  read_data_valid_mask=temp[7:4]==0;
+  request_ready_mask=REQUEST_RANDOM?(temp[3:0]==0):1;
+  read_data_valid_mask=DATA_VALID_RANDOM?(temp[7:4]==0):1;
 end
 
 initial begin
