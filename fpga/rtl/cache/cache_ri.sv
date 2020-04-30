@@ -488,8 +488,9 @@ task state_idle_handle();
         if(!rw_isHit&&!rw_isHaveFreeBlock) begin
           replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH]]<=
             replaceFIFO[rw_last_av_s0_address[TAG_RAM_ADDR_WIDTH+BLOCK_ADDR_WIDTH-1:BLOCK_ADDR_WIDTH]]+2'd1;
-        end
+        end begin
           return_state<=rw_last_av_s0_read?state_readIn:state_clearRe;
+        end
       end
     `cache_rw_cmd_iorw:begin
         /*将rw模块收到的IO读写请求发送到总线上*/
@@ -521,9 +522,9 @@ endtask
 task state_read_write_miss_handle();
   is_need_modific_tag<=!rw_isHit;
   modific_tag<=rw_last_av_s0_address[31:31-TAG_WIDTH+1]|(1<<TAG_WIDTH);
-  count_a<=8'd0;
-  count_b<=8'd0;
-  count_c<=8'd0;
+  count_a=8'd0;
+  count_b=8'd0;
+  count_c=8'd0;
   is_read_addr_change<=1'd0;
   address_a<={tag_ri_read_block_addr,rw_last_av_s0_address[31-TAG_WIDTH:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
   address_b<={rw_last_av_s0_address[31:BLOCK_ADDR_WIDTH],{BLOCK_ADDR_WIDTH{1'd0}}};
@@ -545,7 +546,7 @@ task state_writeBack_handle();
   logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_a);
   /*改变内部SRAM读地址*/
-  if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<BLOCK_DEPTH)) begin
+  if(!(av_m0_write&&av_m0_waitRequest)&&(count_a!=BLOCK_DEPTH)) begin
     readAddress<=block_addr+count_a*4;
     is_read_addr_change<=1'd1;
   end
@@ -560,11 +561,11 @@ task state_writeBack_handle();
   /*-----------------计数器控制--------------------------------------*/
   if(!end_state_writeBack) begin
     /*修改一次地址,count_a加一*/
-    if(!(av_m0_write&&av_m0_waitRequest)&&(count_a<BLOCK_DEPTH)) begin
+    if(!(av_m0_write&&av_m0_waitRequest)&&(count_a!=BLOCK_DEPTH)) begin
       count_a++;
     end
-    /*没向FIFO中压入一条写数据指令,count_b加一*/
-    if(av_m0_cmd_fifo_write&&!av_m0_cmd_fifo_full&&(count_b<BLOCK_DEPTH)) begin
+    /*每向FIFO中压入一条写数据指令,count_b加一*/
+    if(av_m0_cmd_fifo_write&&!av_m0_cmd_fifo_full&&(count_b!=BLOCK_DEPTH)) begin
       count_b++;
     end
     /*每写一个数据count_c加一*/
@@ -573,15 +574,40 @@ task state_writeBack_handle();
     end
   end
   else begin
+    /*断言*/
+    assert((count_a==BLOCK_DEPTH)&&(count_b==BLOCK_DEPTH)&&(count_b==BLOCK_DEPTH)) else begin
+      $error("state_writeBack_handle:counter error,a=%d,b=%d,c=%d",count_a,count_b,count_c);
+      $stop();
+    end
+    assert(av_m0_cmd_fifo_empty&&!av_m0_cmd_fifo_write) else begin
+      $error("state_writeBack_handle:fifo is not empty");
+      $stop();
+    end
+    assert(!av_m0_write&&!av_m0_read) else begin
+      $error("state_writeBack_handle:The read/write signal is not zeroed");
+      $stop();
+    end
     /*如果下一步需要进入到其它状态,全部清零*/
     av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
-    count_a<=8'd0;
-    count_b<=8'd0;
-    count_c<=8'd0;
+    count_a=8'd0;
+    count_b=8'd0;
+    count_c=8'd0;
+  end
+  /*断言*/
+  assert((count_a<=BLOCK_DEPTH)&&(count_b<=BLOCK_DEPTH)&&(count_c<=BLOCK_DEPTH)) else begin
+    /*在该任务执行时,三个count必须永远小于或等于BLOCK_DEPTH*/
+    $error("state_writeBack_handle:The counter is greater than the BLOCK_DEPTH");
+    $stop();
+  end
+  if(av_m0_write&&!av_m0_waitRequest) begin
+    assert(!av_m0_cmd_fifo_empty||av_m0_cmd_fifo_write) else begin
+      $error("state_writeBack_handle:An illegal instruction was given");
+      $stop();
+    end
   end
   /*将内部SRAM中读出的数据压到fifo中*/
-  if(!av_m0_cmd_fifo_full) begin
-    if(is_read_data_valid&&!end_state_writeBack&&(count_b<BLOCK_DEPTH)) begin
+  if(!av_m0_cmd_fifo_full&&!end_state_writeBack) begin
+    if(is_read_data_valid&&(count_b!=BLOCK_DEPTH)) begin
       av_cmd_fifo_push_write(
         .fifo_port          (av_m0_cmd_fifo_port  ),
         .address            (block_addr+count_b*4 ),
@@ -613,7 +639,7 @@ endtask
 task state_readIn_handle();
   logic[31:0] block_addr;
   block_addr=get_cache_block_addr(address_b);
-  if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<BLOCK_DEPTH)) begin
+  if(!read_byte_en_fifo_half&&rw_isHit&&(count_a!=BLOCK_DEPTH)) begin
     /*字节使能信号fifo占用还没过半，还能装，命中了(说明是因为byte不可读造成的，写cache块时不能覆
       盖原来的数据，所以需要考虑字节可读信号)*/
     readAddress<=block_addr+count_a*4;
@@ -645,10 +671,10 @@ task state_readIn_handle();
   is_read_data_valid<=is_read_addr_change;
   /*-----------------计数器控制--------------------------------------*/
   if(!end_state_readIn) begin
-    if(!read_byte_en_fifo_half&&rw_isHit&&(count_a<BLOCK_DEPTH)) begin
+    if(!read_byte_en_fifo_half&&rw_isHit&&(count_a!=BLOCK_DEPTH)) begin
       count_a++;
     end
-    if(!av_m0_cmd_fifo_full&&av_m0_cmd_fifo_write&&(count_b<BLOCK_DEPTH)) begin
+    if(!av_m0_cmd_fifo_full&&av_m0_cmd_fifo_write&&(count_b!=BLOCK_DEPTH)) begin
       count_b++;
     end
     if(av_m0_readDataValid) begin
@@ -656,14 +682,54 @@ task state_readIn_handle();
     end
   end
   else begin
+    /*断言*/
+    assert(((count_a==BLOCK_DEPTH)||!rw_isHit)&&(count_b==BLOCK_DEPTH)&&(count_b==BLOCK_DEPTH)) else begin
+      /*退出state_readIn_handle状态时,三个计数器的值应该为BLOCK_DEPTH,如果不是,则表示出了问题*/
+      $error("state_readIn_handle:counter error,a=%d,b=%d,c=%d",count_a,count_b,count_c);
+      $stop();
+    end
+    assert(av_m0_cmd_fifo_empty&&!av_m0_cmd_fifo_write) else begin
+      /*退出时,指令fifo应该被清空,并且不应该有新的数据写入*/
+      $error("state_readIn_handle:fifo is not empty");
+      $stop();
+    end
+    assert(!av_m0_write&&!av_m0_read) else begin
+      /*退出时,读写信号应该被置0*/
+      $error("state_readIn_handle:The read/write signal is not zeroed");
+      $stop();
+    end
     readAddress<=rw_last_av_s0_address;
     /*如果下一步需要进入到其它状态,全部清零*/
-    count_a<=8'd0;
-    count_b<=8'd0;
-    count_c<=8'd0;
+    av_cmd_fifo_push_nop(av_m0_cmd_fifo_port);
+    count_a=8'd0;
+    count_b=8'd0;
+    count_c=8'd0;
   end
-  if(!av_m0_cmd_fifo_full) begin
-    if(count_b<BLOCK_DEPTH) begin
+  /*断言*/
+  assert((count_a<=BLOCK_DEPTH)&&(count_b<=BLOCK_DEPTH)&&(count_c<=BLOCK_DEPTH)) else begin
+    /*在该任务执行时,三个count必须永远小于或等于BLOCK_DEPTH*/
+    $error("state_readIn_handle:The counter is greater than the BLOCK_DEPTH");
+    $stop();
+  end
+  if(read_byte_en_fifo_write) begin
+    assert(!read_byte_en_fifo_full) else begin
+      $error("state_readIn_handle:Byte_en data lost");
+    end
+  end
+  if(av_m0_write&&!av_m0_waitRequest) begin
+    assert(!av_m0_cmd_fifo_empty||av_m0_cmd_fifo_write) else begin
+      $error("state_readIn_handle:An illegal instruction was given");
+      $stop();
+    end
+  end
+  if(read_byte_en_fifo_read&&rw_isHit) begin
+    assert(!read_byte_en_fifo_empty||read_byte_en_fifo_write) else begin
+      $error("state_readIn_handle:Invalid byte_en");
+      $stop();
+    end
+  end
+  if(!av_m0_cmd_fifo_full&&!end_state_readIn) begin
+    if(count_b!=BLOCK_DEPTH) begin
       /*总线指令fifo还能装,向fifo写读数据入指令*/
       av_cmd_fifo_push_read(
         .fifo_port          (av_m0_cmd_fifo_port  ),
