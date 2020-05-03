@@ -12,7 +12,7 @@ module sdram_sim_model #(
   i_avl_bus.slave     avl_m0
 );
 localparam ADD_WIDTH=($clog2(SIZE)+10)-2;
-logic[3:0][7:0] ram[2**ADD_WIDTH-1:0];
+logic[3:0][7:0] ram[2**ADD_WIDTH];
 logic request_ready_mask;
 logic read_data_valid_mask;
 logic read_data_valid;

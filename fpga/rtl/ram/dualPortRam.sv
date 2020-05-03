@@ -96,7 +96,7 @@ input		logic [(WIDTH+7)/8-1:0] 	writeByteEnable;
 	*/
 `elsif FPGA_TYPE_NULL
 	/*---生成verilog描述的RAM-------------------------*/
-	logic [WIDTH/8-1:0][7:0] ram[DEPTH-1:0];
+	logic [WIDTH/8-1:0][7:0] ram[DEPTH];
 	initial begin:ram_init_block
 		int i;
 		for(i=0;i<DEPTH;i++) begin

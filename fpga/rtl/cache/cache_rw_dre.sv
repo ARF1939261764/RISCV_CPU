@@ -95,11 +95,12 @@ wire         [7:0] rds[3:0];
 reg          last_addr_bit0;
 reg          last_is_write_during_read;
 reg  [7:0]   last_writeRe;
+reg  [1:0]   last_write_channel;
 
 assign {rds[3],rds[2],rds[1],rds[0]}=rd;
 
 assign readRe=last_addr_bit0?readReAll[7:4]:readReAll[3:0];
-assign readReAll=last_is_write_during_read?last_writeRe:rds[readChannel];
+assign readReAll=last_is_write_during_read&&(last_write_channel==readChannel)?last_writeRe:rds[readChannel];
 
 assign wd={4{writeRe}};
 
@@ -107,13 +108,14 @@ always @(posedge clk) begin
   last_addr_bit0<=readAddress[0];
   last_is_write_during_read<=(readAddress[ADDR_WIDTH-1:1]==writeAddress[ADDR_WIDTH-1:1])&&(readChannel==writeChannel)&&writeEnable;
   last_writeRe<=writeRe;
+  last_write_channel<=writeChannel;
 end
 
 dualPortRam #(
 	.WIDTH(32),		                                /*数据位宽*/
 	.DEPTH(2**(ADDR_WIDTH-1))	                    /*深度*/
 )
-dualPortRam_inst0_tagRam(
+dualPortRam_inst0_dreRam(
 	.clk(clk),
 	.readAddress(readAddress[ADDR_WIDTH-1:1]),	  /*读地址*/
 	.readData(rd),							                  /*读出的数据*/

@@ -13,7 +13,7 @@ vlog -sv -work work +incdir+../../../rtl/bus           {../../../rtl/bus/*.sv   
 vlog -sv -work work +incdir+../../../tb/common         {../../../tb/common/*.sv         }
 vlog -sv -work work +incdir+../../../tb/cache/01_cache {../../../tb/cache/01_cache/*.sv }
 
-vsim -t 100ps -L work cache_tb
+vsim -t 100ps -L work -voptargs="+acc" cache_tb
 
 view structure
 view signals

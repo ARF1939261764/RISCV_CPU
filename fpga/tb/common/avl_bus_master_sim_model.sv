@@ -89,7 +89,7 @@ function void receive_cmd();
     end
     else begin
       $error("read data fail,master=%2d,slave=%2d,addr=%h,read_data=%h,read_res.value=%h,addr=%h,byte_en=%1h",MASTER_ID,read_res.slave,read_res.addr,avl_m.read_data,read_res.value,read_res.addr,read_res.byte_en);
-      stop=1;
+      $stop();
     end
   end
 endfunction
@@ -100,13 +100,6 @@ function void record_read_write_info();
       avl_m.write?"w":"r",MASTER_ID,avl_m.address,avl_m.byte_en,avl_m.write_data,avl_m.begin_burst_transfer,avl_m.burst_count,$realtime);
   end
 endfunction
-/***stop************************/
-always @(posedge clk) begin
-  /*延迟一个时钟周期再停止,以观察发生错误时的状况*/
-  if(stop) begin
-    $stop();
-  end
-end
 /***初始化************************/
 initial begin
   logic[31:0] temp;

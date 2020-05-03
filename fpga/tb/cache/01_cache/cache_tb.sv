@@ -115,4 +115,63 @@ sdram_sim_model_inst0(
   .avl_m0(alv_bus_mem[0])
 );
 
+/**********************************************************
+cache与sdram一致性检测
+**********************************************************/
+/*
+localparam DATA_RAM_ADDR_WIDTH=$clog2(TEST_CONFIG_CACHE_SIZE/4/4);
+
+`define sdram_ram sdram_sim_model_inst0.ram
+`define cache_ram cache_inst0.cache_rw_inst0.cache_rw_data_inst0.cache_rw_data_ram_inst0.dualPortRam_inst0_dataRam.ram
+`define cache_dre cache_inst0.cache_rw_inst0.cache_rw_dre_inst0.cache_rw_dre_ram_inst0.dualPortRam_inst0_dreRam.ram
+`define cache_tag cache_inst0.cache_rw_inst0.cache_rw_tag_inst0.cache_rw_tag_ram_inst0.dualPortRam_inst0_tagRam.ram
+
+logic read_in_done;
+logic write_back_done;
+logic[31:0] sdram_base_addr;
+logic[31:0] cache_base_addr;
+logic[1:0]  cache_way;
+logic[3:0]  cache_ri_state;
+
+assign read_in_done=cache_inst0.cache_ri_inst0.end_state_readIn&&(cache_ri_state==cache_inst0.cache_ri_inst0.state_readIn);
+assign write_back_done=cache_inst0.cache_ri_inst0.end_state_writeBack&&(cache_ri_state==cache_inst0.cache_ri_inst0.state_writeBack);
+assign cache_ri_state=cache_inst0.cache_ri_inst0.state;
+
+always @(posedge clk or negedge rest) begin:block1
+  if(!rest) begin
+    sdram_base_addr=0;
+    cache_base_addr=0;
+  end
+  else begin
+    int i;
+    logic[3:0][7:0] cache_data,sdram_data;
+    logic[3:0] cache_dre_info;
+    if(write_back_done) begin
+      sdram_base_addr=cache_inst0.cache_ri_inst0.address_a/4;
+      cache_base_addr=(sdram_base_addr*4%2048)/4;
+    end
+    if(write_back_done) begin
+      cache_way=cache_inst0.cache_ri_inst0.rwChannel;
+      for(i=0;i<TEST_CONFIG_CACHE_BLOCK_SIZE/4;i++) begin
+        cache_data= (`cache_ram[cache_base_addr+i][cache_way*4+3]<<24)|
+                    (`cache_ram[cache_base_addr+i][cache_way*4+2]<<16)|
+                    (`cache_ram[cache_base_addr+i][cache_way*4+1]<< 8)|
+                    (`cache_ram[cache_base_addr+i][cache_way*4+0]<< 0);
+        sdram_data= `sdram_ram[sdram_base_addr+i];
+        cache_dre_info=i[0]?`cache_dre[(cache_base_addr+i)/2][cache_way][7:4]:`cache_dre[(cache_base_addr+i)/2][cache_way][3:0];
+        assert(
+          (!cache_dre_info[3]||(cache_data[3]==sdram_data[3]))&&
+          (!cache_dre_info[2]||(cache_data[2]==sdram_data[2]))&&
+          (!cache_dre_info[1]||(cache_data[1]==sdram_data[1]))&&
+          (!cache_dre_info[0]||(cache_data[0]==sdram_data[0]))
+        ) else begin
+          $display("Error:Data Inconsistency,cache_addr=%x,cache_way=%01x,cache=%x,sdram_addr=%x,sdram=%x,cache=%x,dre=%1x",cache_base_addr+i,cache_way,cache_data,sdram_base_addr+i,sdram_data,`cache_ram[cache_base_addr+i],cache_dre_info);
+          $stop();
+        end
+      end
+    end
+  end
+end
+*/
+
 endmodule

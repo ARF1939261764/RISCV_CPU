@@ -30,8 +30,8 @@ csr_sim_model csr_sim_model_inst0(
 
 sdram_sim_model #(
   .SIZE(32*1024),
-  .REQUEST_RANDOM(1'd1),
-  .DATA_VALID_RANDOM(1'd1),
+  .REQUEST_RANDOM(1'd0),
+  .DATA_VALID_RANDOM(1'd0),
   .INIT_FILE("../../../tb/core/file/01_arit_istr_01_bin.txt")
 )
 sdram_sim_model_inst0_istr(
@@ -40,7 +40,7 @@ sdram_sim_model_inst0_istr(
 );
 sdram_sim_model #(
   .SIZE(32*1024),
-  .REQUEST_RANDOM(1'd1),
+  .REQUEST_RANDOM(1'd0),
   .DATA_VALID_RANDOM(1'd0),
   .INIT_FILE("../../../tb/core/file/01_arit_istr_01_bin.txt")
 )

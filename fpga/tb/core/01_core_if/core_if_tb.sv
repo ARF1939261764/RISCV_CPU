@@ -31,6 +31,8 @@ core_if_inst0(
 /*sdram模块*/
 sdram_sim_model #(
   .SIZE     (32*1024),
+  .REQUEST_RANDOM   (0),
+  .DATA_VALID_RANDOM(0),
   .INIT_FILE("../../../tb/core/file/ram_data_01.txt")
 )
 sdram_sim_model_inst0(
@@ -46,9 +48,13 @@ initial begin
   flush_en=0;
   bp_jump_addr=0;
   bp_jump_en=0;
-  fd_ready=1;
   ctr_stop=0;
-  
+end
+
+always @(posedge clk) begin:block0
+  int temp;
+  temp=$random();
+  fd_ready=1||(temp[3:0]==0);
 end
 
 always #10 clk=~clk;
@@ -57,25 +63,10 @@ initial begin
   #10   rest=0;
   #100  rest=1;
   #1000;
-  @(posedge clk);
-  $display("jump to 32'h10");
-  flush_en=1;
-  jump_en=1;
-  jump_addr=32'h10;
-  @(posedge clk);
-  jump_en=0;
-  flush_en=0;
-  #1000;
-  @(posedge clk);
-  $display("jump to 32'h64");
-  bp_jump_en=1;
-  bp_jump_addr=32'h64;
-  @(posedge clk);
-  bp_jump_en=0;
 end
 
 always @(posedge clk) begin
-  if(fd_valid) begin
+  if(fd_valid&&fd_ready) begin
     $display("pc=%x,istr=%x,type=%s",fd_pc,(fd_istr[1:0]==2'd3)?fd_istr:fd_istr[15:0],(fd_istr[1:0]==2'd3)?"i":"c");
   end
 end
