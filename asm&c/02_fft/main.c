@@ -1,6 +1,6 @@
 #include "DSP.h"
 
-ComplexType *Complex=(ComplexType *)0x01;/*注意不要为0x00，不然会被判定为NULL*/
+ComplexType *Complex=(ComplexType *)0x08000;/*注意不要为0x00，不然会被判定为NULL*/
 
 int main(void)
 {

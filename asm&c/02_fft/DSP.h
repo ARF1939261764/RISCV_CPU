@@ -4,7 +4,7 @@
 #include "stdint.h"
 #include "math.h"
 
-#define DSP_FFT_MAX_NUM		8192
+#define DSP_FFT_MAX_NUM		16
 
 typedef struct
 {
