@@ -1,18 +1,20 @@
 module core_test (
   input  logic clk,
   input  logic rest,
-  inout  wire  io[31:0]
+  inout  wire  gpio_io[31:0],
+  output wire  uart_tx
 );
 
 i_avl_bus avl_bus_istr();
 i_avl_bus avl_bus_data();
 
 i_avl_bus avl_bus_data_bus_in[0:0]();
-i_avl_bus avl_bus_data_bus_out[1:0]();
+i_avl_bus avl_bus_data_bus_out[3:0]();
 
 logic pll_c0;
 logic pll_c1;
 
+//assign pll_c0 = clk;
 
 PLL  pll_inst0(
   .inclk0(clk),
@@ -46,17 +48,25 @@ gpio gpio_inst0(
   .clk    (pll_c0),
   .rest   (rest  ),
   .avl_s0 (avl_bus_data_bus_out[1]),
-  .io     (io)
+  .io     (gpio_io)
+);
+
+uart uart_inst0(
+  .clk    (pll_c0),
+  .rest   (rest  ),
+  .avl_s0 (avl_bus_data_bus_out[2]),
+  .rx     (),
+  .tx     (uart_tx)
 );
 
 localparam int AVL_BUS_DATA_BUS_ADDR_MAP_TAB_FIELD_LEN[0:31]  = '{
-              16,17,0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0
+              16,17,17,17, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0
             };
 localparam int AVL_BUS_DATA_BUS_ADDR_MAP_TAB_ADDR_BLOCK[0:31] = '{
-              32'h00000000,32'h00010000,32'h00010000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,
+              32'h00000000,32'h00010000,32'h00018000,32'h00020000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,
               32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,
               32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,
               32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000,32'h00000000
@@ -66,7 +76,7 @@ avl_bus_adapter avl_bus_adapter_data_bus_inst0(.avl_in(avl_bus_data),.avl_out(av
 
 avl_bus_n2n #(
   .MASTER_NUM                    (1),
-  .SLAVE_NUM                     (2),
+  .SLAVE_NUM                     (4),
   .ARB_METHOD                    (0),
   .BUS_N21_SEL_FIFO_DEPTH        (2),
   .BUS_N21_RES_DATA_FIFO_DEPTH   (0),

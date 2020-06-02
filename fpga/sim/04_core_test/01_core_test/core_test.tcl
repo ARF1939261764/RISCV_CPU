@@ -12,10 +12,7 @@ vlog -sv -work work +incdir+../../../rtl/bus                      {../../../rtl/
 vlog -sv -work work +incdir+../../../rtl/peripheral               {../../../rtl/peripheral/*.sv               }
 vlog -sv -work work +incdir+../../../rtl/core                     {../../../rtl/core/*.sv                     }
 vlog -sv -work work +incdir+../../../rtl/core_test/ram            {../../../rtl/core_test/ram/*.sv            }
-vlog -sv -work work +incdir+../../../rtl/core_test/rom            {../../../rtl/core_test/rom/*.sv            }
-#vlog -sv -work work +incdir+../../../rtl/core_test/pll            {../../../rtl/core_test/pll/*.sv           }
 vlog -sv -work work +incdir+../../../rtl/core_test/ram            {../../../rtl/core_test/ram/*.v             }
-vlog -sv -work work +incdir+../../../rtl/core_test/rom            {../../../rtl/core_test/rom/*.v             }
 vlog -sv -work work +incdir+../../../rtl/core_test/pll            {../../../rtl/core_test/pll/*.v             }
 vlog -sv -work work +incdir+../../../rtl/core_test                {../../../rtl/core_test/*.sv                }
 vlog -sv -work work +incdir+../../../tb/core_test/01_core_test    {../../../tb/core_test/01_core_test/*.sv    }
@@ -26,7 +23,7 @@ vsim -t 100ps -L work -voptargs="+acc"  core_test_tb
 
 add wave *
 
-#log -r /*
+log -r /*
 
 view structure
 view signals
